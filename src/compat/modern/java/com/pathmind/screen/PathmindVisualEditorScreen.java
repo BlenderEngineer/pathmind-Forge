@@ -6023,7 +6023,7 @@ public class PathmindVisualEditorScreen extends Screen {
                 publishPresetBusy = false;
                 if (throwable != null || session == null) {
                     publishPresetSession = null;
-                    setPublishPresetStatus("Discord sign-in failed.", UITheme.STATE_ERROR);
+                    setPublishPresetStatus(fallback(throwable == null ? null : throwable.getMessage(), "Discord sign-in failed."), UITheme.STATE_ERROR);
                     return;
                 }
                 publishPresetSession = session;

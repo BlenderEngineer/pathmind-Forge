@@ -2953,7 +2953,7 @@ public class PathmindMarketplaceScreen extends Screen {
                     authBusy = false;
                     if (throwable != null || session == null) {
                         if (popupPreset != null) {
-                            popupStatusMessage = "Discord sign-in failed.";
+                            popupStatusMessage = fallback(throwable == null ? null : throwable.getMessage(), "Discord sign-in failed.");
                             popupStatusColor = UITheme.STATE_ERROR;
                         }
                         return;

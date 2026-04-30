@@ -11,6 +11,7 @@ import net.minecraft.util.Util;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,11 +28,15 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Browser-based Supabase auth for the marketplace.
@@ -106,7 +111,7 @@ public final class MarketplaceAuthManager {
             pendingLogin = login;
             try {
                 ensureCallbackServer();
-                Util.getOperatingSystem().open(buildDiscordAuthorizeUrl(codeVerifier));
+                openExternalBrowser(buildDiscordAuthorizeUrl(codeVerifier));
             } catch (Exception e) {
                 pendingLogin = null;
                 login.future.completeExceptionally(e);
@@ -368,6 +373,90 @@ public final class MarketplaceAuthManager {
             + "&apikey=" + URLEncoder.encode(MarketplaceService.PUBLISHABLE_KEY, StandardCharsets.UTF_8)
             + "&code_challenge=" + URLEncoder.encode(codeChallenge, StandardCharsets.UTF_8)
             + "&code_challenge_method=S256";
+    }
+
+    private static void openExternalBrowser(String url) throws IOException {
+        URI uri = URI.create(url);
+        if (isLinux() && tryLinuxBrowserLaunch(url)) {
+            return;
+        }
+        if (tryDesktopBrowse(uri)) {
+            return;
+        }
+        try {
+            Util.getOperatingSystem().open(url);
+            return;
+        } catch (Exception ignored) {
+        }
+        if (!isLinux() && tryLinuxBrowserLaunch(url)) {
+            return;
+        }
+        throw new IOException("Pathmind could not open your browser automatically. Open this link manually: " + url);
+    }
+
+    private static boolean tryDesktopBrowse(URI uri) {
+        try {
+            if (!Desktop.isDesktopSupported()) {
+                return false;
+            }
+            Desktop desktop = Desktop.getDesktop();
+            if (!desktop.isSupported(Desktop.Action.BROWSE)) {
+                return false;
+            }
+            desktop.browse(uri);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean tryLinuxBrowserLaunch(String url) {
+        List<List<String>> commands = new ArrayList<>();
+        commands.add(List.of("xdg-open", url));
+        commands.add(List.of("gio", "open", url));
+        commands.add(List.of("sensible-browser", url));
+        commands.add(List.of("gnome-open", url));
+        commands.add(List.of("kde-open", url));
+        commands.add(List.of("kde-open5", url));
+        commands.add(List.of("exo-open", "--launch", "WebBrowser", url));
+
+        String browser = System.getenv("BROWSER");
+        if (browser != null && !browser.isBlank()) {
+            for (String candidate : browser.split(":")) {
+                String trimmed = candidate == null ? "" : candidate.trim();
+                if (!trimmed.isEmpty() && !trimmed.contains(" ")) {
+                    commands.add(0, List.of(trimmed, url));
+                }
+            }
+        }
+
+        for (List<String> command : commands) {
+            if (trySpawnBrowserCommand(command)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean trySpawnBrowserCommand(List<String> command) {
+        try {
+            Process process = new ProcessBuilder(command)
+                .redirectInput(ProcessBuilder.Redirect.PIPE)
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start();
+            if (process.waitFor(2, TimeUnit.SECONDS)) {
+                return process.exitValue() == 0;
+            }
+            return process.isAlive();
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isLinux() {
+        String osName = System.getProperty("os.name", "");
+        return osName.toLowerCase(Locale.ROOT).contains("linux");
     }
 
     private static String generateCodeVerifier() {

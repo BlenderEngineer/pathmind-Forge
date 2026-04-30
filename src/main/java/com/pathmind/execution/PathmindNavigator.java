@@ -110,7 +110,7 @@ public final class PathmindNavigator {
     private static final int MAX_PATH_BREAK_LOOKAHEAD = 8;
     private static final int MAX_GOAL_CANDIDATES = 10;
     private static final int MAX_VISIBLE_CANDIDATE_PATHS = 3;
-    private static final int MAX_GOAL_PATH_ATTEMPTS = 6;
+    private static final int MAX_GOAL_PATH_ATTEMPTS = 8;
     private static final int PROACTIVE_REPLAN_LOOKAHEAD_STEPS = 6;
     private static final int MAX_SNAPSHOT_PATH_POINTS = 96;
     private static final int MAX_SNAPSHOT_CANDIDATE_POINTS = 64;
@@ -1062,7 +1062,19 @@ public final class PathmindNavigator {
             waypoint = target.toImmutable();
             synchronized (this) {
                 activeWaypoint = waypoint;
-                activePlannedPrimitive = createPrimitiveSnapshot(null, null, waypoint, SearchPrimitiveType.WALK, PlannedPrimitiveType.WALK, List.of(), null);
+                List<BlockPos> breakTargets = getRequiredBreakTargets(world, playerFootPos, waypoint);
+                if (breakTargets == null) {
+                    breakTargets = List.of();
+                } else {
+                    breakTargets = breakTargets.stream()
+                        .filter(pos -> pos != null && isBreakableForNavigator(world, pos))
+                        .map(BlockPos::toImmutable)
+                        .toList();
+                }
+                BlockPos placeTarget = needsPlacedSupport(world, waypoint) && canPlaceSupportAt(world, waypoint.down())
+                    ? waypoint.down().toImmutable()
+                    : null;
+                activePlannedPrimitive = createPlannedPrimitive(world, playerFootPos, waypoint, breakTargets, placeTarget);
             }
         }
 
@@ -1133,7 +1145,19 @@ public final class PathmindNavigator {
                 waypoint = target.toImmutable();
                 synchronized (this) {
                     activeWaypoint = waypoint;
-                    activePlannedPrimitive = createPrimitiveSnapshot(null, null, waypoint, SearchPrimitiveType.WALK, PlannedPrimitiveType.WALK, List.of(), null);
+                    List<BlockPos> breakTargets = getRequiredBreakTargets(world, playerFootPos, waypoint);
+                    if (breakTargets == null) {
+                        breakTargets = List.of();
+                    } else {
+                        breakTargets = breakTargets.stream()
+                            .filter(pos -> pos != null && isBreakableForNavigator(world, pos))
+                            .map(BlockPos::toImmutable)
+                            .toList();
+                    }
+                    BlockPos placeTarget = needsPlacedSupport(world, waypoint) && canPlaceSupportAt(world, waypoint.down())
+                        ? waypoint.down().toImmutable()
+                        : null;
+                    activePlannedPrimitive = createPlannedPrimitive(world, playerFootPos, waypoint, breakTargets, placeTarget);
                 }
             }
         }
@@ -1487,6 +1511,21 @@ public final class PathmindNavigator {
         }
         return horizontalDistanceSq(target, resolvedGoal) <= 4.0D
             && Math.abs(target.getY() - resolvedGoal.getY()) <= MAX_DROP_DOWN;
+    }
+
+    private boolean isDirectGoalCompletionCandidate(BlockPos candidate, BlockPos target) {
+        if (candidate == null || target == null) {
+            return false;
+        }
+        if (candidate.down().equals(target)) {
+            return true;
+        }
+        if (candidate.getY() != target.getY()) {
+            return false;
+        }
+        int dx = Math.abs(candidate.getX() - target.getX());
+        int dz = Math.abs(candidate.getZ() - target.getZ());
+        return dx + dz == 1;
     }
 
     private boolean isPlayerNearPath(BlockPos playerFootPos) {
@@ -4544,6 +4583,7 @@ public final class PathmindNavigator {
     }
 
     private List<BlockPos> collectGoalCandidates(World world, BlockPos start, BlockPos target) {
+        boolean exactTargetNavigable = target != null && isNavigableNode(world, target);
         if (target != null
             && isWithinSearchBounds(start, target, target)
             && isChunkLoaded(world, target)
@@ -4566,10 +4606,11 @@ public final class PathmindNavigator {
                             || !isChunkLoaded(world, candidate)
                             || !isGoalNodeReachable(world, candidate)
                             || isHardDanger(world, candidate)
+                            || (!exactTargetNavigable && !isDirectGoalCompletionCandidate(candidate, target))
                             || !seen.add(candidate)) {
                             continue;
                         }
-                        scored.add(new ScoredPos(candidate.toImmutable(), scoreGoalCandidate(world, candidate, target)));
+                        scored.add(new ScoredPos(candidate.toImmutable(), scoreGoalCandidate(world, start, candidate, target, exactTargetNavigable)));
                     }
                 }
             }
@@ -4583,12 +4624,22 @@ public final class PathmindNavigator {
         return result;
     }
 
-    private double scoreGoalCandidate(World world, BlockPos candidate, BlockPos target) {
+    private double scoreGoalCandidate(World world, BlockPos start, BlockPos candidate, BlockPos target, boolean exactTargetNavigable) {
         double horizontal = Math.sqrt(horizontalDistanceSq(candidate, target));
+        double startDistance = start == null ? 0.0D : Math.sqrt(horizontalDistanceSq(start, candidate)) * 0.42D;
         double verticalPenalty = Math.abs(candidate.getY() - target.getY()) * 1.35D;
         double opennessBonus = countOpenNeighbors(world, candidate) * -0.12D;
         double exactTargetBias = candidate.equals(target) ? -2.5D : 0.0D;
         double failedPenalty = isFailedNode(candidate, System.currentTimeMillis()) ? FAILED_MOVE_PENALTY : 0.0D;
+        double approachPenalty = 0.0D;
+        if (!exactTargetNavigable) {
+            if (candidate.down().equals(target)) {
+                approachPenalty += 0.9D;
+            }
+            if (candidate.getY() != target.getY()) {
+                approachPenalty += 1.6D;
+            }
+        }
         double modificationPenalty = 0.0D;
         List<BlockPos> breakTargets = getRequiredBreakTargets(world, candidate);
         if (breakTargets != null && !breakTargets.isEmpty()) {
@@ -4597,7 +4648,15 @@ public final class PathmindNavigator {
         if (needsPlacedSupport(world, candidate)) {
             modificationPenalty += PATH_PLACE_ROUTE_PENALTY + PLACE_ASSIST_SURCHARGE;
         }
-        return horizontal + verticalPenalty + opennessBonus + exactTargetBias + failedPenalty + modificationPenalty + terrainPenalty(world, candidate, candidate);
+        return horizontal
+            + startDistance
+            + verticalPenalty
+            + opennessBonus
+            + exactTargetBias
+            + failedPenalty
+            + approachPenalty
+            + modificationPenalty
+            + terrainPenalty(world, candidate, candidate);
     }
 
     private int countOpenNeighbors(World world, BlockPos pos) {
@@ -5088,15 +5147,15 @@ public final class PathmindNavigator {
         if (player == null || target == null) {
             return false;
         }
-        Box targetBox = new Box(
-            target.getX(),
-            target.getY(),
-            target.getZ(),
-            target.getX() + 1.0D,
-            target.getY() + 1.0D,
-            target.getZ() + 1.0D
-        );
-        return player.getBoundingBox().intersects(targetBox);
+        BlockPos playerFootPos = resolvePlayerFootPos(player);
+        if (target.equals(playerFootPos)) {
+            return true;
+        }
+        double centerDx = Math.abs(player.getX() - (target.getX() + 0.5D));
+        double centerDz = Math.abs(player.getZ() - (target.getZ() + 0.5D));
+        return centerDx <= 0.26D
+            && centerDz <= 0.26D
+            && Math.abs(player.getY() - target.getY()) <= 1.25D;
     }
 
     private boolean hasReachedGoal(
@@ -5106,11 +5165,11 @@ public final class PathmindNavigator {
         BlockPos completionTarget,
         BlockPos requestedTarget
     ) {
-        if (isWithinGoalArrivalRange(player, completionTarget)) {
-            return true;
-        }
         if (world == null || playerFootPos == null || requestedTarget == null) {
             return false;
+        }
+        if (isNavigableNode(world, completionTarget)) {
+            return isWithinGoalArrivalRange(player, completionTarget);
         }
         if (isNavigableNode(world, requestedTarget)) {
             return false;
@@ -6803,9 +6862,11 @@ public final class PathmindNavigator {
         }
         boolean plannedClimb = isClimbPrimitive(plannedPrimitive);
         boolean plannedDrop = isDescendPrimitive(plannedPrimitive);
+        boolean sameColumnDescent = playerFootPos.getX() == waypoint.getX() && playerFootPos.getZ() == waypoint.getZ();
         BlockPos climbAnchor = resolveClimbAnchor(world, playerFootPos, waypoint);
         boolean climbNode = plannedClimb || (plannedPrimitive == null && climbAnchor != null);
-        boolean verticalDropStep = plannedDrop || (plannedPrimitive == null && playerFootPos.getX() == waypoint.getX()
+        boolean verticalDropStep = (plannedDrop && sameColumnDescent)
+            || (plannedPrimitive == null && playerFootPos.getX() == waypoint.getX()
             && playerFootPos.getZ() == waypoint.getZ()
             && waypoint.getY() < playerFootPos.getY()
             && canSafelyDropTo(world, playerFootPos, waypoint));
@@ -8596,9 +8657,7 @@ public final class PathmindNavigator {
         if (!activeTarget.equals(waypoint) && !activeTarget.up().equals(waypoint)) {
             return false;
         }
-        return isWithinGoalArrivalRange(player, activeTarget)
-            || isStandable(world, activeTarget)
-            || isNavigableNode(world, activeTarget);
+        return hasReachedGoal(world, player, playerFootPos, activeTarget, activeTarget);
     }
 
     private boolean shouldForceFinalApproach(World world, BlockPos playerFootPos, BlockPos target) {
