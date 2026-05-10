@@ -18750,8 +18750,9 @@ public class Node {
                 future.complete(null);
                 return;
             }
-            HitResult hit = client.crosshairTarget;
-            if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK) {
+            Optional<BlockHitResult> currentHit = getCurrentBlockHitResult();
+            if (currentHit.isPresent()) {
+                BlockHitResult blockHit = currentHit.get();
                 BlockPos hitPos = blockHit.getBlockPos();
                 if (hitPos != null) {
                     BlockState hitState = client.world.getBlockState(hitPos);
@@ -20336,11 +20337,11 @@ public class Node {
         if (client == null || client.world == null) {
             return Optional.empty();
         }
-        HitResult hit = client.crosshairTarget;
-        if (!(hit instanceof BlockHitResult) || hit.getType() != HitResult.Type.BLOCK) {
+        Optional<BlockHitResult> hit = getCurrentBlockHitResult();
+        if (hit.isEmpty()) {
             return Optional.empty();
         }
-        BlockPos pos = ((BlockHitResult) hit).getBlockPos();
+        BlockPos pos = hit.get().getBlockPos();
         if (pos == null) {
             return Optional.empty();
         }
@@ -20352,11 +20353,7 @@ public class Node {
         if (client == null) {
             return Optional.empty();
         }
-        HitResult hit = client.crosshairTarget;
-        if (!(hit instanceof BlockHitResult blockHit) || hit.getType() != HitResult.Type.BLOCK) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(blockHit.getBlockPos());
+        return getCurrentBlockHitResult().map(BlockHitResult::getBlockPos);
     }
 
     private Optional<Entity> getTargetedEntity() {
@@ -20401,12 +20398,35 @@ public class Node {
         if (client == null) {
             return Optional.empty();
         }
-        HitResult hit = client.crosshairTarget;
-        if (!(hit instanceof BlockHitResult) || hit.getType() != HitResult.Type.BLOCK) {
+        Optional<BlockHitResult> hit = getCurrentBlockHitResult();
+        if (hit.isEmpty()) {
             return Optional.empty();
         }
-        Direction face = ((BlockHitResult) hit).getSide();
+        Direction face = hit.get().getSide();
         return face == null ? Optional.empty() : Optional.of(face);
+    }
+
+    private Optional<BlockHitResult> getCurrentBlockHitResult() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null || client.world == null) {
+            return Optional.empty();
+        }
+
+        BlockHitResult freshHit = raycastBlockFromOrientation(
+            client,
+            client.player.getYaw(),
+            client.player.getPitch(),
+            Math.sqrt(DEFAULT_REACH_DISTANCE_SQUARED)
+        );
+        if (freshHit != null) {
+            return Optional.of(freshHit);
+        }
+
+        HitResult cachedHit = client.crosshairTarget;
+        if (cachedHit instanceof BlockHitResult blockHit && cachedHit.getType() == HitResult.Type.BLOCK) {
+            return Optional.of(blockHit);
+        }
+        return Optional.empty();
     }
     
     private Hand resolveHand(NodeParameter parameter, Hand defaultHand) {
