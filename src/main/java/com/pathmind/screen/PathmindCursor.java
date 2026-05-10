@@ -1,6 +1,8 @@
 package com.pathmind.screen;
 
 import com.pathmind.PathmindMod;
+import com.pathmind.util.DrawContextBridge;
+import com.pathmind.util.MatrixStackBridge;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
@@ -41,6 +43,15 @@ final class PathmindCursor {
     }
 
     static void render(DrawContext context, Identifier texture, int mouseX, int mouseY) {
-        GuiTextureRenderer.drawIcon(context, texture, mouseX - HOTSPOT_X, mouseY - HOTSPOT_Y, SIZE, CURSOR_TINT);
+        DrawContextBridge.startNewRootLayer(context);
+        Object matrices = context.getMatrices();
+        MatrixStackBridge.push(matrices);
+        try {
+            MatrixStackBridge.translateZ(matrices, 1000.0f);
+            GuiTextureRenderer.drawIcon(context, texture, mouseX - HOTSPOT_X, mouseY - HOTSPOT_Y, SIZE, CURSOR_TINT);
+            DrawContextBridge.flush(context);
+        } finally {
+            MatrixStackBridge.pop(matrices);
+        }
     }
 }

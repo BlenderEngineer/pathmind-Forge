@@ -143,7 +143,8 @@ public class Node {
     private final String id;
     private final NodeType type;
     private NodeMode mode;
-    private int x, y;
+    private final NodeLayoutState layoutState;
+    private final NodeInteractionState interactionState;
     private static final int MIN_WIDTH = 92;
     private static final int MIN_HEIGHT = 44;
     private static final int EVENT_FUNCTION_MIN_HEIGHT = 36;
@@ -323,16 +324,11 @@ public class Node {
         t.setDaemon(true);
         return t;
     });
-    private int width;
-    private int height;
     private int nextOutputSocket = 0;
     private int repeatRemainingIterations = 0;
     private boolean repeatActive = false;
     private boolean repeatExecuteAttachedAction = false;
     private boolean lastSensorResult = false;
-    private boolean selected = false;
-    private boolean dragging = false;
-    private int dragOffsetX, dragOffsetY;
     private final List<NodeParameter> parameters;
     private Node attachedSensor;
     private Node parentControl;
@@ -341,7 +337,6 @@ public class Node {
     private final Map<Integer, Node> attachedParameters;
     private Node parentParameterHost;
     private int parentParameterSlotIndex;
-    private boolean socketsHidden;
     private boolean booleanToggleValue = true;
     private RuntimeParameterData runtimeParameterData;
     private transient Node owningStartNode;
@@ -352,14 +347,6 @@ public class Node {
     private String bookText;
     private final List<String> bookPages;
     private String stickyNoteText;
-    private int stickyNoteWidthOverride;
-    private int stickyNoteHeightOverride;
-    private int messageFieldContentWidthOverride;
-    private int parameterFieldWidthOverride;
-    private int coordinateFieldWidthOverride;
-    private int amountFieldWidthOverride;
-    private int stopTargetFieldWidthOverride;
-    private int variableFieldWidthOverride;
     private boolean gotoAllowBreakWhileExecuting;
     private boolean gotoAllowPlaceWhileExecuting;
     private boolean keyPressedActivatesInGuis;
@@ -381,8 +368,12 @@ public class Node {
         this.id = java.util.UUID.randomUUID().toString();
         this.type = type;
         this.mode = NodeMode.getDefaultModeForNodeType(type);
-        this.x = x;
-        this.y = y;
+        this.layoutState = new NodeLayoutState(
+            x,
+            y,
+            STICKY_NOTE_MIN_WIDTH + 32,
+            STICKY_NOTE_MIN_HEIGHT + 20);
+        this.interactionState = new NodeInteractionState();
         this.parameters = new ArrayList<>();
         this.attachedSensor = null;
         this.parentControl = null;
@@ -391,7 +382,6 @@ public class Node {
         this.attachedParameters = new HashMap<>();
         this.parentParameterHost = null;
         this.parentParameterSlotIndex = -1;
-        this.socketsHidden = false;
         this.owningStartNode = null;
         this.activeRepeatUntilGuard = null;
         this.startNodeNumber = 0;
@@ -403,14 +393,6 @@ public class Node {
         this.bookText = "";
         this.bookPages = new ArrayList<>();
         this.stickyNoteText = "";
-        this.stickyNoteWidthOverride = STICKY_NOTE_MIN_WIDTH + 32;
-        this.stickyNoteHeightOverride = STICKY_NOTE_MIN_HEIGHT + 20;
-        this.messageFieldContentWidthOverride = 0;
-        this.parameterFieldWidthOverride = 0;
-        this.coordinateFieldWidthOverride = 0;
-        this.amountFieldWidthOverride = 0;
-        this.stopTargetFieldWidthOverride = 0;
-        this.variableFieldWidthOverride = 0;
         this.gotoAllowBreakWhileExecuting = false;
         this.gotoAllowPlaceWhileExecuting = false;
         this.keyPressedActivatesInGuis = true;
@@ -663,11 +645,11 @@ public class Node {
     }
 
     public int getX() {
-        return x;
+        return layoutState.getX();
     }
 
     public int getY() {
-        return y;
+        return layoutState.getY();
     }
 
     public void setPosition(int x, int y) {
@@ -682,52 +664,51 @@ public class Node {
     }
 
     private void setPositionSilently(int x, int y) {
-        this.x = x;
-        this.y = y;
+        layoutState.setPosition(x, y);
     }
 
     public int getWidth() {
-        return width;
+        return layoutState.getWidth();
     }
 
     public int getHeight() {
-        return height;
+        return layoutState.getHeight();
     }
 
     public boolean isSelected() {
-        return selected;
+        return interactionState.isSelected();
     }
 
     public void setSelected(boolean selected) {
-        this.selected = selected;
+        interactionState.setSelected(selected);
     }
 
     public boolean isDragging() {
-        return dragging;
+        return interactionState.isDragging();
     }
 
     public void setDragging(boolean dragging) {
-        this.dragging = dragging;
+        interactionState.setDragging(dragging);
     }
 
     public int getDragOffsetX() {
-        return dragOffsetX;
+        return interactionState.getDragOffsetX();
     }
 
     public void setDragOffsetX(int dragOffsetX) {
-        this.dragOffsetX = dragOffsetX;
+        interactionState.setDragOffsetX(dragOffsetX);
     }
 
     public int getDragOffsetY() {
-        return dragOffsetY;
+        return interactionState.getDragOffsetY();
     }
 
     public void setDragOffsetY(int dragOffsetY) {
-        this.dragOffsetY = dragOffsetY;
+        interactionState.setDragOffsetY(dragOffsetY);
     }
 
     public boolean containsPoint(int pointX, int pointY) {
-        return pointX >= x && pointX <= x + getWidth() && pointY >= y && pointY <= y + getHeight();
+        return layoutState.containsPoint(pointX, pointY);
     }
 
     public Text getDisplayName() {
@@ -1115,24 +1096,24 @@ public class Node {
         int socketHeight = 12;
         if (type == NodeType.START || type == NodeType.EVENT_FUNCTION) {
             // Center sockets on compact entry nodes without traditional headers
-            return y + getHeight() / 2;
+            return getY() + getHeight() / 2;
         } else if (usesMinimalNodePresentation()) {
             int socketCount = isInput ? getInputSocketCount() : getOutputSocketCount();
             if (socketCount <= 1) {
-                return y + getHeight() / 2;
+                return getY() + getHeight() / 2;
             }
             int totalHeight = (socketCount - 1) * socketHeight;
-            int startY = y + getHeight() / 2 - totalHeight / 2;
+            int startY = getY() + getHeight() / 2 - totalHeight / 2;
             return startY + socketIndex * socketHeight;
         } else {
             int headerHeight = 14;
-            int contentStartY = y + headerHeight + 6; // Start sockets below header with some padding
+            int contentStartY = getY() + headerHeight + 6; // Start sockets below header with some padding
             return contentStartY + socketIndex * socketHeight;
         }
     }
     
     public int getSocketX(boolean isInput) {
-        return isInput ? x - 4 : x + getWidth() + 4;
+        return isInput ? getX() - 4 : getX() + getWidth() + 4;
     }
     
     public void setNextOutputSocket(int socketIndex) {
@@ -1150,7 +1131,7 @@ public class Node {
     }
     
     public boolean isSocketClicked(int mouseX, int mouseY, int socketIndex, boolean isInput) {
-        if (socketsHidden) {
+        if (interactionState.areSocketsHidden()) {
             return false;
         }
         int socketX = getSocketX(isInput);
@@ -1161,11 +1142,11 @@ public class Node {
     }
 
     public int getSensorSlotLeft() {
-        return x + SENSOR_SLOT_MARGIN_HORIZONTAL;
+        return getX() + SENSOR_SLOT_MARGIN_HORIZONTAL;
     }
 
     private int getSlotAreaStartY() {
-        int top = y + HEADER_HEIGHT;
+        int top = getY() + HEADER_HEIGHT;
         if (isParameterNode()) {
             int lineCount = getVisibleParameterLineCount();
             if (lineCount > 0) {
@@ -1248,7 +1229,7 @@ public class Node {
 
     public int getSensorSlotWidth() {
         int minWidth = SENSOR_SLOT_MIN_CONTENT_WIDTH + 2 * SENSOR_SLOT_INNER_PADDING;
-        int widthWithMargins = this.width - 2 * SENSOR_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = getWidth() - 2 * SENSOR_SLOT_MARGIN_HORIZONTAL;
         return Math.max(minWidth, widthWithMargins);
     }
 
@@ -1277,16 +1258,16 @@ public class Node {
     }
 
     public int getParameterSlotLeft() {
-        return x + PARAMETER_SLOT_MARGIN_HORIZONTAL;
+        return getX() + PARAMETER_SLOT_MARGIN_HORIZONTAL;
     }
 
     public int getParameterSlotLeft(int slotIndex) {
         if (isComparisonOperator()) {
             int slotWidth = getParameterSlotWidth(slotIndex);
-            int baseLeft = x + PARAMETER_SLOT_MARGIN_HORIZONTAL;
+            int baseLeft = getX() + PARAMETER_SLOT_MARGIN_HORIZONTAL;
             if (usesMinimalNodePresentation()) {
-                int contentLeft = x + MINIMAL_NODE_TAB_WIDTH + PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                int contentWidth = Math.max(0, width - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
+                int contentLeft = getX() + MINIMAL_NODE_TAB_WIDTH + PARAMETER_SLOT_MARGIN_HORIZONTAL;
+                int contentWidth = Math.max(0, getWidth() - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
                 int groupWidth = slotWidth * 2 + OPERATOR_SLOT_GAP;
                 int startX = contentLeft + Math.max(0, (contentWidth - groupWidth) / 2);
                 if (slotIndex <= 0) {
@@ -1303,9 +1284,9 @@ public class Node {
     }
 
     public int getParameterSlotTop(int slotIndex) {
-        int top = y + HEADER_HEIGHT + PARAMETER_SLOT_LABEL_HEIGHT;
+        int top = getY() + HEADER_HEIGHT + PARAMETER_SLOT_LABEL_HEIGHT;
         if ((isInlineParameterNode() || shouldRenderInlineParameters()) && hasParameterSlot()) {
-            top = y + HEADER_HEIGHT;
+            top = getY() + HEADER_HEIGHT;
             int parameterDisplayHeight = getParameterDisplayHeight();
             if (parameterDisplayHeight > 0) {
                 top += parameterDisplayHeight;
@@ -1329,7 +1310,7 @@ public class Node {
         if (isComparisonOperator()) {
             if (usesMinimalNodePresentation()) {
                 int slotHeight = getParameterSlotHeight(slotIndex);
-                return y + Math.max(0, (height - slotHeight) / 2);
+                return getY() + Math.max(0, (getHeight() - slotHeight) / 2);
             }
             return top;
         }
@@ -1352,15 +1333,15 @@ public class Node {
     }
 
     public int getParameterSlotWidth() {
-        int widthWithMargins = this.width - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = getWidth() - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
         return Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, widthWithMargins);
     }
 
     public int getParameterSlotWidth(int slotIndex) {
         if (isComparisonOperator()) {
-            int widthWithMargins = this.width - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
+            int widthWithMargins = getWidth() - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
             if (usesMinimalNodePresentation()) {
-                widthWithMargins = Math.max(0, this.width - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
+                widthWithMargins = Math.max(0, getWidth() - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
             }
             int minCombinedWidth = PARAMETER_SLOT_MIN_CONTENT_WIDTH * 2 + OPERATOR_SLOT_GAP;
             int effectiveWidth = Math.max(minCombinedWidth, widthWithMargins);
@@ -1384,7 +1365,7 @@ public class Node {
     private int getParameterSlotsBottom() {
         int slotCount = getParameterSlotCount();
         if (slotCount <= 0) {
-            return y + HEADER_HEIGHT;
+            return getY() + HEADER_HEIGHT;
         }
         if (isComparisonOperator()) {
             int leftHeight = getParameterSlotHeight(0);
@@ -1437,7 +1418,7 @@ public class Node {
     }
 
     public int getModeFieldTop() {
-        int top = y + HEADER_HEIGHT;
+        int top = getY() + HEADER_HEIGHT;
         if (hasSchematicDropdownField()) {
             top += getSchematicFieldDisplayHeight();
         }
@@ -1554,7 +1535,7 @@ public class Node {
     }
 
     public int getCoordinateFieldWidth() {
-        return Math.max(COORDINATE_FIELD_WIDTH, coordinateFieldWidthOverride);
+        return Math.max(COORDINATE_FIELD_WIDTH, layoutState.getCoordinateFieldWidthOverride());
     }
 
     public int getCoordinateFieldSpacing() {
@@ -1585,11 +1566,11 @@ public class Node {
     }
 
     public int getScreenCoordinatePickerButtonLeft() {
-        return x + POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL;
+        return getX() + POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL;
     }
 
     public int getScreenCoordinatePickerButtonWidth() {
-        return Math.max(SCREEN_PICK_BUTTON_MIN_WIDTH, width - 2 * POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL);
+        return Math.max(SCREEN_PICK_BUTTON_MIN_WIDTH, getWidth() - 2 * POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL);
     }
 
     public int getScreenCoordinatePickerButtonHeight() {
@@ -1814,7 +1795,7 @@ public class Node {
         if (hasAmountSignToggle()) {
             width = Math.max(40, width - (AMOUNT_SIGN_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING));
         }
-        return Math.max(width, amountFieldWidthOverride);
+        return Math.max(width, layoutState.getAmountFieldWidthOverride());
     }
 
     public int getAmountFieldLeft() {
@@ -1900,7 +1881,7 @@ public class Node {
     }
 
     public int getRandomRoundingFieldLabelTop() {
-        return y + HEADER_HEIGHT + getParameterDisplayHeight() + RANDOM_ROUNDING_FIELD_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + getParameterDisplayHeight() + RANDOM_ROUNDING_FIELD_TOP_MARGIN;
     }
 
     public int getRandomRoundingFieldInputTop() {
@@ -1916,7 +1897,7 @@ public class Node {
     }
 
     public int getRandomRoundingFieldWidth() {
-        int width = Math.max(20, this.width - 10);
+        int width = Math.max(20, getWidth() - 10);
         if (hasRandomRoundingToggle()) {
             width = Math.max(40, width - (RANDOM_ROUNDING_TOGGLE_WIDTH + RANDOM_ROUNDING_TOGGLE_SPACING));
         }
@@ -1924,7 +1905,7 @@ public class Node {
     }
 
     public int getRandomRoundingFieldLeft() {
-        return x + 5;
+        return getX() + 5;
     }
 
     public boolean hasRandomRoundingToggle() {
@@ -2142,7 +2123,7 @@ public class Node {
     }
 
     public int getSchematicFieldLabelTop() {
-        return y + HEADER_HEIGHT + SCHEMATIC_FIELD_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + SCHEMATIC_FIELD_TOP_MARGIN;
     }
 
     public int getSchematicFieldInputTop() {
@@ -2177,7 +2158,7 @@ public class Node {
 
     public int getStopTargetFieldLabelTop() {
         if (type == NodeType.TEMPLATE || type == NodeType.CUSTOM_NODE) {
-            return y + HEADER_HEIGHT + 4;
+            return getY() + HEADER_HEIGHT + 4;
         }
         return getParameterSlotsBottom() + STOP_TARGET_FIELD_TOP_MARGIN;
     }
@@ -2199,16 +2180,16 @@ public class Node {
 
     public int getStopTargetFieldWidth() {
         if (type == NodeType.TEMPLATE || type == NodeType.CUSTOM_NODE) {
-            return Math.max(72, width - 12);
+            return Math.max(72, getWidth() - 12);
         }
-        return Math.max(STOP_TARGET_FIELD_MIN_WIDTH, stopTargetFieldWidthOverride);
+        return Math.max(STOP_TARGET_FIELD_MIN_WIDTH, layoutState.getStopTargetFieldWidthOverride());
     }
 
     public int getStopTargetFieldLeft() {
         if (type == NodeType.TEMPLATE || type == NodeType.CUSTOM_NODE) {
-            return x + 6;
+            return getX() + 6;
         }
-        return x + Math.max(STOP_TARGET_FIELD_MARGIN_HORIZONTAL, (width - getStopTargetFieldWidth()) / 2);
+        return getX() + Math.max(STOP_TARGET_FIELD_MARGIN_HORIZONTAL, (getWidth() - getStopTargetFieldWidth()) / 2);
     }
 
     public int getVariableFieldDisplayHeight() {
@@ -2219,7 +2200,7 @@ public class Node {
     }
 
     public int getVariableFieldLabelTop() {
-        return y + HEADER_HEIGHT + VARIABLE_FIELD_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + VARIABLE_FIELD_TOP_MARGIN;
     }
 
     public int getVariableFieldInputTop() {
@@ -2235,11 +2216,11 @@ public class Node {
     }
 
     public int getVariableFieldWidth() {
-        return Math.max(VARIABLE_FIELD_MIN_WIDTH, variableFieldWidthOverride);
+        return Math.max(VARIABLE_FIELD_MIN_WIDTH, layoutState.getVariableFieldWidthOverride());
     }
 
     public int getVariableFieldLeft() {
-        return x + Math.max(VARIABLE_FIELD_MARGIN_HORIZONTAL, (width - getVariableFieldWidth()) / 2);
+        return getX() + Math.max(VARIABLE_FIELD_MARGIN_HORIZONTAL, (getWidth() - getVariableFieldWidth()) / 2);
     }
 
     public boolean isPointInsideParameterSlot(int pointX, int pointY) {
@@ -2296,7 +2277,7 @@ public class Node {
     }
 
     public int getActionSlotLeft() {
-        return x + ACTION_SLOT_MARGIN_HORIZONTAL;
+        return getX() + ACTION_SLOT_MARGIN_HORIZONTAL;
     }
 
     public int getActionSlotTop() {
@@ -2318,7 +2299,7 @@ public class Node {
 
     public int getActionSlotWidth() {
         int minWidth = ACTION_SLOT_MIN_CONTENT_WIDTH + 2 * ACTION_SLOT_INNER_PADDING;
-        int widthWithMargins = this.width - 2 * ACTION_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = getWidth() - 2 * ACTION_SLOT_MARGIN_HORIZONTAL;
         return Math.max(minWidth, widthWithMargins);
     }
 
@@ -2384,7 +2365,7 @@ public class Node {
             previousSensor.parentControl = null;
             previousSensor.setDragging(false);
             previousSensor.setSelected(false);
-            previousSensor.setPositionSilently(this.x + this.width + SENSOR_SLOT_MARGIN_HORIZONTAL, this.y);
+            previousSensor.setPositionSilently(getX() + getWidth() + SENSOR_SLOT_MARGIN_HORIZONTAL, getY());
         }
 
         attachedSensor = sensor;
@@ -2485,7 +2466,7 @@ public class Node {
         parameter.parentParameterSlotIndex = -1;
         parameter.setSocketsHidden(false);
         parameter.recalculateDimensions();
-        parameter.setPositionSilently(this.x + this.width + PARAMETER_SLOT_MARGIN_HORIZONTAL, this.y);
+        parameter.setPositionSilently(getX() + getWidth() + PARAMETER_SLOT_MARGIN_HORIZONTAL, getY());
 
         refreshAttachedParameterValues();
         recalculateDimensions();
@@ -2789,7 +2770,7 @@ public class Node {
             previous.parentActionControl = null;
             previous.setDragging(false);
             previous.setSelected(false);
-            previous.setPositionSilently(this.x + this.width + ACTION_SLOT_MARGIN_HORIZONTAL, this.y);
+            previous.setPositionSilently(getX() + getWidth() + ACTION_SLOT_MARGIN_HORIZONTAL, getY());
         }
 
         attachedActionNode = node;
@@ -2814,11 +2795,11 @@ public class Node {
     }
 
     public void setSocketsHidden(boolean hidden) {
-        this.socketsHidden = hidden;
+        interactionState.setSocketsHidden(hidden);
     }
 
     public boolean shouldRenderSockets() {
-        return !socketsHidden;
+        return !interactionState.areSocketsHidden();
     }
 
     /**
@@ -3667,15 +3648,15 @@ public class Node {
     }
 
     public int getBooleanToggleLeft() {
-        return x + BOOLEAN_TOGGLE_MARGIN_HORIZONTAL;
+        return getX() + BOOLEAN_TOGGLE_MARGIN_HORIZONTAL;
     }
 
     public int getBooleanToggleTop() {
-        return y + HEADER_HEIGHT + BOOLEAN_TOGGLE_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + BOOLEAN_TOGGLE_TOP_MARGIN;
     }
 
     public int getBooleanToggleWidth() {
-        return Math.max(48, width - 2 * BOOLEAN_TOGGLE_MARGIN_HORIZONTAL);
+        return Math.max(48, getWidth() - 2 * BOOLEAN_TOGGLE_MARGIN_HORIZONTAL);
     }
 
     public int getBooleanToggleHeight() {
@@ -3711,19 +3692,20 @@ public class Node {
     }
 
     public int getStickyNoteWidthOverride() {
-        return isStickyNote() ? stickyNoteWidthOverride : 0;
+        return isStickyNote() ? layoutState.getStickyNoteWidthOverride() : 0;
     }
 
     public int getStickyNoteHeightOverride() {
-        return isStickyNote() ? stickyNoteHeightOverride : 0;
+        return isStickyNote() ? layoutState.getStickyNoteHeightOverride() : 0;
     }
 
     public void setStickyNoteSize(int width, int height) {
         if (!isStickyNote()) {
             return;
         }
-        stickyNoteWidthOverride = Math.max(STICKY_NOTE_MIN_WIDTH, width);
-        stickyNoteHeightOverride = Math.max(STICKY_NOTE_MIN_HEIGHT, height);
+        layoutState.setStickyNoteSize(
+            Math.max(STICKY_NOTE_MIN_WIDTH, width),
+            Math.max(STICKY_NOTE_MIN_HEIGHT, height));
         recalculateDimensions();
     }
 
@@ -3732,19 +3714,19 @@ public class Node {
     }
 
     public int getStickyNoteBodyLeft() {
-        return x + STICKY_NOTE_TEXT_MARGIN;
+        return getX() + STICKY_NOTE_TEXT_MARGIN;
     }
 
     public int getStickyNoteBodyTop() {
-        return y + STICKY_NOTE_HEADER_HEIGHT + STICKY_NOTE_TEXT_MARGIN;
+        return getY() + STICKY_NOTE_HEADER_HEIGHT + STICKY_NOTE_TEXT_MARGIN;
     }
 
     public int getStickyNoteBodyWidth() {
-        return Math.max(1, width - STICKY_NOTE_TEXT_MARGIN * 2);
+        return Math.max(1, getWidth() - STICKY_NOTE_TEXT_MARGIN * 2);
     }
 
     public int getStickyNoteBodyHeight() {
-        return Math.max(1, height - STICKY_NOTE_HEADER_HEIGHT - STICKY_NOTE_TEXT_MARGIN * 2);
+        return Math.max(1, getHeight() - STICKY_NOTE_HEADER_HEIGHT - STICKY_NOTE_TEXT_MARGIN * 2);
     }
 
     public int getStickyNoteResizeHandleSize() {
@@ -3837,7 +3819,7 @@ public class Node {
         if (messageLines.isEmpty()) {
             messageLines.add("Hello World");
         }
-        messageFieldContentWidthOverride = 0;
+        layoutState.clearMessageFieldContentWidthOverride();
         recalculateDimensions();
     }
 
@@ -3846,7 +3828,7 @@ public class Node {
             return;
         }
         messageLines.add(value == null ? "" : value);
-        messageFieldContentWidthOverride = 0;
+        layoutState.clearMessageFieldContentWidthOverride();
         recalculateDimensions();
     }
 
@@ -3861,7 +3843,7 @@ public class Node {
         if (messageLines.isEmpty()) {
             messageLines.add("Hello World");
         }
-        messageFieldContentWidthOverride = 0;
+        layoutState.clearMessageFieldContentWidthOverride();
         recalculateDimensions();
         return true;
     }
@@ -3895,7 +3877,7 @@ public class Node {
     }
 
     public int getMessageFieldLabelTop(int index) {
-        return y + HEADER_HEIGHT + MESSAGE_FIELD_TOP_MARGIN + index * (MESSAGE_FIELD_LABEL_HEIGHT + MESSAGE_FIELD_HEIGHT + MESSAGE_FIELD_VERTICAL_GAP);
+        return getY() + HEADER_HEIGHT + MESSAGE_FIELD_TOP_MARGIN + index * (MESSAGE_FIELD_LABEL_HEIGHT + MESSAGE_FIELD_HEIGHT + MESSAGE_FIELD_VERTICAL_GAP);
     }
 
     public int getMessageFieldInputTop(int index) {
@@ -3911,7 +3893,7 @@ public class Node {
     }
 
     public int getMessageFieldWidth() {
-        return Math.max(MESSAGE_FIELD_MIN_CONTENT_WIDTH, width - 2 * MESSAGE_FIELD_MARGIN_HORIZONTAL);
+        return Math.max(MESSAGE_FIELD_MIN_CONTENT_WIDTH, getWidth() - 2 * MESSAGE_FIELD_MARGIN_HORIZONTAL);
     }
 
     public void setMessageFieldTextWidth(int textWidth) {
@@ -3919,14 +3901,14 @@ public class Node {
             return;
         }
         int paddedWidth = Math.max(MESSAGE_FIELD_MIN_CONTENT_WIDTH, textWidth + (MESSAGE_FIELD_TEXT_PADDING * 2));
-        messageFieldContentWidthOverride = paddedWidth;
+        layoutState.setMessageFieldContentWidthOverride(paddedWidth);
     }
 
     public void setParameterFieldWidthOverride(int fieldWidth) {
         if (!isParameterNode()) {
             return;
         }
-        parameterFieldWidthOverride = Math.max(0, fieldWidth);
+        layoutState.setParameterFieldWidthOverride(Math.max(0, fieldWidth));
     }
 
     public void setCoordinateFieldTextWidth(int textWidth) {
@@ -3934,7 +3916,7 @@ public class Node {
             return;
         }
         int paddedWidth = Math.max(COORDINATE_FIELD_WIDTH, textWidth + (COORDINATE_FIELD_TEXT_PADDING * 2));
-        coordinateFieldWidthOverride = paddedWidth;
+        layoutState.setCoordinateFieldWidthOverride(paddedWidth);
     }
 
     public void setAmountFieldTextWidth(int textWidth) {
@@ -3942,7 +3924,7 @@ public class Node {
             return;
         }
         int paddedWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, textWidth + (AMOUNT_FIELD_TEXT_PADDING * 2));
-        amountFieldWidthOverride = paddedWidth;
+        layoutState.setAmountFieldWidthOverride(paddedWidth);
     }
 
     public void setStopTargetFieldTextWidth(int textWidth) {
@@ -3950,7 +3932,7 @@ public class Node {
             return;
         }
         int paddedWidth = Math.max(STOP_TARGET_FIELD_MIN_WIDTH, textWidth + (STOP_TARGET_FIELD_TEXT_PADDING * 2));
-        stopTargetFieldWidthOverride = paddedWidth;
+        layoutState.setStopTargetFieldWidthOverride(paddedWidth);
     }
 
     public void setVariableFieldTextWidth(int textWidth) {
@@ -3958,15 +3940,15 @@ public class Node {
             return;
         }
         int paddedWidth = Math.max(VARIABLE_FIELD_MIN_WIDTH, textWidth + (VARIABLE_FIELD_TEXT_PADDING * 2));
-        variableFieldWidthOverride = paddedWidth;
+        layoutState.setVariableFieldWidthOverride(paddedWidth);
     }
 
     public int getMessageFieldLeft() {
-        return x + MESSAGE_FIELD_MARGIN_HORIZONTAL;
+        return getX() + MESSAGE_FIELD_MARGIN_HORIZONTAL;
     }
 
     public int getMessageAddButtonLeft() {
-        return x + width - MESSAGE_BUTTON_PADDING - MESSAGE_BUTTON_SIZE;
+        return getX() + getWidth() - MESSAGE_BUTTON_PADDING - MESSAGE_BUTTON_SIZE;
     }
 
     public int getMessageRemoveButtonLeft() {
@@ -3974,7 +3956,7 @@ public class Node {
     }
 
     public int getMessageButtonTop() {
-        return y + 3;
+        return getY() + 3;
     }
 
     public int getMessageButtonSize() {
@@ -4006,11 +3988,11 @@ public class Node {
     }
 
     public int getMessageScopeToggleLeft() {
-        return x + MESSAGE_SCOPE_MARGIN_HORIZONTAL;
+        return getX() + MESSAGE_SCOPE_MARGIN_HORIZONTAL;
     }
 
     public int getMessageScopeToggleWidth() {
-        return Math.max(MESSAGE_FIELD_MIN_CONTENT_WIDTH, width - 2 * MESSAGE_SCOPE_MARGIN_HORIZONTAL);
+        return Math.max(MESSAGE_FIELD_MIN_CONTENT_WIDTH, getWidth() - 2 * MESSAGE_SCOPE_MARGIN_HORIZONTAL);
     }
 
     public int getMessageScopeToggleHeight() {
@@ -4160,15 +4142,15 @@ public class Node {
     }
 
     public int getBookTextButtonTop() {
-        return y + HEADER_HEIGHT + BOOK_TEXT_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + BOOK_TEXT_TOP_MARGIN;
     }
 
     public int getBookTextButtonLeft() {
-        return x + BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
+        return getX() + BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
     }
 
     public int getBookTextButtonWidth() {
-        return Math.max(BOOK_TEXT_BUTTON_MIN_WIDTH, width - 2 * BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL);
+        return Math.max(BOOK_TEXT_BUTTON_MIN_WIDTH, getWidth() - 2 * BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL);
     }
 
     public int getBookTextButtonHeight() {
@@ -4184,11 +4166,11 @@ public class Node {
     }
 
     public int getBookTextPageFieldLeft() {
-        return x + BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
+        return getX() + BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
     }
 
     public int getBookTextPageFieldWidth() {
-        return width - 2 * BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
+        return getWidth() - 2 * BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
     }
 
     public int getBookTextPageFieldHeight() {
@@ -4205,20 +4187,20 @@ public class Node {
     }
 
     public int getPopupEditButtonLeft() {
-        return x + POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL;
+        return getX() + POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL;
     }
 
     public int getPopupEditButtonTop() {
         if (isParameterNode()
             && type != NodeType.SENSOR_POSITION_OF
             && type != NodeType.SENSOR_DISTANCE_BETWEEN) {
-            return y + HEADER_HEIGHT + getParameterDisplayHeight() + POPUP_EDIT_BUTTON_TOP_MARGIN;
+            return getY() + HEADER_HEIGHT + getParameterDisplayHeight() + POPUP_EDIT_BUTTON_TOP_MARGIN;
         }
-        return y + HEADER_HEIGHT;
+        return getY() + HEADER_HEIGHT;
     }
 
     public int getPopupEditButtonWidth() {
-        return Math.max(POPUP_EDIT_BUTTON_MIN_WIDTH, width - 2 * POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL);
+        return Math.max(POPUP_EDIT_BUTTON_MIN_WIDTH, getWidth() - 2 * POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL);
     }
 
     public int getPopupEditButtonHeight() {
@@ -4233,15 +4215,15 @@ public class Node {
     }
 
     public int getEventNameFieldLeft() {
-        return x + EVENT_NAME_FIELD_MARGIN_HORIZONTAL;
+        return getX() + EVENT_NAME_FIELD_MARGIN_HORIZONTAL;
     }
 
     public int getEventNameFieldTop() {
-        return y + HEADER_HEIGHT + EVENT_NAME_FIELD_TOP_MARGIN;
+        return getY() + HEADER_HEIGHT + EVENT_NAME_FIELD_TOP_MARGIN;
     }
 
     public int getEventNameFieldWidth() {
-        return width - 2 * EVENT_NAME_FIELD_MARGIN_HORIZONTAL;
+        return getWidth() - 2 * EVENT_NAME_FIELD_MARGIN_HORIZONTAL;
     }
 
     public int getEventNameFieldHeight() {
@@ -4253,18 +4235,17 @@ public class Node {
      */
     public void recalculateDimensions() {
         if (type == NodeType.START) {
-            this.width = START_END_SIZE;
-            this.height = START_END_SIZE;
+            layoutState.setSize(START_END_SIZE, START_END_SIZE);
             return;
         }
         if (isStickyNote()) {
-            this.width = Math.max(STICKY_NOTE_MIN_WIDTH, stickyNoteWidthOverride);
-            this.height = Math.max(STICKY_NOTE_MIN_HEIGHT, stickyNoteHeightOverride);
+            layoutState.setSize(
+                Math.max(STICKY_NOTE_MIN_WIDTH, layoutState.getStickyNoteWidthOverride()),
+                Math.max(STICKY_NOTE_MIN_HEIGHT, layoutState.getStickyNoteHeightOverride()));
             return;
         }
         if (type == NodeType.TEMPLATE || type == NodeType.CUSTOM_NODE) {
-            this.width = TEMPLATE_NODE_WIDTH;
-            this.height = TEMPLATE_NODE_HEIGHT;
+            layoutState.setSize(TEMPLATE_NODE_WIDTH, TEMPLATE_NODE_HEIGHT);
             return;
         }
 
@@ -4315,8 +4296,8 @@ public class Node {
                 }
             }
             int requiredFieldWidth = maxParameterWidth;
-            if (parameterFieldWidthOverride > 0) {
-                requiredFieldWidth = Math.max(requiredFieldWidth, parameterFieldWidthOverride);
+            if (layoutState.getParameterFieldWidthOverride() > 0) {
+                requiredFieldWidth = Math.max(requiredFieldWidth, layoutState.getParameterFieldWidthOverride());
             }
             if (requiredFieldWidth > 0) {
                 computedWidth = Math.max(computedWidth, requiredFieldWidth + 10);
@@ -4346,7 +4327,7 @@ public class Node {
                     computedWidth = Math.max(computedWidth, coordinateWidth);
                 }
                 if (hasAmountInputField()) {
-                    int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, amountFieldWidthOverride);
+                    int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, layoutState.getAmountFieldWidthOverride());
                     if (hasAmountToggle()) {
                         amountContentWidth += AMOUNT_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
                     }
@@ -4363,7 +4344,7 @@ public class Node {
             computedWidth = Math.max(computedWidth, coordinateWidth);
         }
         if (hasAmountInputField()) {
-            int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, amountFieldWidthOverride);
+            int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, layoutState.getAmountFieldWidthOverride());
             if (hasAmountToggle()) {
                 amountContentWidth += AMOUNT_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
             }
@@ -4397,12 +4378,12 @@ public class Node {
             computedWidth = Math.max(computedWidth, requiredWidth);
         }
         if (hasStopTargetInputField()) {
-            int requiredWidth = Math.max(STOP_TARGET_FIELD_MIN_WIDTH, stopTargetFieldWidthOverride)
+            int requiredWidth = Math.max(STOP_TARGET_FIELD_MIN_WIDTH, layoutState.getStopTargetFieldWidthOverride())
                 + 2 * STOP_TARGET_FIELD_MARGIN_HORIZONTAL;
             computedWidth = Math.max(computedWidth, requiredWidth);
         }
         if (hasVariableInputField()) {
-            int requiredWidth = Math.max(VARIABLE_FIELD_MIN_WIDTH, variableFieldWidthOverride)
+            int requiredWidth = Math.max(VARIABLE_FIELD_MIN_WIDTH, layoutState.getVariableFieldWidthOverride())
                 + 2 * VARIABLE_FIELD_MARGIN_HORIZONTAL;
             computedWidth = Math.max(computedWidth, requiredWidth);
         }
@@ -4417,8 +4398,8 @@ public class Node {
                 MESSAGE_FIELD_MIN_CONTENT_WIDTH,
                 maxMessageLength * CHAR_PIXEL_WIDTH + (MESSAGE_FIELD_TEXT_PADDING * 2)
             );
-            if (messageFieldContentWidthOverride > 0) {
-                messageContentWidth = Math.max(messageContentWidth, messageFieldContentWidthOverride);
+            if (layoutState.getMessageFieldContentWidthOverride() > 0) {
+                messageContentWidth = Math.max(messageContentWidth, layoutState.getMessageFieldContentWidthOverride());
             }
             int messageFieldWidth = messageContentWidth + 2 * MESSAGE_FIELD_MARGIN_HORIZONTAL;
             int buttonWidth = (MESSAGE_BUTTON_SIZE * 2) + MESSAGE_BUTTON_SPACING + (MESSAGE_BUTTON_PADDING * 2);
@@ -4433,7 +4414,7 @@ public class Node {
             computedWidth = Math.max(computedWidth, editButtonWidth);
         }
         int minWidth = usesMinimalNodePresentation() ? 70 : MIN_WIDTH;
-        this.width = Math.max(minWidth, computedWidth);
+        int computedNodeWidth = Math.max(minWidth, computedWidth);
 
         int contentHeight = HEADER_HEIGHT;
         boolean hasSlots = hasSensorSlot() || hasActionSlot();
@@ -4574,11 +4555,13 @@ public class Node {
         int minHeight = usesMinimalNodePresentation() ? 32 : MIN_HEIGHT;
         computedHeight = Math.max(minHeight, contentHeight);
 
+        int computedNodeHeight;
         if (type == NodeType.EVENT_FUNCTION || type == NodeType.VARIABLE) {
-            this.height = Math.max(EVENT_FUNCTION_MIN_HEIGHT, contentHeight);
+            computedNodeHeight = Math.max(EVENT_FUNCTION_MIN_HEIGHT, contentHeight);
         } else {
-            this.height = computedHeight;
+            computedNodeHeight = computedHeight;
         }
+        layoutState.setSize(computedNodeWidth, computedNodeHeight);
 
         // Function nodes used to be forced into a square layout. That made them as tall
         // as they were wide and left a large amount of empty space around their input
