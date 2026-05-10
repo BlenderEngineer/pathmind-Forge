@@ -300,10 +300,10 @@ public class Node {
     private static final int STICKY_NOTE_TEXT_MARGIN = 8;
     private static final int STICKY_NOTE_HANDLE_SIZE = 8;
     private static final int BOOK_PAGE_MAX_CHARS = 256;
-    private static final double PARAMETER_SEARCH_RADIUS = 64.0;
+    static final double PARAMETER_SEARCH_RADIUS = 64.0;
     private static final Method CLIENT_WORLD_GET_ENTITY_BY_UUID = resolveClientWorldGetEntityByUuid();
     private static final double DEFAULT_REACH_DISTANCE_SQUARED = 25.0D;
-    private static final double DEFAULT_DIRECTION_DISTANCE = 16.0;
+    static final double DEFAULT_DIRECTION_DISTANCE = 16.0;
     private static final Pattern UNSAFE_RESOURCE_ID_PATTERN = Pattern.compile("[^a-z0-9_:/.-]");
     private static final Object GOTO_BREAK_LOCK = new Object();
     private static final AtomicInteger ACTIVE_GOTO_BREAK_BLOCKING_REQUESTS = new AtomicInteger(0);
@@ -447,7 +447,7 @@ public class Node {
     private static final String PARAM_ID_UI_BUTTON_TIMES = "ui_button_times";
     private static final String PARAM_ID_UI_BUTTON_DELAY = "ui_button_delay";
 
-    private static String normalizeParameterKey(String key) {
+    static String normalizeParameterKey(String key) {
         if (key == null) {
             return "";
         }
@@ -482,7 +482,7 @@ public class Node {
         }
     }
 
-    private void sendNodeErrorMessage(net.minecraft.client.MinecraftClient client, String message) {
+    void sendNodeErrorMessage(net.minecraft.client.MinecraftClient client, String message) {
         if (client == null || message == null || message.isEmpty()) {
             return;
         }
@@ -2904,7 +2904,7 @@ public class Node {
         NodeBooleanParameters.setBooleanModeLiteral(this, literalMode, BOOLEAN_MODE_LITERAL, BOOLEAN_MODE_VARIABLE);
     }
 
-    private void ensureBooleanParameters() {
+    void ensureBooleanParameters() {
         NodeBooleanParameters.ensureBooleanParameters(this, BOOLEAN_MODE_LITERAL);
     }
 
@@ -2973,62 +2973,12 @@ public class Node {
             values.put(normalizeParameterKey(key), value);
         }
 
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(type);
+        if (behaviorDefinition != null && behaviorDefinition.hasParameterBehavior()) {
+            return behaviorDefinition.exportValues(this, values);
+        }
+
         switch (type) {
-            case PARAM_DURATION: {
-                String duration = values.get("Duration");
-                if (duration != null) {
-                    String trimmed = duration.trim();
-                    double parsed = 1.0;
-                    if (!trimmed.isEmpty()) {
-                        try {
-                            parsed = Double.parseDouble(trimmed);
-                        } catch (NumberFormatException ignored) {
-                            parsed = 0.0;
-                        }
-                    }
-
-                    NodeMode durationMode = mode != null ? mode : NodeMode.WAIT_SECONDS;
-                    double unitSeconds;
-                    switch (durationMode) {
-                        case WAIT_TICKS:
-                            unitSeconds = 0.05;
-                            break;
-                        case WAIT_MINUTES:
-                            unitSeconds = 60.0;
-                            break;
-                        case WAIT_HOURS:
-                            unitSeconds = 3600.0;
-                            break;
-                        case WAIT_SECONDS:
-                        default:
-                            unitSeconds = 1.0;
-                            break;
-                    }
-
-                    String secondsValue = Double.toString(Math.max(0.0, parsed) * unitSeconds);
-                    values.put("Duration", secondsValue);
-                    values.put(normalizeParameterKey("Duration"), secondsValue);
-                    values.put("IntervalSeconds", secondsValue);
-                    values.put(normalizeParameterKey("IntervalSeconds"), secondsValue);
-                    values.put("WaitSeconds", secondsValue);
-                    values.put(normalizeParameterKey("WaitSeconds"), secondsValue);
-                    values.put("DurationSeconds", secondsValue);
-                    values.put(normalizeParameterKey("DurationSeconds"), secondsValue);
-                }
-                break;
-            }
-            case PARAM_AMOUNT: {
-                String amount = values.get("Amount");
-                if (amount != null) {
-                    values.put("Count", amount);
-                    values.put(normalizeParameterKey("Count"), amount);
-                    values.put("Threshold", amount);
-                    values.put(normalizeParameterKey("Threshold"), amount);
-                    values.put("Value", amount);
-                    values.put(normalizeParameterKey("Value"), amount);
-                }
-                break;
-            }
             case LIST_LENGTH: {
                 Optional<Integer> length = resolveListLengthValue(this);
                 String amount = length.map(String::valueOf).orElse("0");
@@ -3278,266 +3228,6 @@ public class Node {
                 values.put(normalizeParameterKey("Count"), countValue);
                 values.put("Value", countValue);
                 values.put(normalizeParameterKey("Value"), countValue);
-                break;
-            }
-            case PARAM_ITEM: {
-                String items = values.get("Items");
-                String item = values.get("Item");
-                if ((items == null || items.isEmpty()) && item != null && !item.isEmpty()) {
-                    values.put("Items", item);
-                    values.put(normalizeParameterKey("Items"), item);
-                }
-                if ((item == null || item.isEmpty()) && items != null && !items.isEmpty()) {
-                    for (String entry : items.split(",")) {
-                        String trimmed = entry == null ? null : entry.trim();
-                        if (trimmed == null || trimmed.isEmpty()) {
-                            continue;
-                        }
-                        item = trimmed;
-                        break;
-                    }
-                    if (item != null && !item.isEmpty()) {
-                        values.put("Item", item);
-                        values.put(normalizeParameterKey("Item"), item);
-                    }
-                }
-                String amount = values.get("Amount");
-                if (amount != null) {
-                    values.put("Count", amount);
-                    values.put(normalizeParameterKey("Count"), amount);
-                }
-                break;
-            }
-            case PARAM_VILLAGER_TRADE: {
-                String item = values.get("Item");
-                if (item != null && !item.isEmpty()) {
-                    values.put("Items", item);
-                    values.put(normalizeParameterKey("Items"), item);
-                }
-                break;
-            }
-            case PARAM_INVENTORY_SLOT: {
-                String slot = values.get("Slot");
-                if (slot != null) {
-                    values.put("SourceSlot", slot);
-                    values.put(normalizeParameterKey("SourceSlot"), slot);
-                    values.put("TargetSlot", slot);
-                    values.put(normalizeParameterKey("TargetSlot"), slot);
-                    values.put("FirstSlot", slot);
-                    values.put(normalizeParameterKey("FirstSlot"), slot);
-                    values.put("SecondSlot", slot);
-                    values.put(normalizeParameterKey("SecondSlot"), slot);
-                }
-                ItemStack resolvedStack = resolveComparableInventorySlotStack(values);
-                if (resolvedStack != null && !resolvedStack.isEmpty()) {
-                    Identifier itemId = Registries.ITEM.getId(resolvedStack.getItem());
-                    if (itemId != null) {
-                        String itemValue = itemId.toString();
-                        values.put("Item", itemValue);
-                        values.put(normalizeParameterKey("Item"), itemValue);
-                        values.put("Items", itemValue);
-                        values.put(normalizeParameterKey("Items"), itemValue);
-                    }
-                    String countValue = Integer.toString(resolvedStack.getCount());
-                    values.put("Count", countValue);
-                    values.put(normalizeParameterKey("Count"), countValue);
-                    values.put("Amount", countValue);
-                    values.put(normalizeParameterKey("Amount"), countValue);
-                }
-                break;
-            }
-            case PARAM_PLAYER: {
-                String player = values.get("Player");
-                if (player != null) {
-                    values.put("Name", player);
-                    values.put(normalizeParameterKey("Name"), player);
-                }
-                break;
-            }
-            case PARAM_WAYPOINT: {
-                String waypoint = values.get("Waypoint");
-                if (waypoint != null) {
-                    values.put("Name", waypoint);
-                    values.put(normalizeParameterKey("Name"), waypoint);
-                }
-                break;
-            }
-            case PARAM_BOOLEAN: {
-                ensureBooleanParameters();
-                String modeValue = isBooleanModeLiteral() ? BOOLEAN_MODE_LITERAL : BOOLEAN_MODE_VARIABLE;
-                values.put("Mode", modeValue);
-                values.put(normalizeParameterKey("Mode"), modeValue);
-                NodeParameter variableParameter = getParameter("Variable");
-                if (variableParameter != null) {
-                    String variableValue = variableParameter.getStringValue();
-                    values.put("Variable", variableValue);
-                    values.put(normalizeParameterKey("Variable"), variableValue);
-                }
-                Optional<Boolean> resolvedToggle = resolveBooleanNodeValue(this);
-                String toggle = resolvedToggle.map(String::valueOf).orElseGet(() -> values.get("Toggle"));
-                if (toggle == null) {
-                    toggle = values.get(normalizeParameterKey("Toggle"));
-                }
-                if (toggle != null) {
-                    values.put("Active", toggle);
-                    values.put(normalizeParameterKey("Active"), toggle);
-                    values.put("Enabled", toggle);
-                    values.put(normalizeParameterKey("Enabled"), toggle);
-                    values.put("Toggle", toggle);
-                    values.put(normalizeParameterKey("Toggle"), toggle);
-                }
-                break;
-            }
-            case PARAM_BLOCK: {
-                String block = values.get("Block");
-                String blocks = values.get("Blocks");
-                if ((blocks == null || blocks.isEmpty()) && block != null && !block.isEmpty()) {
-                    values.put("Blocks", block);
-                    values.put(normalizeParameterKey("Blocks"), block);
-                }
-                if ((block == null || block.isEmpty()) && blocks != null && !blocks.isEmpty()) {
-                    for (String entry : blocks.split(",")) {
-                        String trimmed = entry == null ? null : entry.trim();
-                        if (trimmed == null || trimmed.isEmpty()) {
-                            continue;
-                        }
-                        block = trimmed;
-                        break;
-                    }
-                    if (block != null && !block.isEmpty()) {
-                        values.put("Block", block);
-                        values.put(normalizeParameterKey("Block"), block);
-                    }
-                }
-                break;
-            }
-            case PARAM_MESSAGE: {
-                String text = values.get("Text");
-                if (text != null) {
-                    values.put("Message", text);
-                    values.put(normalizeParameterKey("Message"), text);
-                }
-                break;
-            }
-            case PARAM_ENTITY: {
-                String range = values.get("Range");
-                if (range != null) {
-                    values.put("Distance", range);
-                    values.put(normalizeParameterKey("Distance"), range);
-                }
-                break;
-            }
-            case PARAM_HAND: {
-                String hand = values.get("Hand");
-                if (hand != null) {
-                    values.put("SourceHand", hand);
-                    values.put(normalizeParameterKey("SourceHand"), hand);
-                    values.put("TargetHand", hand);
-                    values.put(normalizeParameterKey("TargetHand"), hand);
-                    values.put("SelectedHand", hand);
-                    values.put(normalizeParameterKey("SelectedHand"), hand);
-                }
-                break;
-            }
-            case PARAM_RANGE: {
-                String range = values.get("Range");
-                if (range != null) {
-                    values.put("Distance", range);
-                    values.put(normalizeParameterKey("Distance"), range);
-                    values.put("Radius", range);
-                    values.put(normalizeParameterKey("Radius"), range);
-                }
-                break;
-            }
-            case PARAM_PLACE_TARGET: {
-                String blockId = values.get("Block");
-                if (blockId != null) {
-                    values.put("BlockId", blockId);
-                    values.put(normalizeParameterKey("BlockId"), blockId);
-                }
-                break;
-            }
-            case PARAM_CLOSEST: {
-                String range = values.get("Range");
-                if (range != null) {
-                    values.put("Distance", range);
-                    values.put(normalizeParameterKey("Distance"), range);
-                }
-                break;
-            }
-            case PARAM_ROTATION: {
-                String yaw = values.get("Yaw");
-                if (yaw != null) {
-                    values.put("YawOffset", yaw);
-                    values.put(normalizeParameterKey("YawOffset"), yaw);
-                }
-                String pitch = values.get("Pitch");
-                if (pitch != null) {
-                    values.put("PitchOffset", pitch);
-                    values.put(normalizeParameterKey("PitchOffset"), pitch);
-                }
-                break;
-            }
-            case PARAM_BLOCK_FACE: {
-                String face = values.get("Face");
-                if (face != null && !face.trim().isEmpty()) {
-                    values.put("Side", face);
-                    values.put(normalizeParameterKey("Side"), face);
-                    values.put("Direction", face);
-                    values.put(normalizeParameterKey("Direction"), face);
-                }
-                break;
-            }
-            case PARAM_DIRECTION: {
-                String modeValue = isDirectionModeExact() ? DIRECTION_MODE_EXACT : DIRECTION_MODE_CARDINAL;
-                values.put("Mode", modeValue);
-                values.put(normalizeParameterKey("Mode"), modeValue);
-                String direction = values.get("Direction");
-                if (DIRECTION_MODE_CARDINAL.equals(modeValue) && direction != null && !direction.trim().isEmpty()) {
-                    String normalized = direction.trim().toLowerCase(Locale.ROOT);
-                    Double yaw = null;
-                    Double pitch = null;
-                    switch (normalized) {
-                        case "north":
-                            yaw = 180.0;
-                            break;
-                        case "south":
-                            yaw = 0.0;
-                            break;
-                        case "west":
-                            yaw = 90.0;
-                            break;
-                        case "east":
-                            yaw = -90.0;
-                            break;
-                        case "up":
-                            pitch = -90.0;
-                            break;
-                        case "down":
-                            pitch = 90.0;
-                            break;
-                        default:
-                            break;
-                    }
-                    if (yaw != null) {
-                        String yawValue = Double.toString(yaw);
-                        values.put("Yaw", yawValue);
-                        values.put(normalizeParameterKey("Yaw"), yawValue);
-                    }
-                    if (pitch != null) {
-                        String pitchValue = Double.toString(pitch);
-                        values.put("Pitch", pitchValue);
-                        values.put(normalizeParameterKey("Pitch"), pitchValue);
-                    }
-                    values.put("Side", direction);
-                    values.put(normalizeParameterKey("Side"), direction);
-                    values.put("Face", direction);
-                    values.put(normalizeParameterKey("Face"), direction);
-                    values.put("Text", direction);
-                    values.put(normalizeParameterKey("Text"), direction);
-                    values.put("Message", direction);
-                    values.put(normalizeParameterKey("Message"), direction);
-                }
                 break;
             }
             default:
@@ -4988,396 +4678,27 @@ public class Node {
         }
 
         NodeType parameterType = parameterNode.getType();
-        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
 
-        switch (parameterType) {
-            case PARAM_COORDINATE: {
-                int x = parseNodeInt(parameterNode, "X", 0);
-                int y = parseNodeInt(parameterNode, "Y", 0);
-                int z = parseNodeInt(parameterNode, "Z", 0);
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(parameterType);
+        if (behaviorDefinition != null && behaviorDefinition.hasRuntimeBehavior()) {
+            return behaviorDefinition.resolvePositionTarget(this, parameterNode, data, future);
+        }
+
+        String xValue = getParameterString(parameterNode, "X");
+        String yValue = getParameterString(parameterNode, "Y");
+        String zValue = getParameterString(parameterNode, "Z");
+        if (xValue != null && yValue != null && zValue != null) {
+            try {
+                int x = Integer.parseInt(xValue.trim());
+                int y = Integer.parseInt(yValue.trim());
+                int z = Integer.parseInt(zValue.trim());
                 BlockPos pos = new BlockPos(x, y, z);
                 if (data != null) {
                     data.targetBlockPos = pos;
                 }
                 return Optional.of(Vec3d.ofCenter(pos));
-            }
-            case PARAM_SCHEMATIC: {
-                int x = parseNodeInt(parameterNode, "X", 0);
-                int y = parseNodeInt(parameterNode, "Y", 0);
-                int z = parseNodeInt(parameterNode, "Z", 0);
-                BlockPos pos = new BlockPos(x, y, z);
-                if (data != null) {
-                    data.targetBlockPos = pos;
-                    data.schematicName = getParameterString(parameterNode, "Schematic");
-                }
-                return Optional.of(Vec3d.ofCenter(pos));
-            }
-            case PARAM_PLACE_TARGET: {
-                int x = parseNodeInt(parameterNode, "X", 0);
-                int y = parseNodeInt(parameterNode, "Y", 0);
-                int z = parseNodeInt(parameterNode, "Z", 0);
-                BlockPos pos = new BlockPos(x, y, z);
-                if (data != null) {
-                    data.targetBlockPos = pos;
-                    data.targetBlockId = getBlockParameterValue(parameterNode);
-                }
-                return Optional.of(Vec3d.ofCenter(pos));
-            }
-            case PARAM_ITEM: {
-                if (client == null || client.player == null) {
-                    return Optional.empty();
-                }
-                List<String> itemIds = resolveItemIdsFromParameter(parameterNode);
-                if (itemIds.isEmpty()) {
-                    sendParameterSearchFailure("No item selected on parameter for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                double defaultRange = type == NodeType.SENSOR_DISTANCE_BETWEEN ? 256.0 : PARAMETER_SEARCH_RADIUS;
-                double range = parseNodeDouble(parameterNode, "Range", defaultRange);
-                boolean hasValidCandidate = false;
-                for (String candidateId : itemIds) {
-                    Identifier identifier = Identifier.tryParse(candidateId);
-                    if (identifier == null || !Registries.ITEM.containsId(identifier)) {
-                        continue;
-                    }
-                    hasValidCandidate = true;
-                    Item item = Registries.ITEM.get(identifier);
-                    Optional<BlockPos> match = findNearestDroppedItem(client, item, range);
-                    if (match.isEmpty()) {
-                        continue;
-                    }
-                    if (data != null) {
-                        data.targetBlockPos = match.get();
-                        data.targetItem = item;
-                        data.targetItemId = candidateId;
-                    }
-                    return Optional.of(Vec3d.ofCenter(match.get()));
-                }
-                if (!hasValidCandidate) {
-                    String reference = itemIds.get(0);
-                    sendParameterSearchFailure("Unknown item \"" + reference + "\" for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                String joined = String.join(", ", itemIds);
-                sendParameterSearchFailure("No dropped " + joined + " found for " + type.getDisplayName() + ".", future);
-                return Optional.empty();
-            }
-            case PARAM_ENTITY: {
-                if (client == null || client.player == null) {
-                    return Optional.empty();
-                }
-                String state = getEntityParameterState(parameterNode);
-                double defaultRange = type == NodeType.SENSOR_DISTANCE_BETWEEN ? 256.0 : PARAMETER_SEARCH_RADIUS;
-                double range = parseNodeDouble(parameterNode, "Range", defaultRange);
-                String rawEntity = getParameterString(parameterNode, "Entity");
-
-                if (isAnySelectionValue(rawEntity)) {
-                    if (client.world == null) {
-                        return Optional.empty();
-                    }
-                    double searchRadius = Math.max(1.0, range);
-                    Box searchBox = client.player.getBoundingBox().expand(searchRadius);
-                    Entity nearest = null;
-                    double nearestDistance = Double.MAX_VALUE;
-                    for (Entity entity : client.world.getOtherEntities(client.player, searchBox)) {
-                        if (entity == null || entity.isRemoved()) {
-                            continue;
-                        }
-                        if (!EntityStateOptions.matchesState(entity, state)) {
-                            continue;
-                        }
-                        double distance = entity.squaredDistanceTo(client.player);
-                        if (nearest == null || distance < nearestDistance) {
-                            nearest = entity;
-                            nearestDistance = distance;
-                        }
-                    }
-                    if (nearest == null) {
-                        sendParameterSearchFailure("No nearby entity found for " + type.getDisplayName() + ".", future);
-                        return Optional.empty();
-                    }
-                    Identifier nearestIdentifier = Registries.ENTITY_TYPE.getId(nearest.getType());
-                    if (data != null) {
-                        data.targetEntity = nearest;
-                        data.targetEntityId = nearestIdentifier != null ? nearestIdentifier.toString() : null;
-                        data.targetBlockPos = nearest.getBlockPos();
-                    }
-                    Vec3d nearestPos = EntityCompatibilityBridge.getPos(nearest);
-                    if (nearestPos != null) {
-                        return Optional.of(nearestPos);
-                    }
-                    return Optional.of(Vec3d.ofCenter(nearest.getBlockPos()));
-                }
-
-                List<String> entityIds = resolveEntityIdsFromParameter(parameterNode);
-                if (entityIds.isEmpty()) {
-                    sendParameterSearchFailure("No entity selected on parameter for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                Entity nearest = null;
-                String nearestId = null;
-                double nearestDistance = Double.MAX_VALUE;
-                for (String candidateId : entityIds) {
-                    Identifier identifier = Identifier.tryParse(candidateId);
-                    if (identifier == null || !Registries.ENTITY_TYPE.containsId(identifier)) {
-                        continue;
-                    }
-                    EntityType<?> entityType = Registries.ENTITY_TYPE.get(identifier);
-                    Optional<Entity> entity = findNearestEntity(client, entityType, range, state);
-                    if (entity.isEmpty()) {
-                        continue;
-                    }
-                    double distance = entity.get().squaredDistanceTo(client.player);
-                    if (distance < nearestDistance) {
-                        nearest = entity.get();
-                        nearestId = identifier.toString();
-                        nearestDistance = distance;
-                    }
-                }
-                if (nearest == null) {
-                    sendParameterSearchFailure("No nearby entity found for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                if (data != null) {
-                    data.targetEntity = nearest;
-                    data.targetEntityId = nearestId;
-                    data.targetBlockPos = nearest.getBlockPos();
-                }
-                Vec3d nearestPos = EntityCompatibilityBridge.getPos(nearest);
-                if (nearestPos != null) {
-                    return Optional.of(nearestPos);
-                }
-                return Optional.of(Vec3d.ofCenter(nearest.getBlockPos()));
-            }
-            case PARAM_PLAYER: {
-                if (client == null || client.player == null || client.world == null) {
-                    return Optional.empty();
-                }
-                String playerName = getParameterString(parameterNode, "Player");
-                Optional<AbstractClientPlayerEntity> player;
-                if (isAnyPlayerValue(playerName)) {
-                    player = findNearestPlayer(client, client.player);
-                } else if (isSelfPlayerValue(playerName)) {
-                    player = Optional.of(client.player);
-                } else {
-                    player = client.world.getPlayers().stream()
-                        .filter(p -> playerName.equalsIgnoreCase(
-                            GameProfileCompatibilityBridge.getName(p.getGameProfile())))
-                        .findFirst();
-                }
-                if (player.isEmpty()) {
-                    String message;
-                    if (isAnyPlayerValue(playerName)) {
-                        message = "No players nearby for " + type.getDisplayName() + ".";
-                    } else if (isSelfPlayerValue(playerName)) {
-                        message = "Local player unavailable for " + type.getDisplayName() + ".";
-                    } else {
-                        message = "Player \"" + playerName + "\" is not nearby for " + type.getDisplayName() + ".";
-                    }
-                    sendParameterSearchFailure(message, future);
-                    return Optional.empty();
-                }
-                String resolvedName = GameProfileCompatibilityBridge.getName(player.get().getGameProfile());
-                if (data != null) {
-                    data.targetPlayerName = resolvedName != null ? resolvedName : playerName;
-                    data.targetEntity = player.get();
-                    data.targetBlockPos = player.get().getBlockPos();
-                }
-                Vec3d playerPos = EntityCompatibilityBridge.getPos(player.get());
-                if (playerPos == null) {
-                    playerPos = Vec3d.ofCenter(player.get().getBlockPos());
-                }
-                return Optional.of(playerPos);
-            }
-            case PARAM_BLOCK: {
-                if (client == null || client.player == null || client.world == null) {
-                    return Optional.empty();
-                }
-                String rawBlock = getParameterString(parameterNode, "Block");
-                List<BlockSelection> blocks = resolveBlocksFromParameter(parameterNode);
-                if (blocks.isEmpty()) {
-                    if (!isAnySelectionValue(rawBlock)) {
-                        sendParameterSearchFailure("No blocks defined on parameter for " + type.getDisplayName() + ".", future);
-                        return Optional.empty();
-                    }
-                    double range = parseNodeDouble(parameterNode, "Range", PARAMETER_SEARCH_RADIUS);
-                    Optional<BlockPos> nearest = findNearestAnyBlock(client, range);
-                    if (nearest.isEmpty()) {
-                        sendParameterSearchFailure("No nearby block found for " + type.getDisplayName() + ".", future);
-                        return Optional.empty();
-                    }
-                    if (data != null) {
-                        data.targetBlockPos = nearest.get();
-                        data.targetBlockIds = new ArrayList<>();
-                    }
-                    return Optional.of(Vec3d.ofCenter(nearest.get()));
-                }
-                double range = parseNodeDouble(parameterNode, "Range", PARAMETER_SEARCH_RADIUS);
-                Optional<BlockPos> match = findNearestBlock(client, blocks, range);
-                if (match.isEmpty()) {
-                    sendParameterSearchFailure("No matching block from parameter found for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                if (data != null) {
-                    data.targetBlockPos = match.get();
-                    data.targetBlockIds = new ArrayList<>();
-                    for (BlockSelection selection : blocks) {
-                        Identifier id = selection.getBlockId();
-                        if (id != null) {
-                            data.targetBlockIds.add(selection.asString());
-                        }
-                    }
-                }
-                return Optional.of(Vec3d.ofCenter(match.get()));
-            }
-            case PARAM_ROTATION:
-            case PARAM_DIRECTION:
-            case PARAM_BLOCK_FACE: {
-                if (client == null || client.player == null) {
-                    return Optional.empty();
-                }
-                Vec3d origin = EntityCompatibilityBridge.getPos(client.player);
-                if (origin == null) {
-                    return Optional.empty();
-                }
-                Float yawParam = parseNodeFloat(parameterNode, "Yaw");
-                Float pitchParam = parseNodeFloat(parameterNode, "Pitch");
-                float yaw = yawParam != null ? yawParam : client.player.getYaw();
-                float pitch = pitchParam != null ? pitchParam : client.player.getPitch();
-
-                if (parameterType == NodeType.PARAM_DIRECTION && parameterNode.isDirectionModeCardinal()) {
-                    String direction = getParameterString(parameterNode, "Direction");
-                    if (direction != null) {
-                        switch (direction.trim().toLowerCase(Locale.ROOT)) {
-                            case "north":
-                                yaw = 180.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "south":
-                                yaw = 0.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "west":
-                                yaw = 90.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "east":
-                                yaw = -90.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "up":
-                                pitch = -90.0F;
-                                break;
-                            case "down":
-                                pitch = 90.0F;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                } else if (parameterType == NodeType.PARAM_BLOCK_FACE) {
-                    String direction = getParameterString(parameterNode, "Face");
-                    if (direction == null || direction.trim().isEmpty()) {
-                        direction = getParameterString(parameterNode, "Side");
-                    }
-                    if (direction != null) {
-                        switch (direction.trim().toLowerCase(Locale.ROOT)) {
-                            case "north":
-                                yaw = 180.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "south":
-                                yaw = 0.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "west":
-                                yaw = 90.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "east":
-                                yaw = -90.0F;
-                                pitch = 0.0F;
-                                break;
-                            case "up":
-                                pitch = -90.0F;
-                                break;
-                            case "down":
-                                pitch = 90.0F;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                if (type == NodeType.GOTO || type == NodeType.TRAVEL || type == NodeType.GOAL) {
-                    if (mode != NodeMode.GOTO_XYZ && mode != NodeMode.GOTO_XZ
-                        && mode != NodeMode.GOAL_XYZ && mode != NodeMode.GOAL_XZ) {
-                        return Optional.empty();
-                    }
-                }
-                Float yawOffset = parseNodeFloat(parameterNode, "YawOffset");
-                Float pitchOffset = parseNodeFloat(parameterNode, "PitchOffset");
-                if (yawOffset != null) {
-                    yaw += yawOffset;
-                }
-                if (pitchOffset != null) {
-                    pitch += pitchOffset;
-                }
-                double distance = Math.max(0.0, parseNodeDouble(parameterNode, "Distance",
-                    parameterType == NodeType.PARAM_DIRECTION
-                        ? (parameterNode.isDirectionModeExact() ? DEFAULT_DIRECTION_DISTANCE : 1.0)
-                        : parameterType == NodeType.PARAM_BLOCK_FACE
-                            ? 1.0
-                        : DEFAULT_DIRECTION_DISTANCE));
-                double yawRad = Math.toRadians(yaw);
-                double pitchRad = Math.toRadians(pitch);
-                double xDir = -Math.sin(yawRad) * Math.cos(pitchRad);
-                double yDir = -Math.sin(pitchRad);
-                double zDir = Math.cos(yawRad) * Math.cos(pitchRad);
-                Vec3d target = origin.add(xDir * distance, yDir * distance, zDir * distance);
-                if (data != null) {
-                    data.targetVector = target;
-                    data.targetBlockPos = new BlockPos(MathHelper.floor(target.x), MathHelper.floor(target.y), MathHelper.floor(target.z));
-                    data.resolvedYaw = yaw;
-                    data.resolvedPitch = pitch;
-                }
-                return Optional.of(target);
-            }
-            default: {
-                String xValue = getParameterString(parameterNode, "X");
-                String yValue = getParameterString(parameterNode, "Y");
-                String zValue = getParameterString(parameterNode, "Z");
-                if (xValue != null && yValue != null && zValue != null) {
-                    try {
-                        int x = Integer.parseInt(xValue.trim());
-                        int y = Integer.parseInt(yValue.trim());
-                        int z = Integer.parseInt(zValue.trim());
-                        BlockPos pos = new BlockPos(x, y, z);
-                        if (data != null) {
-                            data.targetBlockPos = pos;
-                        }
-                        return Optional.of(Vec3d.ofCenter(pos));
-                    } catch (NumberFormatException ignored) {
-                        // fall through to empty optional
-                    }
-                }
-                break;
-            }
-            case PARAM_CLOSEST: {
-                if (client == null || client.player == null || client.world == null) {
-                    return Optional.empty();
-                }
-                int range = Math.max(1, parseNodeInt(parameterNode, "Range", 5));
-                Optional<BlockPos> open = findNearestOpenBlock(client, range);
-                if (open.isEmpty()) {
-                    sendParameterSearchFailure("No open block found within range for " + type.getDisplayName() + ".", future);
-                    return Optional.empty();
-                }
-                if (data != null) {
-                    data.targetBlockPos = open.get();
-                }
-                return Optional.of(Vec3d.ofCenter(open.get()));
+            } catch (NumberFormatException ignored) {
+                // fall through to empty optional
             }
         }
 
@@ -5839,7 +5160,7 @@ public class Node {
         sendNodeErrorMessage(client, "Parameter \"" + parameterNode.getType().getDisplayName() + "\" cannot be used with \"" + this.type.getDisplayName() + "\".");
     }
 
-    private void sendParameterSearchFailure(String message, CompletableFuture<Void> future) {
+    void sendParameterSearchFailure(String message, CompletableFuture<Void> future) {
         // Only surface search failures during execution contexts (future != null).
         // UI/preview calls (future == null) should not spam chat.
         if (future != null) {
@@ -5925,7 +5246,7 @@ public class Node {
         return String.format(Locale.ROOT, "%.3f", value);
     }
 
-    private static int parseNodeInt(Node node, String name, int defaultValue) {
+    static int parseNodeInt(Node node, String name, int defaultValue) {
         if (node != null && node.getType() == NodeType.OPERATOR_RANDOM) {
             double min = node.getDoubleParameter("Min", 0.0);
             double max = node.getDoubleParameter("Max", 1.0);
@@ -5975,7 +5296,7 @@ public class Node {
         }
     }
 
-    private static double parseNodeDouble(Node node, String name, double defaultValue) {
+    static double parseNodeDouble(Node node, String name, double defaultValue) {
         if (node != null && node.getType() == NodeType.OPERATOR_RANDOM) {
             double min = node.getDoubleParameter("Min", 0.0);
             double max = node.getDoubleParameter("Max", 1.0);
@@ -6040,7 +5361,7 @@ public class Node {
         return node.resolveBooleanValueFromRaw(value, false).orElse(defaultValue);
     }
 
-    private static Float parseNodeFloat(Node node, String name) {
+    static Float parseNodeFloat(Node node, String name) {
         String value = getParameterString(node, name);
         if (value == null || value.isEmpty()) {
             return null;
@@ -6074,7 +5395,7 @@ public class Node {
         }
     }
 
-    private static Double parseDoubleOrNull(String value) {
+    static Double parseDoubleOrNull(String value) {
         if (value == null || value.isEmpty()) {
             return null;
         }
@@ -6173,7 +5494,7 @@ public class Node {
         return trimmed.isEmpty() || "any".equalsIgnoreCase(trimmed);
     }
 
-    private static boolean isAnySelectionValue(String value) {
+    static boolean isAnySelectionValue(String value) {
         if (value == null) {
             return true;
         }
@@ -6183,7 +5504,7 @@ public class Node {
             || "any state".equalsIgnoreCase(trimmed);
     }
 
-    private List<BlockSelection> resolveBlocksFromParameter(Node parameterNode) {
+    List<BlockSelection> resolveBlocksFromParameter(Node parameterNode) {
         List<BlockSelection> selections = new ArrayList<>();
         String primary = getBlockParameterValue(parameterNode);
         String listValue = getParameterString(parameterNode, "Blocks");
@@ -6213,7 +5534,7 @@ public class Node {
         });
     }
 
-    private List<String> resolveItemIdsFromParameter(Node parameterNode) {
+    List<String> resolveItemIdsFromParameter(Node parameterNode) {
         List<String> itemIds = new ArrayList<>();
         if (parameterNode == null) {
             return itemIds;
@@ -6412,7 +5733,7 @@ public class Node {
         return desiredSelection.equals(getTradeKeySellItemId(offerKey));
     }
 
-    private List<String> resolveEntityIdsFromParameter(Node parameterNode) {
+    List<String> resolveEntityIdsFromParameter(Node parameterNode) {
         List<String> entityIds = new ArrayList<>();
         if (parameterNode == null) {
             return entityIds;
@@ -6575,7 +5896,7 @@ public class Node {
         }
     }
 
-    private Optional<BlockPos> findNearestBlock(net.minecraft.client.MinecraftClient client, List<BlockSelection> selections, double range) {
+    Optional<BlockPos> findNearestBlock(net.minecraft.client.MinecraftClient client, List<BlockSelection> selections, double range) {
         if (client == null || client.player == null || client.world == null || selections == null || selections.isEmpty()) {
             return Optional.empty();
         }
@@ -6664,7 +5985,7 @@ public class Node {
         return matches;
     }
 
-    private Optional<BlockPos> findNearestAnyBlock(net.minecraft.client.MinecraftClient client, double range) {
+    Optional<BlockPos> findNearestAnyBlock(net.minecraft.client.MinecraftClient client, double range) {
         if (client == null || client.player == null || client.world == null) {
             return Optional.empty();
         }
@@ -6694,7 +6015,7 @@ public class Node {
         return Optional.ofNullable(bestPos);
     }
 
-    private Optional<BlockPos> findNearestOpenBlock(net.minecraft.client.MinecraftClient client, int range) {
+    Optional<BlockPos> findNearestOpenBlock(net.minecraft.client.MinecraftClient client, int range) {
         if (client == null || client.player == null || client.world == null) {
             return Optional.empty();
         }
@@ -7771,11 +7092,11 @@ public class Node {
         return Math.max(1, getIntParameter("MaxBlocks", 256));
     }
 
-    private static final class ListValueEntry {
-        private final NodeType elementType;
-        private final String entry;
+    static final class ListValueEntry {
+        final NodeType elementType;
+        final String entry;
 
-        private ListValueEntry(NodeType elementType, String entry) {
+        ListValueEntry(NodeType elementType, String entry) {
             this.elementType = elementType;
             this.entry = entry;
         }
@@ -7801,100 +7122,23 @@ public class Node {
         }
 
         NodeType parameterType = parameterNode.getType();
-        switch (parameterType) {
-            case PARAM_ENTITY: {
-                String state = getEntityParameterState(parameterNode);
-                double range = parseDoubleOrDefault(getParameterString(parameterNode, "Range"), PARAMETER_SEARCH_RADIUS);
-                String rawEntity = getParameterString(parameterNode, "Entity");
-                Entity nearest = null;
-                double nearestDistance = Double.MAX_VALUE;
-                if (isAnySelectionValue(rawEntity)) {
-                    double searchRadius = Math.max(1.0, range);
-                    Box searchBox = client.player.getBoundingBox().expand(searchRadius);
-                    for (Entity candidate : client.world.getOtherEntities(
-                        client.player,
-                        searchBox,
-                        entity -> entity != null && !entity.isRemoved() && EntityStateOptions.matchesState(entity, state))) {
-                        double distance = candidate.squaredDistanceTo(client.player);
-                        if (distance < nearestDistance) {
-                            nearest = candidate;
-                            nearestDistance = distance;
-                        }
-                    }
-                } else {
-                    for (String candidateId : resolveEntityIdsFromParameter(parameterNode)) {
-                        Identifier identifier = Identifier.tryParse(candidateId);
-                        if (identifier == null || !Registries.ENTITY_TYPE.containsId(identifier)) {
-                            continue;
-                        }
-                        EntityType<?> entityType = Registries.ENTITY_TYPE.get(identifier);
-                        Optional<Entity> candidate = findNearestEntity(client, entityType, range, state);
-                        if (candidate.isEmpty()) {
-                            continue;
-                        }
-                        double distance = candidate.get().squaredDistanceTo(client.player);
-                        if (distance < nearestDistance) {
-                            nearest = candidate.get();
-                            nearestDistance = distance;
-                        }
-                    }
-                }
-                return nearest != null ? new ListValueEntry(NodeType.PARAM_ENTITY, nearest.getUuidAsString()) : null;
-            }
-            case PARAM_PLAYER: {
-                String playerName = getParameterString(parameterNode, "Player");
-                if (isSelfPlayerValue(playerName)) {
-                    return new ListValueEntry(NodeType.PARAM_PLAYER, client.player.getUuidAsString());
-                }
-                if (isAnyPlayerValue(playerName)) {
-                    Optional<AbstractClientPlayerEntity> nearest = findNearestPlayer(client, client.player);
-                    return nearest.map(player -> new ListValueEntry(NodeType.PARAM_PLAYER, player.getUuidAsString())).orElse(null);
-                }
-                for (AbstractClientPlayerEntity player : client.world.getPlayers()) {
-                    if (player != null && playerName != null && playerName.equalsIgnoreCase(
-                        GameProfileCompatibilityBridge.getName(player.getGameProfile()))) {
-                        return new ListValueEntry(NodeType.PARAM_PLAYER, player.getUuidAsString());
-                    }
-                }
-                return null;
-            }
-            case PARAM_ITEM: {
-                double range = parseDoubleOrDefault(getParameterString(parameterNode, "Range"), PARAMETER_SEARCH_RADIUS);
-                Entity nearest = null;
-                double nearestDistance = Double.MAX_VALUE;
-                for (String candidateId : resolveItemIdsFromParameter(parameterNode)) {
-                    Identifier identifier = Identifier.tryParse(candidateId);
-                    if (identifier == null || !Registries.ITEM.containsId(identifier)) {
-                        continue;
-                    }
-                    Item item = Registries.ITEM.get(identifier);
-                    for (ItemEntity itemEntity : findItemsByType(client, item, range)) {
-                        if (itemEntity == null || itemEntity.isRemoved()) {
-                            continue;
-                        }
-                        double distance = itemEntity.squaredDistanceTo(client.player);
-                        if (distance < nearestDistance) {
-                            nearest = itemEntity;
-                            nearestDistance = distance;
-                        }
-                    }
-                }
-                return nearest != null ? new ListValueEntry(NodeType.PARAM_ITEM, nearest.getUuidAsString()) : null;
-            }
-            default:
-                NodeType resolvedType = parameterNode.getResolvedValueType();
-                Map<String, String> exported = exportResolvedParameterValues(parameterNode);
-                if (resolvedType == null || exported == null || exported.isEmpty()) {
-                    if (client != null) {
-                        sendNodeErrorMessage(client, "No value available to add to the list.");
-                    }
-                    if (future != null && !future.isDone()) {
-                        future.complete(null);
-                    }
-                    return null;
-                }
-                return new ListValueEntry(resolvedType, serializeListEntryValues(exported));
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(parameterType);
+        if (behaviorDefinition != null && behaviorDefinition.hasListEntryBehavior()) {
+            return behaviorDefinition.resolveListValueEntry(this, parameterNode, client);
         }
+
+        NodeType resolvedType = parameterNode.getResolvedValueType();
+        Map<String, String> exported = exportResolvedParameterValues(parameterNode);
+        if (resolvedType == null || exported == null || exported.isEmpty()) {
+            if (client != null) {
+                sendNodeErrorMessage(client, "No value available to add to the list.");
+            }
+            if (future != null && !future.isDone()) {
+                future.complete(null);
+            }
+            return null;
+        }
+        return new ListValueEntry(resolvedType, serializeListEntryValues(exported));
     }
 
     private String describeListElementType(NodeType type) {
@@ -8896,162 +8140,17 @@ public class Node {
             handled[0] = true;
         }
 
-            switch (parameterNode.getType()) {
-            case PARAM_ITEM: {
-                if (client == null || client.player == null || client.world == null) {
-                    return null;
-                }
-                List<String> itemIds = resolveItemIdsFromParameter(parameterNode);
-                if (itemIds.isEmpty()) {
-                    sendNodeErrorMessage(client, "No item selected for " + type.getDisplayName() + ".");
-                    future.complete(null);
-                    return null;
-                }
-                double searchRange = parseDoubleOrDefault(getParameterString(parameterNode, "Range"), PARAMETER_SEARCH_RADIUS);
-                Optional<BlockPos> matchedPosition = Optional.empty();
-                Item matchedItem = null;
-                String matchedItemId = null;
-
-                for (String candidateId : itemIds) {
-                    Identifier identifier = Identifier.tryParse(candidateId);
-                    if (identifier == null || !Registries.ITEM.containsId(identifier)) {
-                        continue;
-                    }
-                    Item candidateItem = Registries.ITEM.get(identifier);
-                    Optional<BlockPos> target = findNearestDroppedItem(client, candidateItem, searchRange);
-                    if (target.isPresent()) {
-                        matchedPosition = target;
-                        matchedItem = candidateItem;
-                        matchedItemId = candidateId;
-                        break;
-                    }
-                }
-
-                if (matchedPosition.isEmpty()) {
-                    String reference = String.join(", ", itemIds);
-                    sendNodeErrorMessage(client, "No dropped " + reference + " found nearby for " + type.getDisplayName() + ".");
-                    future.complete(null);
-                    return null;
-                }
-
-                if (runtimeState.runtimeParameterData != null) {
-                    runtimeState.runtimeParameterData.targetBlockPos = matchedPosition.get();
-                    runtimeState.runtimeParameterData.targetItem = matchedItem;
-                    runtimeState.runtimeParameterData.targetItemId = matchedItemId;
-                }
-
-                return matchedPosition.get();
-            }
-            case PARAM_ENTITY: {
-                if (client == null || client.player == null || client.world == null) {
-                    return null;
-                }
-                List<String> entityIds = resolveEntityIdsFromParameter(parameterNode);
-                if (entityIds.isEmpty()) {
-                    sendNodeErrorMessage(client, "No entity selected for " + type.getDisplayName() + ".");
-                    future.complete(null);
-                    return null;
-                }
-                String state = getEntityParameterState(parameterNode);
-                double range = parseDoubleOrDefault(getParameterString(parameterNode, "Range"), PARAMETER_SEARCH_RADIUS);
-                Entity nearest = null;
-                double nearestDistance = Double.MAX_VALUE;
-                for (String candidateId : entityIds) {
-                    Identifier identifier = Identifier.tryParse(candidateId);
-                    if (identifier == null || !Registries.ENTITY_TYPE.containsId(identifier)) {
-                        continue;
-                    }
-                    EntityType<?> entityType = Registries.ENTITY_TYPE.get(identifier);
-                    Optional<Entity> target = findNearestEntity(client, entityType, range, state);
-                    if (target.isEmpty()) {
-                        continue;
-                    }
-                    double distance = target.get().squaredDistanceTo(client.player);
-                    if (distance < nearestDistance) {
-                        nearest = target.get();
-                        nearestDistance = distance;
-                    }
-                }
-                if (nearest == null) {
-                    sendNodeErrorMessage(client, "No matching entity found nearby for " + type.getDisplayName() + ".");
-                    future.complete(null);
-                    return null;
-                }
-                if (runtimeState.runtimeParameterData != null) {
-                    runtimeState.runtimeParameterData.targetBlockPos = nearest.getBlockPos();
-                    runtimeState.runtimeParameterData.targetEntity = nearest;
-                }
-                return nearest.getBlockPos();
-            }
-            case LIST_ITEM: {
-                Entity target = resolveListItemEntity(parameterNode, runtimeState.runtimeParameterData, future);
-                if (target == null) {
-                    return null;
-                }
-                if (runtimeState.runtimeParameterData != null) {
-                    runtimeState.runtimeParameterData.targetBlockPos = target.getBlockPos();
-                    runtimeState.runtimeParameterData.targetEntity = target;
-                }
-                return target.getBlockPos();
-            }
-            case PARAM_PLAYER: {
-                if (client == null || client.player == null || client.world == null) {
-                    return null;
-                }
-                String playerName = getParameterString(parameterNode, "Player");
-                if (isSelfPlayerValue(playerName)) {
-                    future.complete(null);
-                    return null;
-                }
-                Optional<AbstractClientPlayerEntity> match;
-                if (isAnyPlayerValue(playerName)) {
-                    match = findNearestPlayer(client, client.player);
-                } else if (isSelfPlayerValue(playerName)) {
-                    match = Optional.of(client.player);
-                } else {
-                    match = client.world.getPlayers().stream()
-                        .filter(p -> playerName.equalsIgnoreCase(
-                            GameProfileCompatibilityBridge.getName(p.getGameProfile())))
-                        .findFirst();
-                }
-
-                if (match.isEmpty()) {
-                    String message;
-                    if (isAnyPlayerValue(playerName)) {
-                        message = "No players nearby for " + type.getDisplayName() + ".";
-                    } else if (isSelfPlayerValue(playerName)) {
-                        message = "Local player unavailable for " + type.getDisplayName() + ".";
-                    } else {
-                        message = "Player \"" + playerName + "\" is not nearby for " + type.getDisplayName() + ".";
-                    }
-                    sendNodeErrorMessage(client, message);
-                    future.complete(null);
-                    return null;
-                }
-
-                if (runtimeState.runtimeParameterData != null) {
-                    runtimeState.runtimeParameterData.targetBlockPos = match.get().getBlockPos();
-                    runtimeState.runtimeParameterData.targetEntity = match.get();
-                }
-                return match.get().getBlockPos();
-            }
-            case PARAM_BLOCK: {
-                String blockId = getBlockParameterValue(parameterNode);
-                BlockPos pos = resolveGotoFallbackTargetFromBlockId(blockId, future);
-                if (pos != null && runtimeState.runtimeParameterData != null) {
-                    runtimeState.runtimeParameterData.targetBlockPos = pos;
-                }
-                return pos;
-            }
-            default:
-                if (handled != null && handled.length > 0) {
-                    handled[0] = false;
-                }
-                return null;
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(parameterNode.getType());
+        if (behaviorDefinition != null && behaviorDefinition.hasGotoFallbackTargetBehavior()) {
+            return behaviorDefinition.resolveGotoFallbackTarget(this, parameterNode, client, future);
         }
+        if (handled != null && handled.length > 0) {
+            handled[0] = false;
+        }
+        return null;
     }
 
-    private BlockPos resolveGotoFallbackTargetFromBlockId(String blockId, CompletableFuture<Void> future) {
+    BlockPos resolveGotoFallbackTargetFromBlockId(String blockId, CompletableFuture<Void> future) {
         if (blockId == null || blockId.isEmpty()) {
             return null;
         }
@@ -14672,7 +13771,7 @@ public class Node {
         return formatCanonicalValueMap(values);
     }
 
-    private String formatCoordinateValues(Map<String, String> values) {
+    String formatCoordinateValues(Map<String, String> values) {
         String x = getRuntimeValue(values, "x");
         String y = getRuntimeValue(values, "y");
         String z = getRuntimeValue(values, "z");
@@ -14682,7 +13781,7 @@ public class Node {
         return x + " " + y + " " + z;
     }
 
-    private String formatRotationValues(Map<String, String> values) {
+    String formatRotationValues(Map<String, String> values) {
         String yaw = getRuntimeValue(values, "yaw");
         String pitch = getRuntimeValue(values, "pitch");
         if (yaw.isEmpty() || pitch.isEmpty()) {
@@ -14691,7 +13790,7 @@ public class Node {
         return yaw + " " + pitch;
     }
 
-    private String getRuntimeValue(Map<String, String> values, String key) {
+    String getRuntimeValue(Map<String, String> values, String key) {
         if (values == null || key == null) {
             return "";
         }
@@ -19412,11 +18511,11 @@ public class Node {
         }
     }
 
-    private static boolean isAnyPlayerValue(String value) {
+    static boolean isAnyPlayerValue(String value) {
         return value != null && "any".equalsIgnoreCase(value.trim());
     }
 
-    private static boolean isSelfPlayerValue(String value) {
+    static boolean isSelfPlayerValue(String value) {
         if (value == null) {
             return true;
         }
@@ -19431,7 +18530,7 @@ public class Node {
         return value == null || value.trim().isEmpty() || "any".equalsIgnoreCase(value.trim());
     }
 
-    private static Optional<AbstractClientPlayerEntity> findNearestPlayer(
+    static Optional<AbstractClientPlayerEntity> findNearestPlayer(
         net.minecraft.client.MinecraftClient client,
         AbstractClientPlayerEntity reference
     ) {
@@ -19522,7 +18621,7 @@ public class Node {
         return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
     }
 
-    private String getBlockParameterValue(Node node) {
+    String getBlockParameterValue(Node node) {
         if (node == null) {
             return null;
         }
@@ -19542,7 +18641,7 @@ public class Node {
         return null;
     }
 
-    private String getEntityParameterState(Node node) {
+    String getEntityParameterState(Node node) {
         if (node == null) {
             return "";
         }
@@ -19646,7 +18745,7 @@ public class Node {
         return parseFlexibleBoolean(formatRuntimeVariableValue(variable));
     }
 
-    private Optional<Boolean> resolveBooleanNodeValue(Node node) {
+    Optional<Boolean> resolveBooleanNodeValue(Node node) {
         if (node == null || node.getType() != NodeType.PARAM_BOOLEAN) {
             return Optional.empty();
         }
@@ -19681,7 +18780,7 @@ public class Node {
         return Optional.empty();
     }
 
-    private static double parseDoubleOrDefault(String value, double defaultValue) {
+    static double parseDoubleOrDefault(String value, double defaultValue) {
         if (value == null || value.isEmpty()) {
             return defaultValue;
         }
@@ -19875,7 +18974,7 @@ public class Node {
         sendNodeErrorMessage(client, "State \"" + stateLabel + "\" is not valid for " + entityLabel + " on " + type.getDisplayName() + ".");
     }
 
-    private Optional<BlockPos> findNearestDroppedItem(net.minecraft.client.MinecraftClient client, Item item, double range) {
+    Optional<BlockPos> findNearestDroppedItem(net.minecraft.client.MinecraftClient client, Item item, double range) {
         if (client == null || client.player == null || client.world == null || item == null) {
             return Optional.empty();
         }
@@ -19890,11 +18989,11 @@ public class Node {
         return Optional.of(nearest.getBlockPos());
     }
 
-    private Optional<Entity> findNearestEntity(net.minecraft.client.MinecraftClient client, EntityType<?> entityType, double range) {
+    Optional<Entity> findNearestEntity(net.minecraft.client.MinecraftClient client, EntityType<?> entityType, double range) {
         return findNearestEntity(client, entityType, range, "");
     }
 
-    private Optional<Entity> findNearestEntity(net.minecraft.client.MinecraftClient client, EntityType<?> entityType, double range, String state) {
+    Optional<Entity> findNearestEntity(net.minecraft.client.MinecraftClient client, EntityType<?> entityType, double range, String state) {
         if (client == null || client.player == null || client.world == null || entityType == null) {
             return Optional.empty();
         }
@@ -19924,7 +19023,7 @@ public class Node {
         return Optional.of(nearest);
     }
 
-    private Entity resolveListItemEntity(Node listNode, RuntimeParameterData data, CompletableFuture<Void> future) {
+    Entity resolveListItemEntity(Node listNode, RuntimeParameterData data, CompletableFuture<Void> future) {
         if (listNode == null) {
             return null;
         }
@@ -20243,7 +19342,7 @@ public class Node {
         );
     }
 
-    private List<ItemEntity> findItemsByType(net.minecraft.client.MinecraftClient client, Item item, double range) {
+    List<ItemEntity> findItemsByType(net.minecraft.client.MinecraftClient client, Item item, double range) {
         if (client == null || client.player == null || client.world == null || item == null) {
             return Collections.emptyList();
         }
@@ -21762,55 +20861,15 @@ public class Node {
     }
 
     private Integer resolveComparableSlotIndex(Map<String, String> values) {
-        if (values == null || values.isEmpty()) {
-            return null;
-        }
-        Integer slot = parseIntOrNull(getRuntimeValue(values, "slot"));
-        if (slot != null) {
-            return slot;
-        }
-        slot = parseIntOrNull(getRuntimeValue(values, "sourceslot"));
-        if (slot != null) {
-            return slot;
-        }
-        slot = parseIntOrNull(getRuntimeValue(values, "targetslot"));
-        if (slot != null) {
-            return slot;
-        }
-        slot = parseIntOrNull(getRuntimeValue(values, "firstslot"));
-        if (slot != null) {
-            return slot;
-        }
-        return parseIntOrNull(getRuntimeValue(values, "secondslot"));
+        return InventorySlotValueResolver.resolveComparableSlotIndex(values);
     }
 
     private SlotSelectionType resolveComparableSlotSelectionType(Map<String, String> values) {
-        if (values == null || values.isEmpty()) {
-            return SlotSelectionType.PLAYER_INVENTORY;
-        }
-        Boolean isPlayer = InventorySlotModeHelper.extractPlayerSelectionFlag(getRuntimeValue(values, "mode"));
-        return Boolean.FALSE.equals(isPlayer) ? SlotSelectionType.GUI_CONTAINER : SlotSelectionType.PLAYER_INVENTORY;
+        return InventorySlotValueResolver.resolveComparableSlotSelectionType(values);
     }
 
     private ItemStack resolveComparableInventorySlotStack(Map<String, String> values) {
-        Integer slotValue = resolveComparableSlotIndex(values);
-        if (slotValue == null) {
-            return null;
-        }
-        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-        if (client == null || client.player == null) {
-            return null;
-        }
-        SlotResolution resolved = resolveInventorySlot(
-            client.player.currentScreenHandler,
-            client.player.getInventory(),
-            slotValue.intValue(),
-            resolveComparableSlotSelectionType(values)
-        );
-        if (resolved == null || resolved.slot == null) {
-            return null;
-        }
-        return resolved.slot.getStack();
+        return InventorySlotValueResolver.resolveComparableInventorySlotStack(values);
     }
 
     private List<String> resolveComparableItemSelections(Map<String, String> values) {
@@ -21941,98 +21000,8 @@ public class Node {
             Node resolved = resolveListItemValueNode(node, null, false, null);
             return resolved != null ? resolveComparableString(resolved) : Optional.empty();
         }
-        switch (node.getType()) {
-            case PARAM_COORDINATE: {
-                Map<String, String> values = node.exportParameterValues();
-                String formatted = formatCoordinateValues(values);
-                return formatted.isEmpty() ? Optional.empty() : Optional.of(formatted);
-            }
-            case PARAM_ROTATION: {
-                Map<String, String> values = node.exportParameterValues();
-                String formatted = formatRotationValues(values);
-                return formatted.isEmpty() ? Optional.empty() : Optional.of(formatted);
-            }
-            case PARAM_MESSAGE: {
-                String text = getParameterString(node, "Text");
-                if (text == null || text.trim().isEmpty()) {
-                    text = getParameterString(node, "Message");
-                }
-                if (text == null || text.trim().isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(text.trim());
-            }
-            case PARAM_DIRECTION: {
-                Map<String, String> values = node.exportParameterValues();
-                String formatted = formatRotationValues(values);
-                if (!formatted.isEmpty()) {
-                    return Optional.of(formatted);
-                }
-                String direction = getParameterString(node, "Direction");
-                if (direction == null || direction.trim().isEmpty()) {
-                    direction = getParameterString(node, "Side");
-                }
-                if (direction == null || direction.trim().isEmpty()) {
-                    direction = getParameterString(node, "Face");
-                }
-                if (direction == null || direction.trim().isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(direction.trim());
-            }
-            case PARAM_BLOCK_FACE: {
-                String face = getParameterString(node, "Face");
-                if (face == null || face.trim().isEmpty()) {
-                    face = getParameterString(node, "Side");
-                }
-                if (face == null || face.trim().isEmpty()) {
-                    face = getParameterString(node, "Direction");
-                }
-                if (face == null || face.trim().isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(face.trim());
-            }
-            case SENSOR_TARGETED_BLOCK_FACE: {
-                Map<String, String> values = node.exportParameterValues();
-                String face = getRuntimeValue(values, "face");
-                if (face.isEmpty()) {
-                    face = getRuntimeValue(values, "side");
-                }
-                if (face.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(face.trim());
-            }
-            case SENSOR_LOOK_DIRECTION: {
-                Map<String, String> values = node.exportParameterValues();
-                String formatted = formatRotationValues(values);
-                if (!formatted.isEmpty()) {
-                    return Optional.of(formatted);
-                }
-                String direction = getRuntimeValue(values, "direction");
-                if (direction.isEmpty()) {
-                    direction = getRuntimeValue(values, "side");
-                }
-                if (direction.isEmpty()) {
-                    direction = getRuntimeValue(values, "face");
-                }
-                if (direction.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(direction.trim());
-            }
-            case SENSOR_POSITION_OF: {
-                if (node.isSensorPositionSingleAxisMode()) {
-                    return Optional.empty();
-                }
-                Map<String, String> values = node.exportParameterValues();
-                String formatted = formatCoordinateValues(values);
-                return formatted.isEmpty() ? Optional.empty() : Optional.of(formatted);
-            }
-            default:
-                return Optional.empty();
-        }
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(node.getType());
+        return behaviorDefinition != null ? behaviorDefinition.resolveComparableString(this, node) : Optional.empty();
     }
 
     private Optional<Double> resolveComparableNumber(Node node) {
@@ -22043,75 +21012,8 @@ public class Node {
             Node resolved = resolveListItemValueNode(node, null, false, null);
             return resolved != null ? resolveComparableNumber(resolved) : Optional.empty();
         }
-        switch (node.getType()) {
-            case PARAM_AMOUNT:
-            case OPERATOR_RANDOM:
-            case OPERATOR_MOD:
-                return Optional.of(parseNodeDouble(node, "Amount", 0.0));
-            case LIST_LENGTH:
-                return Optional.of(parseNodeDouble(node, "Amount", 0.0));
-            case PARAM_DISTANCE:
-                return Optional.of(parseNodeDouble(node, "Distance", 0.0));
-            case SENSOR_DISTANCE_BETWEEN: {
-                Map<String, String> values = node.exportParameterValues();
-                String distanceValue = getRuntimeValue(values, "distance");
-                if (distanceValue.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(parseDoubleOrNull(distanceValue));
-            }
-            case SENSOR_IS_ON_GROUND: {
-                Map<String, String> values = node.exportParameterValues();
-                String distanceValue = getRuntimeValue(values, "distance");
-                if (distanceValue.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(parseDoubleOrNull(distanceValue));
-            }
-            case SENSOR_SLOT_ITEM_COUNT: {
-                Map<String, String> values = node.exportParameterValues();
-                String amountValue = getRuntimeValue(values, "amount");
-                if (amountValue.isEmpty()) {
-                    amountValue = getRuntimeValue(values, "count");
-                }
-                if (amountValue.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(parseDoubleOrNull(amountValue));
-            }
-            case SENSOR_POSITION_OF: {
-                if (!node.isSensorPositionSingleAxisMode()) {
-                    return Optional.empty();
-                }
-                Map<String, String> values = node.exportParameterValues();
-                String amountValue = getRuntimeValue(values, "amount");
-                if (amountValue.isEmpty()) {
-                    amountValue = getRuntimeValue(values, "value");
-                }
-                if (amountValue.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(parseDoubleOrNull(amountValue));
-            }
-            case SENSOR_LOOK_DIRECTION: {
-                if (!node.isSensorLookSingleAxisMode()) {
-                    return Optional.empty();
-                }
-                Map<String, String> values = node.exportParameterValues();
-                String amountValue = getRuntimeValue(values, "amount");
-                if (amountValue.isEmpty()) {
-                    amountValue = getRuntimeValue(values, "value");
-                }
-                if (amountValue.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(parseDoubleOrNull(amountValue));
-            }
-            case PARAM_INVENTORY_SLOT:
-                return resolveInventorySlotCount(node).map(count -> (double) count);
-            default:
-                return Optional.empty();
-        }
+        NodeBehaviorDefinition behaviorDefinition = NodeBehaviorDefinitionRegistry.get(node.getType());
+        return behaviorDefinition != null ? behaviorDefinition.resolveComparableNumber(this, node) : Optional.empty();
     }
 
     private Optional<Double> resolveComparableNumberWithVariables(Node node, int slotIndex) {
@@ -22128,7 +21030,7 @@ public class Node {
         return resolveComparableNumber(node);
     }
 
-    private Optional<Integer> resolveInventorySlotCount(Node slotNode) {
+    Optional<Integer> resolveInventorySlotCount(Node slotNode) {
         if (slotNode == null || !providesTrait(slotNode, NodeValueTrait.INVENTORY_SLOT)) {
             return Optional.empty();
         }
