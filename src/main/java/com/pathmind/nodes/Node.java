@@ -1051,27 +1051,20 @@ public class Node {
     }
 
     public int getSocketY(int socketIndex, boolean isInput) {
-        int socketHeight = 12;
-        if (type == NodeType.START || type == NodeType.EVENT_FUNCTION) {
-            // Center sockets on compact entry nodes without traditional headers
-            return getY() + getHeight() / 2;
-        } else if (usesMinimalNodePresentation()) {
-            int socketCount = isInput ? getInputSocketCount() : getOutputSocketCount();
-            if (socketCount <= 1) {
-                return getY() + getHeight() / 2;
-            }
-            int totalHeight = (socketCount - 1) * socketHeight;
-            int startY = getY() + getHeight() / 2 - totalHeight / 2;
-            return startY + socketIndex * socketHeight;
-        } else {
-            int headerHeight = 14;
-            int contentStartY = getY() + headerHeight + 6; // Start sockets below header with some padding
-            return contentStartY + socketIndex * socketHeight;
-        }
+        return NodeGeometry.socketY(
+            getY(),
+            getHeight(),
+            socketIndex,
+            isInput ? getInputSocketCount() : getOutputSocketCount(),
+            12,
+            type == NodeType.START || type == NodeType.EVENT_FUNCTION,
+            usesMinimalNodePresentation(),
+            14,
+            6);
     }
     
     public int getSocketX(boolean isInput) {
-        return isInput ? getX() - 4 : getX() + getWidth() + 4;
+        return NodeGeometry.socketX(getX(), getWidth(), isInput, 4);
     }
     
     public void setNextOutputSocket(int socketIndex) {
@@ -1096,7 +1089,7 @@ public class Node {
         int socketY = getSocketY(socketIndex, isInput);
         int socketRadius = 6; // Smaller size for more space
 
-        return Math.abs(mouseX - socketX) <= socketRadius && Math.abs(mouseY - socketY) <= socketRadius;
+        return NodeGeometry.isPointNear(socketX, socketY, socketRadius, mouseX, mouseY);
     }
 
     public int getSensorSlotLeft() {
@@ -1204,8 +1197,7 @@ public class Node {
         int slotTop = getSensorSlotTop();
         int slotWidth = getSensorSlotWidth();
         int slotHeight = getSensorSlotHeight();
-        return pointX >= slotLeft && pointX <= slotLeft + slotWidth &&
-               pointY >= slotTop && pointY <= slotTop + slotHeight;
+        return NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY);
     }
 
     public int getParameterSlotCount() {
@@ -2195,8 +2187,7 @@ public class Node {
             int slotWidth = getParameterSlotWidth(i);
             int slotTop = getParameterSlotTop(i);
             int slotHeight = getParameterSlotHeight(i);
-            if (pointX >= slotLeft && pointX <= slotLeft + slotWidth &&
-                pointY >= slotTop && pointY <= slotTop + slotHeight) {
+            if (NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY)) {
                 return i;
             }
         }
@@ -2214,19 +2205,18 @@ public class Node {
         if (parameter == null) {
             return;
         }
-        int slotX = getParameterSlotLeft(slotIndex) + PARAMETER_SLOT_INNER_PADDING;
-        int slotY = getParameterSlotTop(slotIndex) + PARAMETER_SLOT_INNER_PADDING;
-        int availableWidth = getParameterSlotWidth(slotIndex) - 2 * PARAMETER_SLOT_INNER_PADDING;
-        int availableHeight = getParameterSlotHeight(slotIndex) - 2 * PARAMETER_SLOT_INNER_PADDING;
         int parameterWidth = parameter.getWidth();
-        int parameterX;
-        if (parameter.usesMinimalNodePresentation()) {
-            int visualAdjustment = MINIMAL_NODE_TAB_WIDTH;
-            parameterX = slotX + Math.max(0, (availableWidth - parameterWidth - visualAdjustment) / 2);
-        } else {
-            parameterX = slotX + Math.max(0, (availableWidth - parameterWidth) / 2);
-        }
-        int parameterY = slotY + Math.max(0, (availableHeight - parameter.getHeight()) / 2);
+        int parameterX = NodeGeometry.centeredChildX(
+            getParameterSlotLeft(slotIndex),
+            PARAMETER_SLOT_INNER_PADDING,
+            getParameterSlotWidth(slotIndex),
+            parameterWidth,
+            parameter.usesMinimalNodePresentation() ? MINIMAL_NODE_TAB_WIDTH : 0);
+        int parameterY = NodeGeometry.centeredChildY(
+            getParameterSlotTop(slotIndex),
+            PARAMETER_SLOT_INNER_PADDING,
+            getParameterSlotHeight(slotIndex),
+            parameter.getHeight());
         if (parameter.hasAttachedParameter() || parameter.hasAttachedSensor() || parameter.hasAttachedActionNode()) {
             parameter.setPosition(parameterX, parameterY);
         } else {
@@ -2274,20 +2264,24 @@ public class Node {
         int slotTop = getActionSlotTop();
         int slotWidth = getActionSlotWidth();
         int slotHeight = getActionSlotHeight();
-        return pointX >= slotLeft && pointX <= slotLeft + slotWidth &&
-               pointY >= slotTop && pointY <= slotTop + slotHeight;
+        return NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY);
     }
 
     public void updateAttachedSensorPosition() {
         if (attachments.getAttachedSensor() == null) {
             return;
         }
-        int slotX = getSensorSlotLeft() + SENSOR_SLOT_INNER_PADDING;
-        int slotY = getSensorSlotTop() + SENSOR_SLOT_INNER_PADDING;
-        int availableWidth = getSensorSlotWidth() - 2 * SENSOR_SLOT_INNER_PADDING;
-        int availableHeight = getSensorSlotHeight() - 2 * SENSOR_SLOT_INNER_PADDING;
-        int sensorX = slotX + Math.max(0, (availableWidth - attachments.getAttachedSensor().getWidth()) / 2);
-        int sensorY = slotY + Math.max(0, (availableHeight - attachments.getAttachedSensor().getHeight()) / 2);
+        int sensorX = NodeGeometry.centeredChildX(
+            getSensorSlotLeft(),
+            SENSOR_SLOT_INNER_PADDING,
+            getSensorSlotWidth(),
+            attachments.getAttachedSensor().getWidth(),
+            0);
+        int sensorY = NodeGeometry.centeredChildY(
+            getSensorSlotTop(),
+            SENSOR_SLOT_INNER_PADDING,
+            getSensorSlotHeight(),
+            attachments.getAttachedSensor().getHeight());
         attachments.getAttachedSensor().setPosition(sensorX, sensorY);
     }
 
@@ -2295,12 +2289,17 @@ public class Node {
         if (attachments.getAttachedActionNode() == null) {
             return;
         }
-        int slotX = getActionSlotLeft() + ACTION_SLOT_INNER_PADDING;
-        int slotY = getActionSlotTop() + ACTION_SLOT_INNER_PADDING;
-        int availableWidth = getActionSlotWidth() - 2 * ACTION_SLOT_INNER_PADDING;
-        int availableHeight = getActionSlotHeight() - 2 * ACTION_SLOT_INNER_PADDING;
-        int nodeX = slotX + Math.max(0, (availableWidth - attachments.getAttachedActionNode().getWidth()) / 2);
-        int nodeY = slotY + Math.max(0, (availableHeight - attachments.getAttachedActionNode().getHeight()) / 2);
+        int nodeX = NodeGeometry.centeredChildX(
+            getActionSlotLeft(),
+            ACTION_SLOT_INNER_PADDING,
+            getActionSlotWidth(),
+            attachments.getAttachedActionNode().getWidth(),
+            0);
+        int nodeY = NodeGeometry.centeredChildY(
+            getActionSlotTop(),
+            ACTION_SLOT_INNER_PADDING,
+            getActionSlotHeight(),
+            attachments.getAttachedActionNode().getHeight());
         attachments.getAttachedActionNode().setPosition(nodeX, nodeY);
     }
 
@@ -7418,7 +7417,7 @@ public class Node {
             return;
         }
         if (mode == null) {
-            future.completeExceptionally(new RuntimeException("No mode set for GOTO node"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("No mode set for GOTO node"));
             return;
         }
 
@@ -7430,7 +7429,7 @@ public class Node {
 
         Object baritone = getBaritone();
         if (baritone == null) {
-            future.completeExceptionally(new RuntimeException("Baritone not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Baritone not available"));
             return;
         }
 
@@ -7453,7 +7452,7 @@ public class Node {
                 if (zParam != null) z = zParam.getIntValue();
 
                 if (isPlayerAtCoordinates(x, y, z)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
 
@@ -7471,7 +7470,7 @@ public class Node {
                 if (zParam2 != null) z2 = zParam2.getIntValue();
 
                 if (isPlayerAtCoordinates(x2, null, z2)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
 
@@ -7489,7 +7488,7 @@ public class Node {
                 net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
                 if (client != null && client.player != null) {
                     if (isPlayerAtCoordinates(null, y3, null)) {
-                        future.complete(null);
+                        NodeExecutionCompletion.complete(future);
                         return;
                     }
                     Object goal3 = BaritoneApiProxy.createGoalYLevel(y3);
@@ -7516,7 +7515,7 @@ public class Node {
                 }
                 Object getToBlockProcess = BaritoneApiProxy.getGetToBlockProcess(baritone);
                 if (getToBlockProcess == null) {
-                    future.completeExceptionally(new RuntimeException("GetToBlock process not available"));
+                    NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("GetToBlock process not available"));
                     break;
                 }
 
@@ -7525,7 +7524,7 @@ public class Node {
                 break;
                 
             default:
-                future.completeExceptionally(new RuntimeException("Unknown GOTO mode: " + mode));
+                NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Unknown GOTO mode: " + mode));
                 break;
         }
     }
@@ -7535,7 +7534,7 @@ public class Node {
             return;
         }
         if (mode == null) {
-            future.completeExceptionally(new RuntimeException("No mode set for TRAVEL node"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("No mode set for TRAVEL node"));
             return;
         }
 
@@ -7544,18 +7543,18 @@ public class Node {
             return;
         }
         if (travelTarget == null || travelTarget.pos() == null) {
-            future.completeExceptionally(new RuntimeException("No target resolved for TRAVEL node"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("No target resolved for TRAVEL node"));
             return;
         }
         BlockPos targetPos = travelTarget.pos();
 
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (client == null || client.player == null || client.world == null) {
-            future.completeExceptionally(new RuntimeException("Pathmind Nav unavailable"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Pathmind Nav unavailable"));
             return;
         }
         if (isPlayerAtCoordinates(targetPos.getX(), targetPos.getY(), targetPos.getZ())) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
@@ -7571,7 +7570,7 @@ public class Node {
         if (!started) {
             navigator.setBlockBreakingAllowed(previousBreakAllowed);
             navigator.setBlockPlacingAllowed(previousPlaceAllowed);
-            future.completeExceptionally(new RuntimeException("Could not start Pathmind Nav"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Could not start Pathmind Nav"));
             return;
         }
 
@@ -7609,7 +7608,7 @@ public class Node {
             }
             case GOTO_XZ: {
                 if (client == null || client.player == null) {
-                    future.completeExceptionally(new RuntimeException("Player unavailable for TRAVEL XZ target"));
+                    NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Player unavailable for TRAVEL XZ target"));
                     return null;
                 }
                 int x = getIntParameter("X", 0);
@@ -7618,7 +7617,7 @@ public class Node {
             }
             case GOTO_Y: {
                 if (client == null || client.player == null) {
-                    future.completeExceptionally(new RuntimeException("Player unavailable for TRAVEL Y target"));
+                    NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Player unavailable for TRAVEL Y target"));
                     return null;
                 }
                 int y = getIntParameter("Y", 64);
@@ -7630,7 +7629,7 @@ public class Node {
                 return new TravelTarget(targetBlock, true);
             }
             default:
-                future.completeExceptionally(new RuntimeException("Unknown TRAVEL mode: " + mode));
+                NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Unknown TRAVEL mode: " + mode));
                 return null;
         }
     }
@@ -7940,7 +7939,7 @@ public class Node {
             }
             String command = String.format("#goto %d %d %d", target.getX(), target.getY(), target.getZ());
             executeCommand(command);
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return true;
         }
 
@@ -7956,12 +7955,12 @@ public class Node {
                 if (zParam != null) z = zParam.getIntValue();
 
                 if (isPlayerAtCoordinates(x, y, z)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return true;
                 }
                 String command = String.format("#goto %d %d %d", x, y, z);
                 executeCommand(command);
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return true;
             }
             case GOTO_XZ: {
@@ -7973,12 +7972,12 @@ public class Node {
                 if (zParam != null) z = zParam.getIntValue();
 
                 if (isPlayerAtCoordinates(x, null, z)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return true;
                 }
                 String command = String.format("#goto %d %d", x, z);
                 executeCommand(command);
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return true;
             }
             case GOTO_Y: {
@@ -7987,12 +7986,12 @@ public class Node {
                 if (yParam != null) y = yParam.getIntValue();
 
                 if (isPlayerAtCoordinates(null, y, null)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return true;
                 }
                 String command = String.format("#goto %d", y);
                 executeCommand(command);
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return true;
             }
             case GOTO_BLOCK: {
@@ -8003,7 +8002,7 @@ public class Node {
                 }
                 String command = String.format("#goto %d %d %d", pos.getX(), pos.getY(), pos.getZ());
                 executeCommand(command);
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return true;
             }
             default:
@@ -8023,7 +8022,7 @@ public class Node {
                 handled[0] = true;
             }
             if (client != null && parameterData.targetEntity == client.player) {
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return null;
             }
             return parameterData.targetEntity.getBlockPos();
@@ -8039,7 +8038,7 @@ public class Node {
                 if (handled != null && handled.length > 0) {
                     handled[0] = true;
                 }
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return null;
             }
         }
@@ -8079,15 +8078,14 @@ public class Node {
             : null;
 
         if (normalized == null || normalized.isEmpty()) {
-            sendNodeErrorMessage(client, "Cannot navigate to block: no block selected.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to block: no block selected.");
             return null;
         }
 
         Identifier identifier = Identifier.tryParse(normalized);
         if (identifier == null || !Registries.BLOCK.containsId(identifier)) {
-            sendNodeErrorMessage(client, "Cannot navigate to block \"" + blockId + "\": unknown identifier.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Cannot navigate to block \"" + blockId + "\": unknown identifier.");
             return null;
         }
 
@@ -8096,8 +8094,8 @@ public class Node {
         BlockSelection.parse(blockId).ifPresent(selections::add);
         Optional<BlockPos> nearest = findNearestBlock(client, selections, PARAMETER_SEARCH_RADIUS);
         if (nearest.isEmpty()) {
-            sendNodeErrorMessage(client, "No " + normalized + " found nearby for " + type.getDisplayName() + ".");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "No " + normalized + " found nearby for " + type.getDisplayName() + ".");
             return null;
         }
 
@@ -8107,13 +8105,13 @@ public class Node {
             BlockPos playerBlockPos = client.player.getBlockPos();
             BlockPos targetPos = nearest.get();
             if (playerBlockPos.equals(targetPos)) {
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
                 return null;
             }
             if (targetBlock != null && client.world.getBlockState(targetPos).isOf(targetBlock)) {
                 double distanceSq = client.player.squaredDistanceTo(targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5);
                 if (distanceSq <= 2.25D) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return null;
                 }
             }
@@ -8131,12 +8129,11 @@ public class Node {
             return false;
         }
         if (targetEntity == client.player) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return true;
         }
         if (customGoalProcess == null) {
-            sendNodeErrorMessage(client, "Cannot navigate to entity: goal process unavailable.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to entity: goal process unavailable.");
             return true;
         }
 
@@ -8180,16 +8177,14 @@ public class Node {
 
         if (matchedPosition.isEmpty()) {
             String reference = String.join(", ", itemIds);
-            sendNodeErrorMessage(client,
+            NodeExecutionCompletion.fail(this, client, future,
                 "No dropped " + reference + " found nearby for " + type.getDisplayName()
                     + ". It may not have appeared yet.");
-            future.complete(null);
             return true;
         }
 
         if (customGoalProcess == null) {
-            sendNodeErrorMessage(client, "Cannot navigate to dropped item: goal process unavailable.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to dropped item: goal process unavailable.");
             return true;
         }
 
@@ -8237,14 +8232,13 @@ public class Node {
             }
         }
         if (nearest == null) {
-            sendNodeErrorMessage(client, "No matching entity found nearby for " + type.getDisplayName() + ".");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "No matching entity found nearby for " + type.getDisplayName() + ".");
             return true;
         }
 
         if (customGoalProcess == null) {
-            sendNodeErrorMessage(client, "Cannot navigate to entity: goal process unavailable.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to entity: goal process unavailable.");
             return true;
         }
 
@@ -8263,7 +8257,7 @@ public class Node {
 
         String playerName = getParameterString(parameterNode, "Player");
         if (isSelfPlayerValue(playerName)) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return true;
         }
         Optional<AbstractClientPlayerEntity> match;
@@ -8287,14 +8281,12 @@ public class Node {
             } else {
                 message = "Player \"" + playerName + "\" is not nearby for " + type.getDisplayName() + ".";
             }
-            sendNodeErrorMessage(client, message);
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, message);
             return true;
         }
 
         if (customGoalProcess == null) {
-            sendNodeErrorMessage(client, "Cannot navigate to player: goal process unavailable.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to player: goal process unavailable.");
             return true;
         }
 
@@ -8326,15 +8318,14 @@ public class Node {
 
         if (client != null && client.world != null) {
             if (normalized == null || normalized.isEmpty()) {
-                sendNodeErrorMessage(client, "Cannot navigate to block: no block selected.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to block: no block selected.");
                 return true;
             }
 
             Identifier identifier = Identifier.tryParse(normalized);
             if (identifier == null || !Registries.BLOCK.containsId(identifier)) {
-                sendNodeErrorMessage(client, "Cannot navigate to block \"" + blockId + "\": unknown identifier.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Cannot navigate to block \"" + blockId + "\": unknown identifier.");
                 return true;
             }
 
@@ -8344,8 +8335,8 @@ public class Node {
                 BlockSelection.parse(blockId).ifPresent(selections::add);
                 Optional<BlockPos> nearest = findNearestBlock(client, selections, PARAMETER_SEARCH_RADIUS);
                 if (nearest.isEmpty()) {
-                    sendNodeErrorMessage(client, "No " + normalized + " found nearby for " + type.getDisplayName() + ".");
-                    future.complete(null);
+                    NodeExecutionCompletion.fail(this, client, future,
+                        "No " + normalized + " found nearby for " + type.getDisplayName() + ".");
                     return true;
                 }
                 targetPos = nearest.get();
@@ -8357,12 +8348,12 @@ public class Node {
                 && client.world.getBlockState(targetPos).isOf(targetBlock)) {
                 BlockPos playerBlockPos = client.player.getBlockPos();
                 if (playerBlockPos.equals(targetPos)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return true;
                 }
                 double distanceSq = client.player.squaredDistanceTo(targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5);
                 if (distanceSq <= 2.25D) { // already within ~1.5 blocks, treat as complete
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return true;
                 }
             }
@@ -8371,10 +8362,7 @@ public class Node {
         if (targetPos != null) {
             Object customGoalProcess = baritone != null ? BaritoneApiProxy.getCustomGoalProcess(baritone) : null;
             if (customGoalProcess == null) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Cannot navigate to block: goal process unavailable.");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to block: goal process unavailable.");
                 return true;
             }
 
@@ -8386,10 +8374,7 @@ public class Node {
 
         Object getToBlockProcess = baritone != null ? BaritoneApiProxy.getGetToBlockProcess(baritone) : null;
         if (getToBlockProcess == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Cannot navigate to block: block search process unavailable.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot navigate to block: block search process unavailable.");
             return true;
         }
 
@@ -8404,7 +8389,7 @@ public class Node {
             return;
         }
         if (mode == null) {
-            future.completeExceptionally(new RuntimeException("No mode set for COLLECT node"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("No mode set for COLLECT node"));
             return;
         }
 
@@ -8418,7 +8403,7 @@ public class Node {
                 case COLLECT_SINGLE: {
                     int amount = Math.max(1, getIntParameter("Amount", 1));
                     if (hasRequiredBlockAlready(targets.get(0), amount)) {
-                        future.complete(null);
+                        NodeExecutionCompletion.complete(future);
                         return;
                     }
                     String command = "#mine " + targets.get(0);
@@ -8426,29 +8411,29 @@ public class Node {
                         command += " " + amount;
                     }
                     executeCommand(command);
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
                 case COLLECT_MULTIPLE: {
                     String command = "#mine " + String.join(" ", targets);
                     executeCommand(command);
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
                 default:
-                    future.completeExceptionally(new RuntimeException("Unknown COLLECT mode: " + mode));
+                    NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Unknown COLLECT mode: " + mode));
                     return;
             }
         }
 
         Object baritone = getBaritone();
         if (baritone == null) {
-            future.completeExceptionally(new RuntimeException("Baritone not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Baritone not available"));
             return;
         }
         Object mineProcess = BaritoneApiProxy.getMineProcess(baritone);
         if (mineProcess == null) {
-            future.completeExceptionally(new RuntimeException("Mine process not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Mine process not available"));
             return;
         }
 
@@ -8458,7 +8443,7 @@ public class Node {
             case COLLECT_SINGLE: {
                 int amount = Math.max(1, getIntParameter("Amount", 1));
                 if (hasRequiredBlockAlready(targets.get(0), amount)) {
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
                 if (amount == 1 && preferredCollectTarget.isPresent()) {
@@ -8495,7 +8480,7 @@ public class Node {
                 break;
             }
             default:
-                future.completeExceptionally(new RuntimeException("Unknown COLLECT mode: " + mode));
+                NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Unknown COLLECT mode: " + mode));
                 break;
         }
     }
@@ -8580,7 +8565,7 @@ public class Node {
                 return;
             }
             if (throwable != null) {
-                future.completeExceptionally(throwable instanceof RuntimeException
+                NodeExecutionCompletion.completeExceptionally(future, throwable instanceof RuntimeException
                     ? (RuntimeException) throwable
                     : new RuntimeException(throwable));
                 return;
@@ -8592,7 +8577,7 @@ public class Node {
     private void breakSpecificBlockForCollect(BlockPos targetPos, CompletableFuture<Void> future) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.world == null || targetPos == null) {
-            future.completeExceptionally(new RuntimeException("Minecraft client not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Minecraft client not available"));
             return;
         }
 
@@ -8604,8 +8589,7 @@ public class Node {
         Vec3d eyePos = client.player.getEyePos();
         Vec3d center = Vec3d.ofCenter(targetPos);
         if (eyePos.squaredDistanceTo(center) > DEFAULT_REACH_DISTANCE_SQUARED) {
-            sendNodeErrorMessage(client, "Target block is out of reach.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Target block is out of reach.");
             return;
         }
 
@@ -8616,14 +8600,13 @@ public class Node {
 
         BlockState state = client.world.getBlockState(targetPos);
         if (state.isAir()) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
         float delta = state.calcBlockBreakingDelta(client.player, client.world, targetPos);
         if (delta <= 0.0F) {
-            sendNodeErrorMessage(client, "Block cannot be broken.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Block cannot be broken.");
             return;
         }
         int ticksToBreak = Math.max(1, (int) Math.ceil(1.0F / delta));
@@ -8662,10 +8645,10 @@ public class Node {
                         ));
                     }
                 });
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                future.completeExceptionally(e);
+                NodeExecutionCompletion.completeExceptionally(future, e);
             }
         }, "Pathmind-Collect-Break").start();
     }
@@ -8730,14 +8713,14 @@ public class Node {
         Identifier identifier = Identifier.tryParse(itemId);
         if (identifier == null || !Registries.ITEM.containsId(identifier)) {
             String errorLabel = (requestedItemLabel != null && !requestedItemLabel.isEmpty()) ? requestedItemLabel : itemId;
-            sendNodeErrorMessage(client, "Cannot craft \"" + errorLabel + "\": unknown item identifier.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Cannot craft \"" + errorLabel + "\": unknown item identifier.");
             return;
         }
 
         Item targetItem = Registries.ITEM.get(identifier);
         if (client == null || client.player == null || client.world == null) {
-            future.completeExceptionally(new RuntimeException("Minecraft client not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Minecraft client not available"));
             return;
         }
 
@@ -8745,8 +8728,7 @@ public class Node {
             String unavailableMessage = craftMode == NodeMode.CRAFT_CRAFTING_TABLE
                     ? "Cannot craft: open a crafting table GUI before running this node."
                     : "Cannot craft: open your inventory or a crafting table GUI before running this node.";
-            sendNodeErrorMessage(client, unavailableMessage);
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, unavailableMessage);
             return;
         }
 
@@ -8754,8 +8736,8 @@ public class Node {
 
         ScreenHandler handler = client.player.currentScreenHandler;
         if (!isCompatibleCraftingHandler(handler, craftMode)) {
-            sendNodeErrorMessage(client, "Cannot craft " + itemDisplayName + ": the crafting screen closed.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Cannot craft " + itemDisplayName + ": the crafting screen closed.");
             return;
         }
 
@@ -8780,7 +8762,7 @@ public class Node {
             });
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
         Object clientRegistryManager = clientWorld != null ? clientWorld.getRegistryManager() : null;
@@ -8795,7 +8777,7 @@ public class Node {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
         CachedRecipe cachedRecipe = findCachedRecipe(client, targetItem, effectiveCraftMode);
@@ -8807,8 +8789,7 @@ public class Node {
                 message = "Cannot craft " + itemDisplayName + ": no matching recipe found. "
                     + "If this is a multiplayer server, open a singleplayer world once to cache recipes.";
             }
-            sendNodeErrorMessage(client, message);
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, message);
             return;
         }
 
@@ -8829,8 +8810,8 @@ public class Node {
             outputTemplate = new ItemStack(targetItem, outputCount);
         }
         if (outputTemplate == null || outputTemplate.isEmpty()) {
-            sendNodeErrorMessage(client, "Cannot craft " + itemDisplayName + ": the recipe produced no output.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Cannot craft " + itemDisplayName + ": the recipe produced no output.");
             return;
         }
 
@@ -8851,8 +8832,8 @@ public class Node {
             gridIngredients = buildGridIngredientsFromCache(cachedRecipe);
         }
         if (gridIngredients.isEmpty()) {
-            sendNodeErrorMessage(client, "Cannot craft " + itemDisplayName + ": the recipe has no ingredients.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Cannot craft " + itemDisplayName + ": the recipe has no ingredients.");
             return;
         }
 
@@ -8876,9 +8857,11 @@ public class Node {
                 if (throwable != null) {
                     Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
                     if (!(cause instanceof InterruptedException)) {
-                        sendNodeErrorMessage(client, "Cannot craft " + itemDisplayName + ": " + cause.getMessage());
+                        NodeExecutionCompletion.fail(this, client, future,
+                            "Cannot craft " + itemDisplayName + ": " + cause.getMessage());
+                        return;
                     }
-                    future.complete(null);
+                    NodeExecutionCompletion.complete(future);
                     return;
                 }
 
@@ -8886,7 +8869,7 @@ public class Node {
                     sendNodeErrorMessage(client, summary.failureMessage);
                 }
 
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
             });
     }
 
@@ -17655,14 +17638,13 @@ public class Node {
         }
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.world == null) {
-            future.completeExceptionally(new RuntimeException("Minecraft client not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Minecraft client not available"));
             return;
         }
 
         Node parameterNode = getAttachedParameter(0);
         if (parameterNode == null) {
-            sendNodeErrorMessage(client, "Break requires a block or coordinate parameter.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Break requires a block or coordinate parameter.");
             return;
         }
 
@@ -17680,8 +17662,7 @@ public class Node {
         if (targetPos == null && providesTrait(parameterNode, NodeValueTrait.BLOCK)) {
             List<BlockSelection> selections = resolveBlocksFromParameter(parameterNode);
             if (selections.isEmpty()) {
-                sendNodeErrorMessage(client, "No block selected for Break.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "No block selected for Break.");
                 return;
             }
             Optional<BlockHitResult> currentHit = getCurrentBlockHitResult();
@@ -17712,8 +17693,7 @@ public class Node {
         }
 
         if (targetPos == null) {
-            sendNodeErrorMessage(client, "No matching block found in reach for Break.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "No matching block found in reach for Break.");
             return;
         }
 
@@ -17725,8 +17705,7 @@ public class Node {
         Vec3d eyePos = client.player.getEyePos();
         Vec3d center = Vec3d.ofCenter(targetPos);
         if (eyePos.squaredDistanceTo(center) > DEFAULT_REACH_DISTANCE_SQUARED) {
-            sendNodeErrorMessage(client, "Target block is out of reach.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Target block is out of reach.");
             return;
         }
 
@@ -17740,13 +17719,12 @@ public class Node {
 
         BlockState state = client.world.getBlockState(targetPos);
         if (state.isAir()) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
         float delta = state.calcBlockBreakingDelta(client.player, client.world, targetPos);
         if (delta <= 0.0F) {
-            sendNodeErrorMessage(client, "Block cannot be broken.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Block cannot be broken.");
             return;
         }
         int ticksToBreak = Math.max(1, (int) Math.ceil(1.0F / delta));
@@ -17786,10 +17764,10 @@ public class Node {
                         ));
                     }
                 });
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                future.completeExceptionally(e);
+                NodeExecutionCompletion.completeExceptionally(future, e);
             }
         }, "Pathmind-Break").start();
     }
@@ -17802,15 +17780,14 @@ public class Node {
 
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (client == null || client.player == null || client.interactionManager == null) {
-            future.completeExceptionally(new RuntimeException("Minecraft client not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Minecraft client not available"));
             return;
         }
 
         // Check if a merchant screen is open
         net.minecraft.client.gui.screen.Screen currentScreen = client.currentScreen;
         if (!(currentScreen instanceof net.minecraft.client.gui.screen.ingame.MerchantScreen)) {
-            sendNodeErrorMessage(client, "No villager trading screen is open.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "No villager trading screen is open.");
             return;
         }
 
@@ -17820,34 +17797,32 @@ public class Node {
         // Get the screen handler from merchant screen
         net.minecraft.screen.MerchantScreenHandler screenHandler = merchantScreen.getScreenHandler();
         if (screenHandler == null) {
-            sendNodeErrorMessage(client, "Cannot access merchant screen handler.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Cannot access merchant screen handler.");
             return;
         }
 
         // Get the trade offers
         net.minecraft.village.TradeOfferList tradeOffers = screenHandler.getRecipes();
         if (tradeOffers == null || tradeOffers.isEmpty()) {
-            sendNodeErrorMessage(client, "No trades available from this villager.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "No trades available from this villager.");
             return;
         }
         int selectedTradeNumber = getConfiguredVillagerTradeNumber();
         int tradeIndex = selectedTradeNumber - 1;
         if (tradeIndex < 0 || tradeIndex >= tradeOffers.size() || tradeOffers.get(tradeIndex) == null) {
-            sendNodeErrorMessage(client, "Trade #" + selectedTradeNumber + " is not available.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Trade #" + selectedTradeNumber + " is not available.");
             return;
         }
         net.minecraft.village.TradeOffer selectedOffer = tradeOffers.get(tradeIndex);
         if (selectedOffer.isDisabled()) {
-            sendNodeErrorMessage(client, "Trade #" + selectedTradeNumber + " is out of stock.");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Trade #" + selectedTradeNumber + " is out of stock.");
             return;
         }
         if (!canAffordTrade(client.player, screenHandler, selectedOffer)) {
-            sendNodeErrorMessage(client, "Not enough items for trade #" + selectedTradeNumber + ".");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Not enough items for trade #" + selectedTradeNumber + ".");
             return;
         }
         List<Integer> preferredTradeIndexes = Collections.singletonList(tradeIndex);
@@ -17915,10 +17890,10 @@ public class Node {
                     }
                 }
 
-                future.complete(null);
+                NodeExecutionCompletion.complete(future);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                future.completeExceptionally(e);
+                NodeExecutionCompletion.completeExceptionally(future, e);
             }
         }, "Pathmind-Trade").start();
     }
