@@ -4313,8 +4313,8 @@ public class Node {
             for (int i = 0; i < requiredSlotCount; i++) {
                 if (isParameterSlotRequired(i) && getAttachedParameter(i) == null) {
                     String label = getParameterSlotLabel(i);
-                    sendNodeErrorMessage(client, type.getDisplayName() + " requires a " + label.toLowerCase(Locale.ROOT) + " parameter before it can run.");
-                    future.complete(null);
+                    NodeExecutionCompletion.fail(this, client, future,
+                        type.getDisplayName() + " requires a " + label.toLowerCase(Locale.ROOT) + " parameter before it can run.");
                     return future;
                 }
             }
@@ -4330,11 +4330,11 @@ public class Node {
                     ExecutionManager.getInstance().runWithExecutionContext(executionId, () -> executeNodeCommand(future));
                 } catch (Exception e) {
                     LOGGER.warn("Error executing node {}: {}", type, e.getMessage(), e);
-                    future.completeExceptionally(e);
+                    NodeExecutionCompletion.completeExceptionally(future, e);
                 }
             });
         } else {
-            future.completeExceptionally(new RuntimeException("Minecraft client not available"));
+            NodeExecutionCompletion.completeExceptionally(future, new RuntimeException("Minecraft client not available"));
         }
 
         return future;
@@ -4390,12 +4390,11 @@ public class Node {
             int requiredSlotCount = parameterNode.getParameterSlotCount();
             for (int i = 0; i < requiredSlotCount; i++) {
                 if (parameterNode.isParameterSlotRequired(i) && parameterNode.getAttachedParameter(i) == null) {
-                    net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
                     if (future != null && !future.isDone()) {
                         String label = parameterNode.getParameterSlotLabel(i);
-                        sendNodeErrorMessage(client, parameterNode.getType().getDisplayName()
-                            + " requires a " + label.toLowerCase(Locale.ROOT) + " parameter before it can run.");
-                        future.complete(null);
+                        NodeExecutionCompletion.failWithCurrentClient(this, future,
+                            parameterNode.getType().getDisplayName()
+                                + " requires a " + label.toLowerCase(Locale.ROOT) + " parameter before it can run.");
                     }
                     return ParameterHandlingResult.COMPLETE;
                 }
@@ -4617,13 +4616,7 @@ public class Node {
     }
 
     private void sendVariableError(String message, CompletableFuture<Void> future) {
-        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-        if (client != null) {
-            sendNodeErrorMessage(client, message);
-        }
-        if (future != null && !future.isDone()) {
-            future.complete(null);
-        }
+        NodeExecutionCompletion.failWithCurrentClient(this, future, message);
     }
 
     private Optional<Vec3d> resolvePositionTarget(Node parameterNode, RuntimeParameterData data, CompletableFuture<Void> future) {
@@ -5164,13 +5157,7 @@ public class Node {
         // Only surface search failures during execution contexts (future != null).
         // UI/preview calls (future == null) should not spam chat.
         if (future != null) {
-            net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-            if (client != null) {
-                sendNodeErrorMessage(client, message);
-            }
-        }
-        if (future != null && !future.isDone()) {
-            future.complete(null);
+            NodeExecutionCompletion.failWithCurrentClient(this, future, message);
         }
     }
 
@@ -5183,18 +5170,12 @@ public class Node {
         if (emptyNames.isEmpty()) {
             return true;
         }
-        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-        if (client != null) {
-            String joined = String.join(", ", emptyNames);
-            String subject = target.getType() != null ? target.getType().getDisplayName() + " node" : "node";
-            String message = emptyNames.size() == 1
-                ? joined + " cannot be empty on " + subject + "."
-                : "Parameters " + joined + " cannot be empty on " + subject + ".";
-            sendNodeErrorMessage(client, message);
-        }
-        if (future != null && !future.isDone()) {
-            future.complete(null);
-        }
+        String joined = String.join(", ", emptyNames);
+        String subject = target.getType() != null ? target.getType().getDisplayName() + " node" : "node";
+        String message = emptyNames.size() == 1
+            ? joined + " cannot be empty on " + subject + "."
+            : "Parameters " + joined + " cannot be empty on " + subject + ".";
+        NodeExecutionCompletion.failWithCurrentClient(this, future, message);
         return false;
     }
 
@@ -6320,19 +6301,13 @@ public class Node {
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (variableNode == null || variableNode.getType() != NodeType.VARIABLE
             || valueNode == null || valueNode.getType() == NodeType.VARIABLE) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Set Variable requires a variable input and a value parameter.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Set Variable requires a variable input and a value parameter.");
             return;
         }
 
         String variableName = getParameterString(variableNode, "Variable");
         if (variableName == null || variableName.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Variable name cannot be empty.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Variable name cannot be empty.");
             return;
         }
 
@@ -6353,19 +6328,14 @@ public class Node {
         if (valueType == NodeType.SENSOR_POSITION_OF) {
             Node parameterNode = valueNode.getAttachedParameter(0);
             if (parameterNode == null) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Position Of requires an entity, user, block, or item parameter.");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Position Of requires an entity, user, block, or item parameter.");
                 return;
             }
             Optional<Vec3d> resolved = valueNode.resolvePositionTarget(parameterNode, null, null);
             if (resolved.isEmpty()) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Position Of could not resolve its target.");
-                }
                 setNextOutputSocket(NO_OUTPUT);
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "Position Of could not resolve its target.");
                 return;
             }
             values = valueNode.exportParameterValues();
@@ -6374,11 +6344,9 @@ public class Node {
             Node parameterNodeA = valueNode.getAttachedParameter(0);
             Node parameterNodeB = valueNode.getAttachedParameter(1);
             if (parameterNodeA == null || parameterNodeB == null) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Distance Between requires two parameters (coordinate, entity, user, block, or item).");
-                }
                 setNextOutputSocket(NO_OUTPUT);
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Distance Between requires two parameters (coordinate, entity, user, block, or item).");
                 return;
             }
             if ((!valueNode.providesTrait(parameterNodeA, NodeValueTrait.ENTITY)
@@ -6391,21 +6359,17 @@ public class Node {
                 && !valueNode.providesTrait(parameterNodeB, NodeValueTrait.BLOCK)
                 && !valueNode.providesTrait(parameterNodeB, NodeValueTrait.ITEM)
                 && !valueNode.providesTrait(parameterNodeB, NodeValueTrait.PLAYER))) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Distance Between only accepts coordinate, entity, user, block, or item parameters.");
-                }
                 setNextOutputSocket(NO_OUTPUT);
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Distance Between only accepts coordinate, entity, user, block, or item parameters.");
                 return;
             }
             Optional<Vec3d> resolvedA = valueNode.resolveDistanceBetweenTarget(parameterNodeA);
             Optional<Vec3d> resolvedB = valueNode.resolveDistanceBetweenTarget(parameterNodeB);
             if (resolvedA.isEmpty() || resolvedB.isEmpty()) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Distance Between could not resolve one or both targets.");
-                }
                 setNextOutputSocket(NO_OUTPUT);
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Distance Between could not resolve one or both targets.");
                 return;
             }
             double distance = Math.sqrt(resolvedA.get().squaredDistanceTo(resolvedB.get()));
@@ -6424,7 +6388,7 @@ public class Node {
         if (!stored) {
             manager.setRuntimeVariableForAnyActiveChain(variableName.trim(), value);
         }
-        future.complete(null);
+        NodeExecutionCompletion.complete(future);
     }
 
     private void executeChangeVariableCommand(CompletableFuture<Void> future) {
@@ -6432,47 +6396,34 @@ public class Node {
 
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (variableNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Change Variable requires a variable.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Change Variable requires a variable.");
             return;
         }
 
         String variableName = getParameterString(variableNode, "Variable");
         if (variableName == null || variableName.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Variable name cannot be empty.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Variable name cannot be empty.");
             return;
         }
 
         ExecutionManager manager = ExecutionManager.getInstance();
         Node startNode = getOwningStartNode();
         if (startNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "No active node tree available for variable change.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "No active node tree available for variable change.");
             return;
         }
 
         ExecutionManager.RuntimeVariable current = manager.getRuntimeVariable(startNode, variableName.trim());
         if (current == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Variable \"" + variableName.trim() + "\" is not set.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Variable \"" + variableName.trim() + "\" is not set.");
             return;
         }
 
         NodeType valueType = current.getType();
         if (valueType == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Variable \"" + variableName.trim() + "\" has no value.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Variable \"" + variableName.trim() + "\" has no value.");
             return;
         }
 
@@ -6486,27 +6437,21 @@ public class Node {
         double amount = getDoubleParameter("Amount", 1.0);
         String operation = getAmountOperation();
         if ((operation.equals("/") || operation.equals("%")) && Math.abs(amount) < 1.0E-9) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Change Variable cannot divide by 0.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Change Variable cannot divide by 0.");
             return;
         }
 
         String[] error = new String[1];
         if (!applyNumericOperation(snapshot, amount, operation, error)) {
-            if (client != null) {
-                sendNodeErrorMessage(client, error[0] != null ? error[0]
-                    : "Change Variable supports variables with a single numeric value.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, error[0] != null ? error[0]
+                : "Change Variable supports variables with a single numeric value.");
             return;
         }
 
         Map<String, String> updatedValues = snapshot.exportParameterValues();
         ExecutionManager.RuntimeVariable updated = new ExecutionManager.RuntimeVariable(valueType, updatedValues);
         manager.setRuntimeVariable(startNode, variableName.trim(), updated);
-        future.complete(null);
+        NodeExecutionCompletion.complete(future);
     }
 
     private enum RemoveListMode {
@@ -6520,19 +6465,13 @@ public class Node {
         Node parameterNode = getAttachedParameter(0);
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (parameterNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Add To List requires an entity, player, or item parameter.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "Add To List requires an entity, player, or item parameter.");
             return;
         }
 
         String listName = getStringParameter("List", "");
         if (listName == null || listName.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "List name cannot be empty.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "List name cannot be empty.");
             return;
         }
 
@@ -6541,19 +6480,14 @@ public class Node {
             return;
         }
         if (listValue == null || listValue.entry == null || listValue.entry.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "No matching target found nearby for " + type.getDisplayName() + ".");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "No matching target found nearby for " + type.getDisplayName() + ".");
             return;
         }
 
         Node startNode = resolveExecutionStartNode();
         if (startNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "No active node tree available for list update.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "No active node tree available for list update.");
             return;
         }
 
@@ -6562,41 +6496,33 @@ public class Node {
         if (runtimeList == null) {
             runtimeList = new ExecutionManager.RuntimeList(listValue.elementType, Collections.singletonList(listValue.entry));
             manager.setRuntimeList(startNode, listName.trim(), runtimeList);
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
         if (runtimeList.getElementType() != listValue.elementType) {
-            if (client != null) {
-                sendNodeErrorMessage(client,
-                    "List \"" + listName.trim() + "\" stores " + describeListElementType(runtimeList.getElementType())
-                        + " entries and cannot accept " + describeListElementType(listValue.elementType) + ".");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "List \"" + listName.trim() + "\" stores " + describeListElementType(runtimeList.getElementType())
+                    + " entries and cannot accept " + describeListElementType(listValue.elementType) + ".");
             return;
         }
 
         runtimeList.addEntry(listValue.entry);
-        future.complete(null);
+        NodeExecutionCompletion.complete(future);
     }
 
     private void executeRemoveFromListCommand(CompletableFuture<Void> future, RemoveListMode mode) {
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         String listName = getStringParameter("List", "");
         if (listName == null || listName.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "List name cannot be empty.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "List name cannot be empty.");
             return;
         }
 
         ExecutionManager.RuntimeList runtimeList = resolveRuntimeList(this);
         if (runtimeList == null || runtimeList.isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "List \"" + listName.trim() + "\" is empty or missing.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "List \"" + listName.trim() + "\" is empty or missing.");
             return;
         }
 
@@ -6608,27 +6534,19 @@ public class Node {
         } else if (mode == RemoveListMode.INDEX) {
             int index = getIntParameter("Index", 1);
             if (index <= 0) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "List item index must be 1 or greater.");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "List item index must be 1 or greater.");
                 return;
             }
             removed = runtimeList.removeEntry(index - 1);
             if (removed == null) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "List \"" + listName.trim() + "\" has no item " + index + ".");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "List \"" + listName.trim() + "\" has no item " + index + ".");
                 return;
             }
         } else {
             Node valueNode = getAttachedParameter(0);
             if (valueNode == null) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Remove From List requires a value parameter.");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, "Remove From List requires a value parameter.");
                 return;
             }
             int removedCount = 0;
@@ -6647,43 +6565,38 @@ public class Node {
                 removedCount++;
             }
             if (removedCount <= 0) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "No matching entry was found in list \"" + listName.trim() + "\".");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No matching entry was found in list \"" + listName.trim() + "\".");
                 return;
             }
         }
 
-        if (removed == null && client != null) {
-            sendNodeErrorMessage(client, "List \"" + listName.trim() + "\" is empty or missing.");
+        if (removed == null) {
+            NodeExecutionCompletion.fail(this, client, future,
+                "List \"" + listName.trim() + "\" is empty or missing.");
+            return;
         }
-        future.complete(null);
+        NodeExecutionCompletion.complete(future);
     }
 
     private void executeCreateListCommand(CompletableFuture<Void> future) {
         Node parameterNode = getAttachedParameter(0);
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         if (parameterNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "Create List requires an entity, player, item, or GUI parameter.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "Create List requires an entity, player, item, or GUI parameter.");
             return;
         }
 
         NodeType parameterType = parameterNode.getType();
         String listName = getStringParameter("List", "");
         if (listName == null || listName.trim().isEmpty()) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "List name cannot be empty.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future, "List name cannot be empty.");
             return;
         }
 
         if (client == null || client.player == null || client.world == null) {
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
@@ -6697,23 +6610,21 @@ public class Node {
                 return;
             }
             if (singleValue == null || singleValue.entry == null || singleValue.entry.trim().isEmpty()) {
-                if (client != null) {
-                    sendNodeErrorMessage(client, "Create List could not resolve a value from the attached parameter.");
-                }
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "Create List could not resolve a value from the attached parameter.");
                 return;
             }
 
             ExecutionManager manager = ExecutionManager.getInstance();
             Node startNode = resolveExecutionStartNode();
             if (startNode == null) {
-                sendNodeErrorMessage(client, "No active node tree available for list creation.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No active node tree available for list creation.");
                 return;
             }
             manager.setRuntimeList(startNode, listName.trim(),
                 new ExecutionManager.RuntimeList(singleValue.elementType, Collections.singletonList(singleValue.entry)));
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
@@ -6721,15 +6632,15 @@ public class Node {
         if (parameterType == NodeType.PARAM_BLOCK) {
             List<BlockSelection> blocks = resolveBlocksFromParameter(parameterNode);
             if (blocks.isEmpty()) {
-                sendNodeErrorMessage(client, "No block selected for " + type.getDisplayName() + ".");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No block selected for " + type.getDisplayName() + ".");
                 return;
             }
 
             List<BlockPos> positions = findBlocksWithinRange(client, blocks, searchRadius);
             if (positions.isEmpty()) {
-                sendNodeErrorMessage(client, "No matching blocks found nearby for " + type.getDisplayName() + ".");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No matching blocks found nearby for " + type.getDisplayName() + ".");
                 return;
             }
             if (isCreateListBlockCapEnabled() && positions.size() > getCreateListMaxBlocks()) {
@@ -6754,14 +6665,14 @@ public class Node {
             ExecutionManager manager = ExecutionManager.getInstance();
             Node startNode = resolveExecutionStartNode();
             if (startNode == null) {
-                sendNodeErrorMessage(client, "No active node tree available for list creation.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No active node tree available for list creation.");
                 return;
             }
 
             manager.setRuntimeList(startNode, listName.trim(),
                 new ExecutionManager.RuntimeList(NodeType.PARAM_COORDINATE, entries));
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         } else if (parameterType == NodeType.PARAM_ENTITY) {
             String state = getEntityParameterState(parameterNode);
@@ -6773,8 +6684,8 @@ public class Node {
             } else {
                 List<String> entityIds = resolveEntityIdsFromParameter(parameterNode);
                 if (entityIds.isEmpty()) {
-                    sendNodeErrorMessage(client, "No entity selected for " + type.getDisplayName() + ".");
-                    future.complete(null);
+                    NodeExecutionCompletion.fail(this, client, future,
+                        "No entity selected for " + type.getDisplayName() + ".");
                     return;
                 }
 
@@ -6821,15 +6732,14 @@ public class Node {
                 } else {
                     message = "Player \"" + playerName + "\" is not nearby for " + type.getDisplayName() + ".";
                 }
-                sendNodeErrorMessage(client, message);
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future, message);
                 return;
             }
         } else if (parameterType == NodeType.PARAM_ITEM) {
             List<String> itemIds = resolveItemIdsFromParameter(parameterNode);
             if (itemIds.isEmpty()) {
-                sendNodeErrorMessage(client, "No item selected for " + type.getDisplayName() + ".");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No item selected for " + type.getDisplayName() + ".");
                 return;
             }
 
@@ -6846,30 +6756,30 @@ public class Node {
         } else if (parameterType == NodeType.PARAM_GUI) {
             ScreenHandler handler = client.player.currentScreenHandler;
             if (handler == null) {
-                sendNodeErrorMessage(client, "No GUI is open for " + type.getDisplayName() + ".");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No GUI is open for " + type.getDisplayName() + ".");
                 return;
             }
 
             GuiSelectionMode guiMode = GuiSelectionMode.fromId(getParameterString(parameterNode, "GUI"));
             List<String> entries = collectGuiListEntries(handler, guiMode);
             if (entries.isEmpty()) {
-                sendNodeErrorMessage(client, "No matching GUI slots found for " + type.getDisplayName() + ".");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No matching GUI slots found for " + type.getDisplayName() + ".");
                 return;
             }
 
             ExecutionManager manager = ExecutionManager.getInstance();
             Node startNode = resolveExecutionStartNode();
             if (startNode == null) {
-                sendNodeErrorMessage(client, "No active node tree available for list creation.");
-                future.complete(null);
+                NodeExecutionCompletion.fail(this, client, future,
+                    "No active node tree available for list creation.");
                 return;
             }
 
             manager.setRuntimeList(startNode, listName.trim(),
                 new ExecutionManager.RuntimeList(parameterType, entries));
-            future.complete(null);
+            NodeExecutionCompletion.complete(future);
             return;
         }
 
@@ -6884,14 +6794,14 @@ public class Node {
                     if (startNode != null) {
                         manager.setRuntimeList(startNode, listName.trim(),
                             new ExecutionManager.RuntimeList(parameterType, configuredEntityIds));
-                        future.complete(null);
+                        NodeExecutionCompletion.complete(future);
                         return;
                     }
                 }
             }
 
-            sendNodeErrorMessage(client, "No matching targets found nearby for " + type.getDisplayName() + ".");
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "No matching targets found nearby for " + type.getDisplayName() + ".");
             return;
         }
 
@@ -6906,16 +6816,14 @@ public class Node {
         ExecutionManager manager = ExecutionManager.getInstance();
         Node startNode = resolveExecutionStartNode();
         if (startNode == null) {
-            if (client != null) {
-                sendNodeErrorMessage(client, "No active node tree available for list creation.");
-            }
-            future.complete(null);
+            NodeExecutionCompletion.fail(this, client, future,
+                "No active node tree available for list creation.");
             return;
         }
 
         manager.setRuntimeList(startNode, listName.trim(),
             new ExecutionManager.RuntimeList(parameterType, entries));
-        future.complete(null);
+        NodeExecutionCompletion.complete(future);
     }
 
     static boolean isCreateListCollectionTarget(NodeType parameterType) {
