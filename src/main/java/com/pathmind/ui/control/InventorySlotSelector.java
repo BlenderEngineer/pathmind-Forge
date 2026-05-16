@@ -266,12 +266,13 @@ public class InventorySlotSelector {
 
         dropdownHoverIndex = -1;
         InventoryGuiMode[] modes = InventoryGuiMode.values();
+        int rowRight = DropdownLayoutHelper.getScrollbarHitLeft(dropdownX, dropdownWidth, layout.maxScrollOffset);
         for (int i = 0; i < visibleCount; i++) {
             int optionIndex = dropdownScrollIndex + i;
             InventoryGuiMode option = modes[optionIndex];
             int optionTop = dropdownY + i * DROPDOWN_OPTION_HEIGHT;
             boolean hovered = animProgress >= 1f &&
-                              mouseX >= dropdownX && mouseX <= dropdownX + dropdownWidth &&
+                              mouseX >= dropdownX && mouseX < rowRight &&
                               mouseY >= optionTop && mouseY <= optionTop + DROPDOWN_OPTION_HEIGHT;
             if (hovered) {
                 dropdownHoverIndex = optionIndex;
@@ -379,6 +380,18 @@ public class InventorySlotSelector {
             return false;
         }
 
+        if (DropdownLayoutHelper.isScrollbarHit(mouseX, mouseY, dropdownX, dropdownY, dropdownWidth,
+            dropdownHeight, layout.maxScrollOffset)) {
+            dropdownScrollIndex = DropdownLayoutHelper.scrollOffsetFromMouseY(mouseY, dropdownY, dropdownHeight,
+                visibleCount, totalOptions, layout.maxScrollOffset);
+            return true;
+        }
+
+        int rowRight = DropdownLayoutHelper.getScrollbarHitLeft(dropdownX, dropdownWidth, layout.maxScrollOffset);
+        if (mouseX >= rowRight) {
+            return true;
+        }
+
         int optionIndex = (int) ((mouseY - dropdownY) / DROPDOWN_OPTION_HEIGHT);
         InventoryGuiMode[] modes = InventoryGuiMode.values();
         int actualIndex = dropdownScrollIndex + optionIndex;
@@ -398,6 +411,10 @@ public class InventorySlotSelector {
 
     public void closeDropdown() {
         dropdownOpen = false;
+    }
+
+    public boolean isDropdownOpen() {
+        return dropdownOpen;
     }
 
     public int getLastRenderHeight() {

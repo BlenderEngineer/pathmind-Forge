@@ -793,6 +793,15 @@ public class NodeParameterOverlay {
         double adjustedMouseX = popupX + (mouseX - scaledX) * scaleX;
         double adjustedMouseY = popupY + (mouseY - scaledY) * scaleY;
 
+        if (inventorySlotEditorActive && inventorySlotSelector != null && inventorySlotSelector.isDropdownOpen()) {
+            inventorySlotSelector.mouseClicked(adjustedMouseX, adjustedMouseY);
+            return true;
+        }
+        if (villagerTradeEditorActive && villagerTradeSelector != null && villagerTradeSelector.isDropdownOpen()) {
+            villagerTradeSelector.mouseClicked(adjustedMouseX, adjustedMouseY);
+            return true;
+        }
+
         if (saveButton != null && saveButton.isMouseOver(adjustedMouseX, adjustedMouseY)) {
             saveParameters();
             return true;

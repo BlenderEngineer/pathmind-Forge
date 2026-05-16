@@ -509,6 +509,10 @@ public class VillagerTradeSelector {
         dropdownOpen = false;
     }
 
+    public boolean isDropdownOpen() {
+        return dropdownOpen;
+    }
+
     public int getLastRenderHeight() {
         return lastRenderHeight;
     }
@@ -1115,12 +1119,13 @@ public class VillagerTradeSelector {
         context.drawHorizontalLine(dropdownX, dropdownX + dropdownWidth, dropdownY + dropdownHeight, applyAlpha(UITheme.BORDER_DEFAULT, alpha));
 
         dropdownHoverIndex = -1;
+        int rowRight = DropdownLayoutHelper.getScrollbarHitLeft(dropdownX, dropdownWidth, layout.maxScrollOffset);
         for (int i = 0; i < visibleCount; i++) {
             int optionIndex = dropdownScrollIndex + i;
             ProfessionOption option = professions.get(optionIndex);
             int optionTop = dropdownY + i * DROPDOWN_OPTION_HEIGHT;
             boolean hovered = animProgress >= 1f &&
-                              mouseX >= dropdownX && mouseX <= dropdownX + dropdownWidth &&
+                              mouseX >= dropdownX && mouseX < rowRight &&
                               mouseY >= optionTop && mouseY <= optionTop + DROPDOWN_OPTION_HEIGHT;
             if (hovered) {
                 dropdownHoverIndex = optionIndex;
@@ -1190,6 +1195,18 @@ public class VillagerTradeSelector {
         if (!inside) {
             dropdownOpen = false;
             return false;
+        }
+
+        if (DropdownLayoutHelper.isScrollbarHit(mouseX, mouseY, dropdownX, dropdownY, dropdownWidth,
+            dropdownHeight, layout.maxScrollOffset)) {
+            dropdownScrollIndex = DropdownLayoutHelper.scrollOffsetFromMouseY(mouseY, dropdownY, dropdownHeight,
+                layout.visibleCount, totalOptions, layout.maxScrollOffset);
+            return true;
+        }
+
+        int rowRight = DropdownLayoutHelper.getScrollbarHitLeft(dropdownX, dropdownWidth, layout.maxScrollOffset);
+        if (mouseX >= rowRight) {
+            return true;
         }
 
         int optionIndex = (int) ((mouseY - dropdownY) / DROPDOWN_OPTION_HEIGHT);
