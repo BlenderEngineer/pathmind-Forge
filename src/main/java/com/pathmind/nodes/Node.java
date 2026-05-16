@@ -397,6 +397,7 @@ public class Node {
     private static final Set<String> MOVE_ITEM_SOURCE_KEYS = createParameterKeySet("SourceSlot", "FirstSlot");
     private static final Set<String> MOVE_ITEM_TARGET_KEYS = createParameterKeySet("TargetSlot", "SecondSlot");
     private static final Set<String> PLACE_POSITION_BLOCK_KEYS = createParameterKeySet("Block", "Blocks", "BlockId");
+    private static final Set<String> HOTBAR_INVENTORY_SLOT_ITEM_KEYS = createParameterKeySet("Item", "Items", "Count", "Amount");
     private static final String PARAM_ID_BOOLEAN_MODE = "boolean_mode";
     private static final String PARAM_ID_BOOLEAN_TOGGLE = "boolean_toggle";
     private static final String PARAM_ID_BOOLEAN_VARIABLE = "boolean_variable";
@@ -2340,6 +2341,14 @@ public class Node {
             return values;
         }
         switch (type) {
+            case HOTBAR:
+                if (parameterNode != null && parameterNode.getType() == NodeType.PARAM_INVENTORY_SLOT) {
+                    Map<String, String> adjusted = new HashMap<>(filterParameterMap(values, HOTBAR_INVENTORY_SLOT_ITEM_KEYS));
+                    adjusted.put("Item", "");
+                    adjusted.put(normalizeParameterKey("Item"), "");
+                    return adjusted;
+                }
+                break;
             case CONTROL_REPEAT: {
                 if (parameterNode != null) {
                     if (!values.containsKey("Count")) {

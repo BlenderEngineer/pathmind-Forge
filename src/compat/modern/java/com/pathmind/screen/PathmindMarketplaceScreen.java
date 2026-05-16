@@ -824,10 +824,11 @@ public class PathmindMarketplaceScreen extends Screen {
                 popup ? presetPopupAnimation.getAnimatedPopupColor(UITheme.TEXT_HEADER) : UITheme.TEXT_HEADER);
         }
 
-        if (interactive && scale > 0.18f && !compactNode) {
+        if (interactive && scale > 0.12f) {
             int textY = nodeY + headerHeight + 3;
+            int lineHeight = Math.max(9, this.textRenderer.fontHeight + 1);
             for (String line : buildNodeBodyLines(node)) {
-                if (textY > nodeY + nodeHeight - 9) {
+                if (textY > nodeY + nodeHeight - lineHeight) {
                     break;
                 }
                 context.drawTextWithShadow(this.textRenderer,
@@ -835,7 +836,7 @@ public class PathmindMarketplaceScreen extends Screen {
                     nodeX + 4,
                     textY,
                     popup ? presetPopupAnimation.getAnimatedPopupColor(UITheme.TEXT_SECONDARY) : UITheme.TEXT_SECONDARY);
-                textY += 10;
+                textY += lineHeight;
             }
         }
         renderNodeSockets(context, node, offsetX, offsetY, scale, popup);
@@ -867,16 +868,46 @@ public class PathmindMarketplaceScreen extends Screen {
         if (node.getMode() != null) {
             bodyLines.add("Mode: " + node.getMode().getDisplayName());
         }
+        if (node.getType() == com.pathmind.nodes.NodeType.MESSAGE) {
+            for (String line : node.getMessageLines()) {
+                String value = fallback(line, "").trim();
+                if (!value.isEmpty()) {
+                    bodyLines.add("Message: " + value);
+                }
+            }
+        }
+        if (node.hasAttachedParameter()) {
+            for (Map.Entry<Integer, Node> entry : node.getAttachedParameters().entrySet()) {
+                if (entry == null || entry.getValue() == null) {
+                    continue;
+                }
+                String slotLabel = node.getParameterSlotLabel(entry.getKey());
+                String childLabel = entry.getValue().getDisplayName().getString();
+                if (slotLabel == null || slotLabel.isBlank()) {
+                    slotLabel = "Param " + (entry.getKey() + 1);
+                }
+                bodyLines.add(slotLabel + ": " + childLabel);
+                if (bodyLines.size() >= 6) {
+                    return bodyLines;
+                }
+            }
+        }
         for (NodeParameter parameter : node.getParameters()) {
             if (parameter == null) {
                 continue;
             }
             String value = fallback(parameter.getStringValue(), "").trim();
             if (value.isEmpty()) {
+                if (node.isParameterNode()) {
+                    bodyLines.add(parameter.getName() + ": empty");
+                }
+                if (bodyLines.size() >= 6) {
+                    break;
+                }
                 continue;
             }
             bodyLines.add(parameter.getName() + ": " + value);
-            if (bodyLines.size() >= 4) {
+            if (bodyLines.size() >= 6) {
                 break;
             }
         }
