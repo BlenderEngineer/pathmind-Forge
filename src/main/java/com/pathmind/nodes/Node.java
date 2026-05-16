@@ -8160,16 +8160,12 @@ public class Node {
             return;
         }
         String itemId = "stick";
-        int quantity = 1;
+        int quantity = getRequestedCraftQuantity();
 
         NodeParameter itemParam = getParameter("Item");
-        NodeParameter amountParam = getParameter("Amount");
 
         if (itemParam != null) {
             itemId = itemParam.getStringValue();
-        }
-        if (amountParam != null) {
-            quantity = amountParam.getIntValue();
         }
         String requestedItemLabel = itemId;
 
@@ -8860,6 +8856,10 @@ public class Node {
         }
 
         return false;
+    }
+
+    int getRequestedCraftQuantity() {
+        return Math.max(1, parseNodeInt(this, "Amount", 1));
     }
 
     private boolean isCompatibleCraftingHandler(ScreenHandler handler, NodeMode craftMode) {
