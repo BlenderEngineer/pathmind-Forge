@@ -44,7 +44,7 @@ public final class RecipeCompatibilityBridge {
         }
         try {
             return RECIPE_PLACEMENT_METHOD.invoke(recipe);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError e) {
             return null;
         }
     }
@@ -59,7 +59,7 @@ public final class RecipeCompatibilityBridge {
             return result instanceof Boolean bool && bool;
         } catch (NoSuchMethodException e) {
             return true;
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError e) {
             return true;
         }
     }
@@ -81,7 +81,7 @@ public final class RecipeCompatibilityBridge {
                 }
                 return cast;
             }
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | LinkageError ignored) {
         }
         return Collections.emptyList();
     }
@@ -98,7 +98,7 @@ public final class RecipeCompatibilityBridge {
             if (result instanceof Object[] array) {
                 return Arrays.asList(array);
             }
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
         }
         return Collections.emptyList();
     }
@@ -146,7 +146,7 @@ public final class RecipeCompatibilityBridge {
         if (INGREDIENT_IS_EMPTY_METHOD != null) {
             try {
                 return (boolean) INGREDIENT_IS_EMPTY_METHOD.invoke(ingredient);
-            } catch (IllegalAccessException | InvocationTargetException ignored) {
+            } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
             }
         }
         if (INGREDIENT_MATCHING_ITEMS_METHOD != null) {
@@ -156,7 +156,7 @@ public final class RecipeCompatibilityBridge {
                 if (empty != null) {
                     return empty;
                 }
-            } catch (IllegalAccessException | InvocationTargetException ignored) {
+            } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
             }
         }
         try {
@@ -164,7 +164,7 @@ public final class RecipeCompatibilityBridge {
             if (emptyIngredient == ingredient) {
                 return true;
             }
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        } catch (NoSuchFieldException | IllegalAccessException | LinkageError ignored) {
         }
         return false;
     }
@@ -216,7 +216,7 @@ public final class RecipeCompatibilityBridge {
     }
 
     private static Method resolveMatchingItemsWithLookupMethod() {
-        for (Method method : Ingredient.class.getMethods()) {
+        for (Method method : getMethodsSafely(Ingredient.class)) {
             if (!"getMatchingItems".equals(method.getName())) {
                 continue;
             }
@@ -254,14 +254,14 @@ public final class RecipeCompatibilityBridge {
             return null;
         }
         try {
-            for (Method method : slotObj.getClass().getMethods()) {
+            for (Method method : getMethodsSafely(slotObj.getClass())) {
                 if (method.getParameterCount() == 0 && method.getReturnType() == int.class) {
                     method.setAccessible(true);
                     return (Integer) method.invoke(slotObj);
                 }
             }
             return null;
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError e) {
             return null;
         }
     }
@@ -271,7 +271,7 @@ public final class RecipeCompatibilityBridge {
             Method method = placement.getClass().getMethod(methodName);
             method.setAccessible(true);
             return method.invoke(placement);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | LinkageError e) {
             return null;
         }
     }
@@ -315,12 +315,12 @@ public final class RecipeCompatibilityBridge {
                         if (result instanceof Ingredient ingredient && !isIngredientEmpty(ingredient)) {
                             return ingredient;
                         }
-                    } catch (IllegalAccessException | InvocationTargetException | RuntimeException ignored) {
+                    } catch (IllegalAccessException | InvocationTargetException | RuntimeException | LinkageError ignored) {
                         // Try next candidate.
                     }
                 }
             }
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -337,9 +337,9 @@ public final class RecipeCompatibilityBridge {
             addCandidate(candidates, java.util.stream.StreamSupport.stream(iterable.spliterator(), false));
         }
 
-        addCandidatesFromMethods(entry, candidates, entry.getClass().getMethods());
-        addCandidatesFromMethods(entry, candidates, entry.getClass().getDeclaredMethods());
-        addCandidatesFromFields(entry, candidates, entry.getClass().getDeclaredFields());
+        addCandidatesFromMethods(entry, candidates, getMethodsSafely(entry.getClass()));
+        addCandidatesFromMethods(entry, candidates, getDeclaredMethodsSafely(entry.getClass()));
+        addCandidatesFromFields(entry, candidates, getDeclaredFieldsSafely(entry.getClass()));
 
         return candidates;
     }
@@ -366,7 +366,7 @@ public final class RecipeCompatibilityBridge {
                 Object value = method.invoke(entry);
                 addCandidate(candidates, value);
                 logged++;
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Skip failing accessors.
             }
             if (logged >= 12) {
@@ -389,7 +389,7 @@ public final class RecipeCompatibilityBridge {
                 Object value = field.get(entry);
                 addCandidate(candidates, value);
                 logged++;
-            } catch (IllegalAccessException | RuntimeException ignored) {
+            } catch (IllegalAccessException | RuntimeException | LinkageError ignored) {
                 // Skip failing accessors.
             }
             if (logged >= 8) {
@@ -421,6 +421,30 @@ public final class RecipeCompatibilityBridge {
         }
     }
 
+    private static Method[] getMethodsSafely(Class<?> type) {
+        try {
+            return type.getMethods();
+        } catch (LinkageError ignored) {
+            return new Method[0];
+        }
+    }
+
+    private static Method[] getDeclaredMethodsSafely(Class<?> type) {
+        try {
+            return type.getDeclaredMethods();
+        } catch (LinkageError ignored) {
+            return new Method[0];
+        }
+    }
+
+    private static java.lang.reflect.Field[] getDeclaredFieldsSafely(Class<?> type) {
+        try {
+            return type.getDeclaredFields();
+        } catch (LinkageError ignored) {
+            return new java.lang.reflect.Field[0];
+        }
+    }
+
     private static Object resolveEntryList(Object entry) {
         if (entry == null) {
             return null;
@@ -437,11 +461,11 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof Iterable<?> iterable) {
                     return iterable;
                 }
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException | LinkageError ignored) {
                 // Try the next candidate.
             }
         }
-        for (Method method : entry.getClass().getMethods()) {
+        for (Method method : getMethodsSafely(entry.getClass())) {
             if (method.getParameterCount() != 0) {
                 continue;
             }
@@ -455,7 +479,7 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof Iterable<?> iterable) {
                     return iterable;
                 }
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException | LinkageError ignored) {
                 // Keep scanning.
             }
         }
@@ -464,7 +488,7 @@ public final class RecipeCompatibilityBridge {
 
     private static List<Method> resolveIngredientFactoryMethods() {
         List<Method> methods = new ArrayList<>();
-        for (Method method : Ingredient.class.getMethods()) {
+        for (Method method : getMethodsSafely(Ingredient.class)) {
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
                 continue;
             }
@@ -582,7 +606,7 @@ public final class RecipeCompatibilityBridge {
             }
         } catch (NoSuchMethodException ignored) {
             // Try declared methods/fields next.
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
             return null;
         }
         try {
@@ -595,7 +619,7 @@ public final class RecipeCompatibilityBridge {
             return value instanceof Ingredient ingredient ? ingredient : null;
         } catch (NoSuchMethodException ignored) {
             // Try fields next.
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
+        } catch (IllegalAccessException | InvocationTargetException | LinkageError ignored) {
             return null;
         }
         try {
@@ -606,7 +630,7 @@ public final class RecipeCompatibilityBridge {
             field.setAccessible(true);
             Object value = field.get(entry);
             return value instanceof Ingredient ingredient ? ingredient : null;
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        } catch (NoSuchFieldException | IllegalAccessException | LinkageError ignored) {
             return null;
         }
     }
@@ -636,7 +660,7 @@ public final class RecipeCompatibilityBridge {
             } else if (result != null) {
                 collectItemStack(result, stacks);
             }
-        } catch (IllegalAccessException | InvocationTargetException | RuntimeException ignored) {
+        } catch (IllegalAccessException | InvocationTargetException | RuntimeException | LinkageError ignored) {
             // Return whatever we collected so far.
         }
         return stacks;
@@ -678,7 +702,7 @@ public final class RecipeCompatibilityBridge {
                         return lookup;
                     }
                 }
-            } catch (RuntimeException ignored) {
+            } catch (RuntimeException | LinkageError ignored) {
                 // Fall through to reflection-based lookup.
             }
         }
@@ -693,11 +717,11 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof RegistryWrapper.WrapperLookup wrapper) {
                     return wrapper;
                 }
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException | LinkageError ignored) {
                 // Try the next candidate.
             }
         }
-        for (Method method : registryManager.getClass().getMethods()) {
+        for (Method method : getMethodsSafely(registryManager.getClass())) {
             if (method.getParameterCount() != 0) {
                 continue;
             }
@@ -710,7 +734,7 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof RegistryWrapper.WrapperLookup wrapper) {
                     return wrapper;
                 }
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ReflectiveOperationException | LinkageError ignored) {
                 // Keep scanning.
             }
         }
@@ -961,7 +985,7 @@ public final class RecipeCompatibilityBridge {
             method.setAccessible(true);
             Object result = method.invoke(null, entryList);
             return result instanceof Ingredient ingredient ? ingredient : null;
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
     }
@@ -989,7 +1013,7 @@ public final class RecipeCompatibilityBridge {
             return item;
         }
         try {
-            for (Method method : holder.getClass().getMethods()) {
+            for (Method method : getMethodsSafely(holder.getClass())) {
                 if (method.getParameterCount() != 0 || method.getReturnType() != Item.class) {
                     continue;
                 }
@@ -999,7 +1023,7 @@ public final class RecipeCompatibilityBridge {
                     return resolved;
                 }
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -1014,7 +1038,7 @@ public final class RecipeCompatibilityBridge {
             method.setAccessible(true);
             Object result = method.invoke(holder);
             return result instanceof Item item ? item : null;
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
     }
@@ -1065,7 +1089,7 @@ public final class RecipeCompatibilityBridge {
             if (result instanceof List<?> list) {
                 return filterStacks(list);
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -1079,7 +1103,7 @@ public final class RecipeCompatibilityBridge {
             if (result instanceof ItemStack stack) {
                 return stack;
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -1087,7 +1111,7 @@ public final class RecipeCompatibilityBridge {
 
     private static List<ItemStack> invokeSlotDisplayBySignature(Object slotDisplay, Object context) {
         try {
-            for (Method method : slotDisplay.getClass().getMethods()) {
+            for (Method method : getMethodsSafely(slotDisplay.getClass())) {
                 if (method.getParameterCount() != 1) {
                     continue;
                 }
@@ -1113,7 +1137,7 @@ public final class RecipeCompatibilityBridge {
                     }
                 }
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -1155,7 +1179,7 @@ public final class RecipeCompatibilityBridge {
             java.lang.reflect.Constructor<?> ctor = contextMapClass.getDeclaredConstructor(java.util.Map.class);
             ctor.setAccessible(true);
             return ctor.newInstance(values);
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
     }
@@ -1165,7 +1189,7 @@ public final class RecipeCompatibilityBridge {
         if (contextsClass == null) {
             return null;
         }
-        for (Method method : contextsClass.getMethods()) {
+        for (Method method : getMethodsSafely(contextsClass)) {
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
                 continue;
             }
@@ -1182,7 +1206,7 @@ public final class RecipeCompatibilityBridge {
                 if (result != null) {
                     return result;
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 return null;
             }
         }
@@ -1196,7 +1220,7 @@ public final class RecipeCompatibilityBridge {
         }) {
             try {
                 return Class.forName(name, true, loader);
-            } catch (ClassNotFoundException ignored) {
+            } catch (ClassNotFoundException | LinkageError ignored) {
                 // Try next candidate.
             }
         }
@@ -1227,7 +1251,7 @@ public final class RecipeCompatibilityBridge {
                         }
                     }
                 }
-            } catch (RuntimeException ignored) {
+            } catch (RuntimeException | LinkageError ignored) {
                 // Give up if the wrapper cannot resolve the tag.
             }
         }
@@ -1244,7 +1268,7 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof List<?> list) {
                     return list;
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Try next accessor.
             }
             try {
@@ -1254,7 +1278,7 @@ public final class RecipeCompatibilityBridge {
                 if (value instanceof List<?> list) {
                     return list;
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Try the next candidate name.
             }
         }
@@ -1265,12 +1289,12 @@ public final class RecipeCompatibilityBridge {
         try {
             type.getMethod(name);
             return true;
-        } catch (NoSuchMethodException ignored) {
+        } catch (NoSuchMethodException | LinkageError ignored) {
         }
         try {
             type.getDeclaredField(name);
             return true;
-        } catch (NoSuchFieldException ignored) {
+        } catch (NoSuchFieldException | LinkageError ignored) {
             return false;
         }
     }
@@ -1284,7 +1308,7 @@ public final class RecipeCompatibilityBridge {
                 if (value != null) {
                     return value;
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Try methods below.
             }
             try {
@@ -1294,7 +1318,7 @@ public final class RecipeCompatibilityBridge {
                 if (value != null) {
                     return value;
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Try next name.
             }
         }
@@ -1330,7 +1354,7 @@ public final class RecipeCompatibilityBridge {
                 RegistryWrapper.Impl<Item> cast = (RegistryWrapper.Impl<Item>) impl;
                 return cast;
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
         return null;
@@ -1344,7 +1368,7 @@ public final class RecipeCompatibilityBridge {
             if (result instanceof Optional<?> optional) {
                 return optional;
             }
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return Optional.empty();
         }
         return Optional.empty();
@@ -1380,7 +1404,7 @@ public final class RecipeCompatibilityBridge {
             method.setAccessible(true);
             Object result = method.invoke(null, arg);
             return result instanceof Ingredient ingredient ? ingredient : null;
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
     }
@@ -1487,7 +1511,7 @@ public final class RecipeCompatibilityBridge {
             Method method = target.getClass().getMethod(methodName);
             method.setAccessible(true);
             return method.invoke(target);
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
             return null;
         }
     }
@@ -1504,7 +1528,7 @@ public final class RecipeCompatibilityBridge {
                 if (result instanceof Number num) {
                     return num.intValue();
                 }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
                 // Try next accessor.
             }
         }

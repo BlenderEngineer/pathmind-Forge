@@ -147,14 +147,14 @@ public class Node {
     private final NodeInteractionState interactionState;
     private final NodeAttachments attachments;
     private final NodeRuntimeState runtimeState;
-    private static final int MIN_WIDTH = 92;
-    private static final int MIN_HEIGHT = 44;
-    private static final int EVENT_FUNCTION_MIN_HEIGHT = 36;
-    private static final int CHAR_PIXEL_WIDTH = 6;
-    private static final int HEADER_HEIGHT = 18;
-    private static final int PARAM_LINE_HEIGHT = 20;
-    private static final int PARAM_PADDING_TOP = 2;
-    private static final int PARAM_PADDING_BOTTOM = 4;
+    static final int MIN_WIDTH = 92;
+    static final int MIN_HEIGHT = 44;
+    static final int EVENT_FUNCTION_MIN_HEIGHT = 36;
+    static final int CHAR_PIXEL_WIDTH = 6;
+    static final int HEADER_HEIGHT = 18;
+    static final int PARAM_LINE_HEIGHT = 20;
+    static final int PARAM_PADDING_TOP = 2;
+    static final int PARAM_PADDING_BOTTOM = 4;
     private static final int MAX_PARAMETER_LABEL_LENGTH = 20;
     private static final String DIRECTION_MODE_EXACT = "exact";
     private static final String DIRECTION_MODE_CARDINAL = "cardinal";
@@ -169,8 +169,8 @@ public class Node {
     private static final Object RECIPE_CACHE_LOCK = new Object();
     private static volatile CachedRecipeBook cachedRecipeBook;
     private static volatile RecipeCacheWarmupState recipeCacheWarmupState;
-    private static final int BODY_PADDING_NO_PARAMS = 10;
-    private static final int START_END_SIZE = 36;
+    static final int BODY_PADDING_NO_PARAMS = 10;
+    static final int START_END_SIZE = 36;
     private static final String CHAT_MESSAGE_PREFIX = "\u00A74[\u00A7cPathmind\u00A74] \u00A77";
     private static final String LIST_SLOT_GUI_PREFIX = "gui:";
     private static final String LIST_SLOT_PLAYER_PREFIX = "player:";
@@ -179,28 +179,28 @@ public class Node {
     private static final long FALLING_SENSOR_RETENTION_MS = 1000L;
     private static final double FALLING_SENSOR_MIN_CLEARANCE = 0.6D;
     private static final int CRAFTING_OUTPUT_POLL_LIMIT = 20;
-    private static final int SENSOR_SLOT_MARGIN_HORIZONTAL = 8;
-    private static final int SENSOR_SLOT_INNER_PADDING = 4;
-    private static final int SENSOR_SLOT_MIN_CONTENT_WIDTH = 60;
-    private static final int SENSOR_SLOT_MIN_CONTENT_HEIGHT = 28;
-    private static final int ACTION_SLOT_MARGIN_HORIZONTAL = 8;
-    private static final int ACTION_SLOT_INNER_PADDING = 4;
-    private static final int ACTION_SLOT_MIN_CONTENT_WIDTH = 80;
-    private static final int ACTION_SLOT_MIN_CONTENT_HEIGHT = 32;
-    private static final int PARAMETER_SLOT_MARGIN_HORIZONTAL = 8;
-    private static final int PARAMETER_SLOT_INNER_PADDING = 4;
-    private static final int PARAMETER_SLOT_MIN_CONTENT_WIDTH = 88;
-    private static final int PARAMETER_SLOT_MIN_CONTENT_HEIGHT = 32;
-    private static final int PARAMETER_SLOT_LABEL_HEIGHT = 12;
-    private static final int OPERATOR_SLOT_GAP = 14;
-    private static final int MINIMAL_NODE_TAB_WIDTH = 6;
-    private static final int PARAMETER_FIELD_PADDING = 12;
+    static final int SENSOR_SLOT_MARGIN_HORIZONTAL = 8;
+    static final int SENSOR_SLOT_INNER_PADDING = 4;
+    static final int SENSOR_SLOT_MIN_CONTENT_WIDTH = 60;
+    static final int SENSOR_SLOT_MIN_CONTENT_HEIGHT = 28;
+    static final int ACTION_SLOT_MARGIN_HORIZONTAL = 8;
+    static final int ACTION_SLOT_INNER_PADDING = 4;
+    static final int ACTION_SLOT_MIN_CONTENT_WIDTH = 80;
+    static final int ACTION_SLOT_MIN_CONTENT_HEIGHT = 32;
+    static final int PARAMETER_SLOT_MARGIN_HORIZONTAL = 8;
+    static final int PARAMETER_SLOT_INNER_PADDING = 4;
+    static final int PARAMETER_SLOT_MIN_CONTENT_WIDTH = 88;
+    static final int PARAMETER_SLOT_MIN_CONTENT_HEIGHT = 32;
+    static final int PARAMETER_SLOT_LABEL_HEIGHT = 12;
+    static final int OPERATOR_SLOT_GAP = 14;
+    static final int MINIMAL_NODE_TAB_WIDTH = 6;
+    static final int PARAMETER_FIELD_PADDING = 12;
     private static final int PLAYER_ARMOR_SLOT_COUNT = 4;
     private static final int PLAYER_OFFHAND_INVENTORY_INDEX = PlayerInventory.MAIN_SIZE + PLAYER_ARMOR_SLOT_COUNT;
-    private static final int PARAMETER_SLOT_BOTTOM_PADDING = 6;
-    private static final int SLOT_AREA_PADDING_TOP = 0;
-    private static final int SLOT_AREA_PADDING_BOTTOM = 6;
-    private static final int SLOT_VERTICAL_SPACING = 6;
+    static final int PARAMETER_SLOT_BOTTOM_PADDING = 6;
+    static final int SLOT_AREA_PADDING_TOP = 0;
+    static final int SLOT_AREA_PADDING_BOTTOM = 6;
+    static final int SLOT_VERTICAL_SPACING = 6;
     private static final int BOOLEAN_TOGGLE_MARGIN_HORIZONTAL = 6;
     private static final int BOOLEAN_TOGGLE_TOP_MARGIN = 8;
     private static final int BOOLEAN_TOGGLE_HEIGHT = 16;
@@ -222,29 +222,29 @@ public class Node {
     private static final int AMOUNT_FIELD_TEXT_PADDING = 3;
     private static final int AMOUNT_FIELD_BOTTOM_MARGIN = 6;
     private static final int WAIT_AMOUNT_FIELD_GAP = 4;
-    private static final int AMOUNT_TOGGLE_WIDTH = 18;
+    static final int AMOUNT_TOGGLE_WIDTH = 18;
     private static final int AMOUNT_TOGGLE_HEIGHT = 10;
-    private static final int AMOUNT_TOGGLE_SPACING = 6;
-    private static final int AMOUNT_SIGN_TOGGLE_WIDTH = 28;
+    static final int AMOUNT_TOGGLE_SPACING = 6;
+    static final int AMOUNT_SIGN_TOGGLE_WIDTH = 28;
     private static final int AMOUNT_SIGN_TOGGLE_HEIGHT = 16;
     private static final int RANDOM_ROUNDING_FIELD_TOP_MARGIN = 6;
     private static final int RANDOM_ROUNDING_FIELD_LABEL_HEIGHT = 10;
     private static final int RANDOM_ROUNDING_FIELD_HEIGHT = 16;
     private static final int RANDOM_ROUNDING_FIELD_BOTTOM_MARGIN = 6;
-    private static final int RANDOM_ROUNDING_TOGGLE_WIDTH = 18;
+    static final int RANDOM_ROUNDING_TOGGLE_WIDTH = 18;
     private static final int RANDOM_ROUNDING_TOGGLE_HEIGHT = 10;
-    private static final int RANDOM_ROUNDING_TOGGLE_SPACING = 6;
-    private static final int MESSAGE_FIELD_MARGIN_HORIZONTAL = 6;
+    static final int RANDOM_ROUNDING_TOGGLE_SPACING = 6;
+    static final int MESSAGE_FIELD_MARGIN_HORIZONTAL = 6;
     private static final int MESSAGE_FIELD_TOP_MARGIN = 6;
     private static final int MESSAGE_FIELD_LABEL_HEIGHT = 10;
     private static final int MESSAGE_FIELD_HEIGHT = 16;
     private static final int MESSAGE_FIELD_VERTICAL_GAP = 6;
     private static final int MESSAGE_FIELD_BOTTOM_MARGIN = 6;
-    private static final int MESSAGE_FIELD_MIN_CONTENT_WIDTH = 120;
-    private static final int MESSAGE_FIELD_TEXT_PADDING = 3;
-    private static final int MESSAGE_BUTTON_SIZE = 10;
-    private static final int MESSAGE_BUTTON_PADDING = 4;
-    private static final int MESSAGE_BUTTON_SPACING = 4;
+    static final int MESSAGE_FIELD_MIN_CONTENT_WIDTH = 120;
+    static final int MESSAGE_FIELD_TEXT_PADDING = 3;
+    static final int MESSAGE_BUTTON_SIZE = 10;
+    static final int MESSAGE_BUTTON_PADDING = 4;
+    static final int MESSAGE_BUTTON_SPACING = 4;
     private static final int MESSAGE_SCOPE_MARGIN_HORIZONTAL = 6;
     private static final int MESSAGE_SCOPE_TOP_MARGIN = 6;
     private static final int MESSAGE_SCOPE_LABEL_HEIGHT = 10;
@@ -254,28 +254,28 @@ public class Node {
     private static final int SCHEMATIC_FIELD_LABEL_HEIGHT = 10;
     private static final int SCHEMATIC_FIELD_HEIGHT = 16;
     private static final int SCHEMATIC_FIELD_BOTTOM_MARGIN = 6;
-    private static final int STOP_TARGET_FIELD_MARGIN_HORIZONTAL = 8;
+    static final int STOP_TARGET_FIELD_MARGIN_HORIZONTAL = 8;
     private static final int STOP_TARGET_FIELD_TOP_MARGIN = 6;
     private static final int STOP_TARGET_FIELD_LABEL_HEIGHT = 0;
     private static final int STOP_TARGET_FIELD_HEIGHT = 16;
     private static final int STOP_TARGET_FIELD_TEXT_PADDING = 3;
     private static final int STOP_TARGET_FIELD_BOTTOM_MARGIN = 6;
-    private static final int STOP_TARGET_FIELD_MIN_WIDTH = 48;
-    private static final int VARIABLE_FIELD_MARGIN_HORIZONTAL = 8;
+    static final int STOP_TARGET_FIELD_MIN_WIDTH = 48;
+    static final int VARIABLE_FIELD_MARGIN_HORIZONTAL = 8;
     private static final int VARIABLE_FIELD_TOP_MARGIN = 6;
     private static final int VARIABLE_FIELD_LABEL_HEIGHT = 0;
     private static final int VARIABLE_FIELD_HEIGHT = 16;
     private static final int VARIABLE_FIELD_TEXT_PADDING = 3;
     private static final int VARIABLE_FIELD_BOTTOM_MARGIN = 6;
-    private static final int VARIABLE_FIELD_MIN_WIDTH = 80;
+    static final int VARIABLE_FIELD_MIN_WIDTH = 80;
     private static final int MODE_FIELD_TOP_MARGIN = 6;
     private static final int MODE_FIELD_LABEL_HEIGHT = 0;
     private static final int MODE_FIELD_HEIGHT = 16;
     private static final int MODE_FIELD_BOTTOM_MARGIN = 6;
-    private static final int BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL = 6;
+    static final int BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL = 6;
     private static final int BOOK_TEXT_TOP_MARGIN = 6;
     private static final int BOOK_TEXT_BUTTON_HEIGHT = 16;
-    private static final int BOOK_TEXT_BUTTON_MIN_WIDTH = 70;
+    static final int BOOK_TEXT_BUTTON_MIN_WIDTH = 70;
     private static final int BOOK_TEXT_LABEL_HEIGHT = 10;
     private static final int BOOK_TEXT_PAGE_FIELD_HEIGHT = 16;
     private static final int BOOK_TEXT_FIELD_SPACING = 6;
@@ -283,19 +283,19 @@ public class Node {
     private static final int SIGN_LINE_MAX_CHARS = 15;
     private static final int SIGN_MAX_LINES = 4;
     private static final int SIGN_MAX_CHARS = 63;
-    private static final int POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL = 6;
+    static final int POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL = 6;
     private static final int POPUP_EDIT_BUTTON_TOP_MARGIN = 4;
     private static final int POPUP_EDIT_BUTTON_HEIGHT = 16;
-    private static final int POPUP_EDIT_BUTTON_MIN_WIDTH = 70;
+    static final int POPUP_EDIT_BUTTON_MIN_WIDTH = 70;
     private static final int POPUP_EDIT_BUTTON_BOTTOM_MARGIN = 6;
-    private static final int TEMPLATE_NODE_WIDTH = 160;
-    private static final int TEMPLATE_NODE_HEIGHT = 108;
+    static final int TEMPLATE_NODE_WIDTH = 160;
+    static final int TEMPLATE_NODE_HEIGHT = 108;
     private static final int EVENT_NAME_FIELD_MARGIN_HORIZONTAL = 6;
-    private static final int EVENT_NAME_FIELD_TOP_MARGIN = 6;
-    private static final int EVENT_NAME_FIELD_HEIGHT = 16;
-    private static final int EVENT_NAME_FIELD_BOTTOM_MARGIN = 6;
-    private static final int STICKY_NOTE_MIN_WIDTH = 120;
-    private static final int STICKY_NOTE_MIN_HEIGHT = 84;
+    static final int EVENT_NAME_FIELD_TOP_MARGIN = 6;
+    static final int EVENT_NAME_FIELD_HEIGHT = 16;
+    static final int EVENT_NAME_FIELD_BOTTOM_MARGIN = 6;
+    static final int STICKY_NOTE_MIN_WIDTH = 120;
+    static final int STICKY_NOTE_MIN_HEIGHT = 84;
     private static final int STICKY_NOTE_HEADER_HEIGHT = 18;
     private static final int STICKY_NOTE_TEXT_MARGIN = 8;
     private static final int STICKY_NOTE_HANDLE_SIZE = 8;
@@ -677,7 +677,7 @@ public class Node {
         return type == NodeType.OPERATOR_BOOLEAN_NOT;
     }
 
-    private boolean isComparisonOperator() {
+    boolean isComparisonOperator() {
         return type == NodeType.OPERATOR_EQUALS
             || type == NodeType.OPERATOR_NOT
             || type == NodeType.OPERATOR_BOOLEAN_OR
@@ -699,7 +699,7 @@ public class Node {
             || type == NodeType.REMOVE_LIST_ITEM;
     }
 
-    private boolean isInlineParameterNode() {
+    boolean isInlineParameterNode() {
         return isParameterNode()
             && type != NodeType.OPERATOR_MOD
             && type != NodeType.PARAM_DURATION
@@ -865,6 +865,10 @@ public class Node {
             return null;
         }
         return attachments.getAttachedParameter(slotIndex);
+    }
+
+    Iterable<Node> getAttachedParameterNodes() {
+        return attachments.getAttachedParameterNodes();
     }
 
     public Node getParentParameterHost() {
@@ -1093,111 +1097,27 @@ public class Node {
     }
 
     public int getSensorSlotLeft() {
-        return getX() + SENSOR_SLOT_MARGIN_HORIZONTAL;
+        return NodeSlotLayout.sensorSlotLeft(this);
     }
 
     private int getSlotAreaStartY() {
-        int top = getY() + HEADER_HEIGHT;
-        if (isParameterNode()) {
-            int lineCount = getVisibleParameterLineCount();
-            if (lineCount > 0) {
-                top += PARAM_PADDING_TOP + lineCount * PARAM_LINE_HEIGHT + PARAM_PADDING_BOTTOM;
-                if (hasPopupEditButton()) {
-                    top += getPopupEditButtonDisplayHeight();
-                }
-                if (hasParameterSlot()) {
-                    int slotCount = getParameterSlotCount();
-                    for (int i = 0; i < slotCount; i++) {
-                        top += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-                    }
-                }
-            } else {
-                top += BODY_PADDING_NO_PARAMS;
-            }
-        } else if (shouldRenderInlineParameters()) {
-            int parameterDisplayHeight = getParameterDisplayHeight();
-            if (parameterDisplayHeight > 0) {
-                top += parameterDisplayHeight;
-            } else {
-                top += BODY_PADDING_NO_PARAMS;
-            }
-            if (hasParameterSlot()) {
-                int slotCount = getParameterSlotCount();
-                for (int i = 0; i < slotCount; i++) {
-                    top += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-                }
-            }
-            if (hasVariableInputField()) {
-                top += getVariableFieldDisplayHeight();
-            }
-            if (hasCoordinateInputFields()) {
-                top += getCoordinateFieldDisplayHeight();
-            }
-            if (hasSensorSlot() || hasActionSlot()) {
-                top += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasParameterSlot()) {
-            int slotCount = getParameterSlotCount();
-            for (int i = 0; i < slotCount; i++) {
-                top += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-            }
-            if (hasVariableInputField()) {
-                top += getVariableFieldDisplayHeight();
-            }
-            if (hasCoordinateInputFields()) {
-                top += getCoordinateFieldDisplayHeight();
-            }
-            if (hasSensorSlot() || hasActionSlot()) {
-                top += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasAmountInputField() && type != NodeType.CONTROL_REPEAT) {
-            top += getAmountFieldDisplayHeight();
-            if (hasSensorSlot() || hasActionSlot()) {
-                top += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasCoordinateInputFields()) {
-            top += getCoordinateFieldDisplayHeight();
-            if (hasSensorSlot() || hasActionSlot()) {
-                top += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasSensorSlot() || hasActionSlot()) {
-            top += SLOT_AREA_PADDING_TOP;
-        } else if (hasBooleanToggle()) {
-            top += getBooleanToggleAreaHeight();
-        } else {
-            top += BODY_PADDING_NO_PARAMS;
-        }
-        return top;
+        return NodeSlotLayout.slotAreaStartY(this);
     }
 
     public int getSensorSlotTop() {
-        int top = getSlotAreaStartY();
-        if (showsSensorSlotHeader()) {
-            top += PARAMETER_SLOT_LABEL_HEIGHT;
-        }
-        return top;
+        return NodeSlotLayout.sensorSlotTop(this);
     }
 
     public int getSensorSlotWidth() {
-        int minWidth = SENSOR_SLOT_MIN_CONTENT_WIDTH + 2 * SENSOR_SLOT_INNER_PADDING;
-        int widthWithMargins = getWidth() - 2 * SENSOR_SLOT_MARGIN_HORIZONTAL;
-        return Math.max(minWidth, widthWithMargins);
+        return NodeSlotLayout.sensorSlotWidth(this);
     }
 
     public int getSensorSlotHeight() {
-        int sensorContentHeight = attachments.getAttachedSensor() != null ? attachments.getAttachedSensor().getHeight() : SENSOR_SLOT_MIN_CONTENT_HEIGHT;
-        return sensorContentHeight + 2 * SENSOR_SLOT_INNER_PADDING;
+        return NodeSlotLayout.sensorSlotHeight(this);
     }
 
     public boolean isPointInsideSensorSlot(int pointX, int pointY) {
-        if (!hasSensorSlot()) {
-            return false;
-        }
-        int slotLeft = getSensorSlotLeft();
-        int slotTop = getSensorSlotTop();
-        int slotWidth = getSensorSlotWidth();
-        int slotHeight = getSensorSlotHeight();
-        return NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY);
+        return NodeSlotLayout.isPointInsideSensorSlot(this, pointX, pointY);
     }
 
     public int getParameterSlotCount() {
@@ -1208,66 +1128,15 @@ public class Node {
     }
 
     public int getParameterSlotLeft() {
-        return getX() + PARAMETER_SLOT_MARGIN_HORIZONTAL;
+        return NodeSlotLayout.parameterSlotLeft(this);
     }
 
     public int getParameterSlotLeft(int slotIndex) {
-        if (isComparisonOperator()) {
-            int slotWidth = getParameterSlotWidth(slotIndex);
-            int baseLeft = getX() + PARAMETER_SLOT_MARGIN_HORIZONTAL;
-            if (usesMinimalNodePresentation()) {
-                int contentLeft = getX() + MINIMAL_NODE_TAB_WIDTH + PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                int contentWidth = Math.max(0, getWidth() - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
-                int groupWidth = slotWidth * 2 + OPERATOR_SLOT_GAP;
-                int startX = contentLeft + Math.max(0, (contentWidth - groupWidth) / 2);
-                if (slotIndex <= 0) {
-                    return startX;
-                }
-                return startX + slotWidth + OPERATOR_SLOT_GAP;
-            }
-            if (slotIndex <= 0) {
-                return baseLeft;
-            }
-            return baseLeft + slotWidth + OPERATOR_SLOT_GAP;
-        }
-        return getParameterSlotLeft();
+        return NodeSlotLayout.parameterSlotLeft(this, slotIndex);
     }
 
     public int getParameterSlotTop(int slotIndex) {
-        int top = getY() + HEADER_HEIGHT + PARAMETER_SLOT_LABEL_HEIGHT;
-        if ((isInlineParameterNode() || shouldRenderInlineParameters()) && hasParameterSlot()) {
-            top = getY() + HEADER_HEIGHT;
-            int parameterDisplayHeight = getParameterDisplayHeight();
-            if (parameterDisplayHeight > 0) {
-                top += parameterDisplayHeight;
-            } else if (isInlineParameterNode()) {
-                top += BODY_PADDING_NO_PARAMS;
-            }
-            if (isInlineParameterNode() && hasPopupEditButton()) {
-                top += getPopupEditButtonDisplayHeight();
-            }
-            top += PARAMETER_SLOT_LABEL_HEIGHT;
-        }
-        if (hasSchematicDropdownField()) {
-            top += getSchematicFieldDisplayHeight();
-        }
-        if (hasVariableInputField()) {
-            top += getVariableFieldDisplayHeight();
-        }
-        if (showsModeFieldAboveParameterSlot()) {
-            top += getModeFieldDisplayHeight();
-        }
-        if (isComparisonOperator()) {
-            if (usesMinimalNodePresentation()) {
-                int slotHeight = getParameterSlotHeight(slotIndex);
-                return getY() + Math.max(0, (getHeight() - slotHeight) / 2);
-            }
-            return top;
-        }
-        for (int i = 0; i < slotIndex; i++) {
-            top += getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING + PARAMETER_SLOT_LABEL_HEIGHT;
-        }
-        return top;
+        return NodeSlotLayout.parameterSlotTop(this, slotIndex);
     }
 
     @Deprecated
@@ -1283,28 +1152,15 @@ public class Node {
     }
 
     public int getParameterSlotWidth() {
-        int widthWithMargins = getWidth() - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-        return Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, widthWithMargins);
+        return NodeSlotLayout.parameterSlotWidth(this);
     }
 
     public int getParameterSlotWidth(int slotIndex) {
-        if (isComparisonOperator()) {
-            int widthWithMargins = getWidth() - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-            if (usesMinimalNodePresentation()) {
-                widthWithMargins = Math.max(0, getWidth() - MINIMAL_NODE_TAB_WIDTH - 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL);
-            }
-            int minCombinedWidth = PARAMETER_SLOT_MIN_CONTENT_WIDTH * 2 + OPERATOR_SLOT_GAP;
-            int effectiveWidth = Math.max(minCombinedWidth, widthWithMargins);
-            int available = effectiveWidth - OPERATOR_SLOT_GAP;
-            return Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, available / 2);
-        }
-        return getParameterSlotWidth();
+        return NodeSlotLayout.parameterSlotWidth(this, slotIndex);
     }
 
     public int getParameterSlotHeight(int slotIndex) {
-        Node parameter = getAttachedParameter(slotIndex);
-        int contentHeight = parameter != null ? parameter.getHeight() : PARAMETER_SLOT_MIN_CONTENT_HEIGHT;
-        return contentHeight + 2 * PARAMETER_SLOT_INNER_PADDING;
+        return NodeSlotLayout.parameterSlotHeight(this, slotIndex);
     }
 
     @Deprecated
@@ -1313,18 +1169,7 @@ public class Node {
     }
 
     private int getParameterSlotsBottom() {
-        int slotCount = getParameterSlotCount();
-        if (slotCount <= 0) {
-            return getY() + HEADER_HEIGHT;
-        }
-        if (isComparisonOperator()) {
-            int leftHeight = getParameterSlotHeight(0);
-            int rightHeight = getParameterSlotHeight(1);
-            int maxHeight = Math.max(leftHeight, rightHeight);
-            return getParameterSlotTop(0) + maxHeight;
-        }
-        int lastIndex = slotCount - 1;
-        return getParameterSlotTop(lastIndex) + getParameterSlotHeight(lastIndex);
+        return NodeSlotLayout.parameterSlotsBottom(this);
     }
 
     public boolean hasCoordinateInputFields() {
@@ -2178,20 +2023,7 @@ public class Node {
     }
 
     public int getParameterSlotIndexAt(int pointX, int pointY) {
-        if (!hasParameterSlot()) {
-            return -1;
-        }
-        int slotCount = getParameterSlotCount();
-        for (int i = 0; i < slotCount; i++) {
-            int slotLeft = getParameterSlotLeft(i);
-            int slotWidth = getParameterSlotWidth(i);
-            int slotTop = getParameterSlotTop(i);
-            int slotHeight = getParameterSlotHeight(i);
-            if (NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY)) {
-                return i;
-            }
-        }
-        return -1;
+        return NodeSlotLayout.parameterSlotIndexAt(this, pointX, pointY);
     }
 
     public void updateAttachedParameterPositions() {
@@ -2225,46 +2057,23 @@ public class Node {
     }
 
     public int getActionSlotLeft() {
-        return getX() + ACTION_SLOT_MARGIN_HORIZONTAL;
+        return NodeSlotLayout.actionSlotLeft(this);
     }
 
     public int getActionSlotTop() {
-        int top = getSlotAreaStartY();
-        if (hasSensorSlot()) {
-            if (showsSensorSlotHeader()) {
-                top += PARAMETER_SLOT_LABEL_HEIGHT;
-            }
-            top += getSensorSlotHeight();
-            if (hasActionSlot()) {
-                top += SLOT_VERTICAL_SPACING;
-            }
-        }
-        if (showsActionSlotHeader()) {
-            top += PARAMETER_SLOT_LABEL_HEIGHT;
-        }
-        return top;
+        return NodeSlotLayout.actionSlotTop(this);
     }
 
     public int getActionSlotWidth() {
-        int minWidth = ACTION_SLOT_MIN_CONTENT_WIDTH + 2 * ACTION_SLOT_INNER_PADDING;
-        int widthWithMargins = getWidth() - 2 * ACTION_SLOT_MARGIN_HORIZONTAL;
-        return Math.max(minWidth, widthWithMargins);
+        return NodeSlotLayout.actionSlotWidth(this);
     }
 
     public int getActionSlotHeight() {
-        int contentHeight = attachments.getAttachedActionNode() != null ? attachments.getAttachedActionNode().getHeight() : ACTION_SLOT_MIN_CONTENT_HEIGHT;
-        return contentHeight + 2 * ACTION_SLOT_INNER_PADDING;
+        return NodeSlotLayout.actionSlotHeight(this);
     }
 
     public boolean isPointInsideActionSlot(int pointX, int pointY) {
-        if (!hasActionSlot()) {
-            return false;
-        }
-        int slotLeft = getActionSlotLeft();
-        int slotTop = getActionSlotTop();
-        int slotWidth = getActionSlotWidth();
-        int slotHeight = getActionSlotHeight();
-        return NodeGeometry.containsPoint(slotLeft, slotTop, slotWidth, slotHeight, pointX, pointY);
+        return NodeSlotLayout.isPointInsideActionSlot(this, pointX, pointY);
     }
 
     public void updateAttachedSensorPosition() {
@@ -2919,7 +2728,7 @@ public class Node {
         return NodeAttributeParameters.getParameterLabel(this, parameter);
     }
 
-    private int getVisibleParameterLineCount() {
+    int getVisibleParameterLineCount() {
         if (type == NodeType.PARAM_DIRECTION) {
             int count = 1;
             for (NodeParameter param : parameters) {
@@ -3872,339 +3681,10 @@ public class Node {
      * Recalculate node dimensions based on current content
      */
     public void recalculateDimensions() {
-        if (type == NodeType.START) {
-            layoutState.setSize(START_END_SIZE, START_END_SIZE);
+        boolean shouldUpdateAttachments = NodeDimensionCalculator.recalculate(this, layoutState);
+        if (!shouldUpdateAttachments) {
             return;
         }
-        if (isStickyNote()) {
-            layoutState.setSize(
-                Math.max(STICKY_NOTE_MIN_WIDTH, layoutState.getStickyNoteWidthOverride()),
-                Math.max(STICKY_NOTE_MIN_HEIGHT, layoutState.getStickyNoteHeightOverride()));
-            return;
-        }
-        if (type == NodeType.TEMPLATE || type == NodeType.CUSTOM_NODE) {
-            layoutState.setSize(TEMPLATE_NODE_WIDTH, TEMPLATE_NODE_HEIGHT);
-            return;
-        }
-
-        normalizeAttributeDetectionParameters();
-
-        int maxTextLength = Math.max(type.getDisplayName().length(), 1);
-        if (isInlineParameterNode() || shouldRenderInlineParameters()) {
-            for (NodeParameter param : parameters) {
-                String paramText = getParameterWidthLabel(param);
-                if (paramText == null || paramText.isEmpty()) {
-                    continue;
-                }
-                if (paramText.length() > maxTextLength) {
-                    maxTextLength = paramText.length();
-                }
-            }
-
-            if (supportsModeSelection()) {
-                String modeLabel = getModeDisplayLabel();
-                if (!modeLabel.isEmpty()) {
-                    maxTextLength = Math.max(maxTextLength, modeLabel.length());
-                }
-            }
-        }
-
-        int computedWidth = maxTextLength * CHAR_PIXEL_WIDTH + 24; // padding and border allowance
-        if (isInlineParameterNode() || shouldRenderInlineParameters()) {
-            int maxParameterWidth = 0;
-            for (NodeParameter param : parameters) {
-                if (param == null) {
-                    continue;
-                }
-                String widthLabel = getParameterWidthLabel(param);
-                if (widthLabel.isEmpty()) {
-                    continue;
-                }
-                String label = getParameterDisplayName(param);
-                String value = getParameterWidthDisplayValue(param);
-                int labelLength = label != null ? label.length() : 0;
-                int valueLength = value != null ? value.length() : 0;
-                int estimatedWidth = (labelLength + valueLength) * CHAR_PIXEL_WIDTH + PARAMETER_FIELD_PADDING;
-                maxParameterWidth = Math.max(maxParameterWidth, estimatedWidth);
-            }
-            if (supportsModeSelection()) {
-                String modeLabel = getModeDisplayLabel();
-                if (!modeLabel.isEmpty()) {
-                    maxParameterWidth = Math.max(maxParameterWidth, modeLabel.length() * CHAR_PIXEL_WIDTH + PARAMETER_FIELD_PADDING);
-                }
-            }
-            int requiredFieldWidth = maxParameterWidth;
-            if (layoutState.getParameterFieldWidthOverride() > 0) {
-                requiredFieldWidth = Math.max(requiredFieldWidth, layoutState.getParameterFieldWidthOverride());
-            }
-            if (requiredFieldWidth > 0) {
-                computedWidth = Math.max(computedWidth, requiredFieldWidth + 10);
-            }
-        }
-        if (type == NodeType.PARAM_BOOLEAN) {
-            computedWidth = Math.max(computedWidth, 132);
-        }
-        if (hasParameterSlot()) {
-            int parameterContentWidth = PARAMETER_SLOT_MIN_CONTENT_WIDTH;
-            if (attachments.hasAttachedParameters()) {
-                for (Node parameterNode : attachments.getAttachedParameterNodes()) {
-                    if (parameterNode != null) {
-                        parameterContentWidth = Math.max(parameterContentWidth, parameterNode.getWidth());
-                    }
-                }
-            }
-            if (isComparisonOperator()) {
-                int slotWidth = parameterContentWidth + 2 * PARAMETER_SLOT_INNER_PADDING;
-                int requiredWidth = (slotWidth * 2) + OPERATOR_SLOT_GAP + 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                computedWidth = Math.max(computedWidth, requiredWidth);
-            } else {
-                int requiredWidth = parameterContentWidth + 2 * (PARAMETER_SLOT_INNER_PADDING + PARAMETER_SLOT_MARGIN_HORIZONTAL);
-                computedWidth = Math.max(computedWidth, requiredWidth);
-                if (hasCoordinateInputFields()) {
-                    int coordinateWidth = getCoordinateFieldTotalWidth() + 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                    computedWidth = Math.max(computedWidth, coordinateWidth);
-                }
-                if (hasAmountInputField()) {
-                    int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, layoutState.getAmountFieldWidthOverride());
-                    if (hasAmountToggle()) {
-                        amountContentWidth += AMOUNT_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
-                    }
-                    if (hasAmountSignToggle()) {
-                        amountContentWidth += AMOUNT_SIGN_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
-                    }
-                    int amountWidth = amountContentWidth + 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                    computedWidth = Math.max(computedWidth, amountWidth);
-                }
-            }
-        }
-        if (hasCoordinateInputFields()) {
-            int coordinateWidth = getCoordinateFieldTotalWidth() + 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, coordinateWidth);
-        }
-        if (hasAmountInputField()) {
-            int amountContentWidth = Math.max(PARAMETER_SLOT_MIN_CONTENT_WIDTH, layoutState.getAmountFieldWidthOverride());
-            if (hasAmountToggle()) {
-                amountContentWidth += AMOUNT_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
-            }
-            if (hasAmountSignToggle()) {
-                amountContentWidth += AMOUNT_SIGN_TOGGLE_WIDTH + AMOUNT_TOGGLE_SPACING;
-            }
-            int amountWidth = amountContentWidth + 2 * PARAMETER_SLOT_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, amountWidth);
-        }
-        if (hasRandomRoundingField()) {
-            int requiredWidth = 40 + 10;
-            if (hasRandomRoundingToggle()) {
-                requiredWidth += RANDOM_ROUNDING_TOGGLE_WIDTH + RANDOM_ROUNDING_TOGGLE_SPACING;
-            }
-            computedWidth = Math.max(computedWidth, requiredWidth);
-        }
-        if (hasSensorSlot()) {
-            int sensorContentWidth = SENSOR_SLOT_MIN_CONTENT_WIDTH;
-            if (attachments.getAttachedSensor() != null) {
-                sensorContentWidth = Math.max(sensorContentWidth, attachments.getAttachedSensor().getWidth());
-            }
-            int requiredWidth = sensorContentWidth + 2 * (SENSOR_SLOT_INNER_PADDING + SENSOR_SLOT_MARGIN_HORIZONTAL);
-            computedWidth = Math.max(computedWidth, requiredWidth);
-        }
-        if (hasActionSlot()) {
-            int actionContentWidth = ACTION_SLOT_MIN_CONTENT_WIDTH;
-            if (attachments.getAttachedActionNode() != null) {
-                actionContentWidth = Math.max(actionContentWidth, attachments.getAttachedActionNode().getWidth());
-            }
-            int requiredWidth = actionContentWidth + 2 * (ACTION_SLOT_INNER_PADDING + ACTION_SLOT_MARGIN_HORIZONTAL);
-            computedWidth = Math.max(computedWidth, requiredWidth);
-        }
-        if (hasStopTargetInputField()) {
-            int requiredWidth = Math.max(STOP_TARGET_FIELD_MIN_WIDTH, layoutState.getStopTargetFieldWidthOverride())
-                + 2 * STOP_TARGET_FIELD_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, requiredWidth);
-        }
-        if (hasVariableInputField()) {
-            int requiredWidth = Math.max(VARIABLE_FIELD_MIN_WIDTH, layoutState.getVariableFieldWidthOverride())
-                + 2 * VARIABLE_FIELD_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, requiredWidth);
-        }
-        if (hasMessageInputFields()) {
-            int maxMessageLength = 0;
-            for (String line : messageLines) {
-                if (line != null) {
-                    maxMessageLength = Math.max(maxMessageLength, line.length());
-                }
-            }
-            int messageContentWidth = Math.max(
-                MESSAGE_FIELD_MIN_CONTENT_WIDTH,
-                maxMessageLength * CHAR_PIXEL_WIDTH + (MESSAGE_FIELD_TEXT_PADDING * 2)
-            );
-            if (layoutState.getMessageFieldContentWidthOverride() > 0) {
-                messageContentWidth = Math.max(messageContentWidth, layoutState.getMessageFieldContentWidthOverride());
-            }
-            int messageFieldWidth = messageContentWidth + 2 * MESSAGE_FIELD_MARGIN_HORIZONTAL;
-            int buttonWidth = (MESSAGE_BUTTON_SIZE * 2) + MESSAGE_BUTTON_SPACING + (MESSAGE_BUTTON_PADDING * 2);
-            computedWidth = Math.max(computedWidth, Math.max(messageFieldWidth, buttonWidth));
-        }
-        if (hasBookTextInput()) {
-            int bookTextWidth = BOOK_TEXT_BUTTON_MIN_WIDTH + 2 * BOOK_TEXT_BUTTON_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, bookTextWidth);
-        }
-        if (hasPopupEditButton()) {
-            int editButtonWidth = POPUP_EDIT_BUTTON_MIN_WIDTH + 2 * POPUP_EDIT_BUTTON_MARGIN_HORIZONTAL;
-            computedWidth = Math.max(computedWidth, editButtonWidth);
-        }
-        int minWidth = usesMinimalNodePresentation() ? 70 : MIN_WIDTH;
-        int computedNodeWidth = Math.max(minWidth, computedWidth);
-
-        int contentHeight = HEADER_HEIGHT;
-        boolean hasSlots = hasSensorSlot() || hasActionSlot();
-
-        if (isInlineParameterNode()) {
-            int parameterLineCount = getVisibleParameterLineCount();
-
-            if (parameterLineCount > 0) {
-                contentHeight += PARAM_PADDING_TOP + (parameterLineCount * PARAM_LINE_HEIGHT) + PARAM_PADDING_BOTTOM;
-                if (hasPopupEditButton()) {
-                    contentHeight += getPopupEditButtonDisplayHeight();
-                }
-                if (hasBooleanToggle()) {
-                    contentHeight += getBooleanToggleAreaHeight();
-                }
-                if (hasRandomRoundingField()) {
-                    contentHeight += getRandomRoundingFieldDisplayHeight();
-                }
-                if (hasParameterSlot()) {
-                    int slotCount = getParameterSlotCount();
-                    for (int i = 0; i < slotCount; i++) {
-                        contentHeight += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-                    }
-                }
-                if (hasSlots) {
-                    contentHeight += SLOT_AREA_PADDING_TOP;
-                }
-            } else if (hasSlots) {
-                contentHeight += SLOT_AREA_PADDING_TOP;
-            } else {
-                contentHeight += BODY_PADDING_NO_PARAMS;
-            }
-        } else if (shouldRenderInlineParameters()) {
-            int parameterLineCount = getVisibleParameterLineCount();
-            if (parameterLineCount > 0) {
-                contentHeight += PARAM_PADDING_TOP + (parameterLineCount * PARAM_LINE_HEIGHT) + PARAM_PADDING_BOTTOM;
-            } else {
-                contentHeight += BODY_PADDING_NO_PARAMS;
-            }
-            if (hasParameterSlot()) {
-                int slotCount = getParameterSlotCount();
-                for (int i = 0; i < slotCount; i++) {
-                    contentHeight += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-                }
-            }
-            if (hasSlots) {
-                contentHeight += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (type == NodeType.EVENT_FUNCTION || type == NodeType.EVENT_CALL) {
-            contentHeight += EVENT_NAME_FIELD_TOP_MARGIN + EVENT_NAME_FIELD_HEIGHT + EVENT_NAME_FIELD_BOTTOM_MARGIN;
-        } else if (hasParameterSlot()) {
-            if (isComparisonOperator()) {
-                int leftHeight = getParameterSlotHeight(0);
-                int rightHeight = getParameterSlotHeight(1);
-                int maxHeight = Math.max(leftHeight, rightHeight);
-                contentHeight += PARAMETER_SLOT_LABEL_HEIGHT + maxHeight + PARAMETER_SLOT_BOTTOM_PADDING;
-                if (hasSlots) {
-                    contentHeight += SLOT_AREA_PADDING_TOP;
-                }
-            } else {
-                if (hasSchematicDropdownField()) {
-                    contentHeight += getSchematicFieldDisplayHeight();
-                }
-                if (hasVariableInputField()) {
-                    contentHeight += getVariableFieldDisplayHeight();
-                }
-                if (showsModeFieldAboveParameterSlot()) {
-                    contentHeight += getModeFieldDisplayHeight();
-                }
-                int slotCount = getParameterSlotCount();
-                for (int i = 0; i < slotCount; i++) {
-                    contentHeight += PARAMETER_SLOT_LABEL_HEIGHT + getParameterSlotHeight(i) + PARAMETER_SLOT_BOTTOM_PADDING;
-                }
-                if (hasCoordinateInputFields()) {
-                    contentHeight += getCoordinateFieldDisplayHeight();
-                }
-                if (hasAmountInputField()) {
-                    contentHeight += getAmountFieldDisplayHeight();
-                }
-                if (hasMessageInputFields()) {
-                    contentHeight += getMessageFieldDisplayHeight();
-                }
-                if (hasSlots) {
-                    contentHeight += SLOT_AREA_PADDING_TOP;
-                }
-            }
-        } else if (hasAmountInputField()) {
-            if (type != NodeType.CONTROL_REPEAT) {
-                contentHeight += getAmountFieldDisplayHeight();
-            }
-            if (hasSlots) {
-                contentHeight += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasCoordinateInputFields()) {
-            contentHeight += getCoordinateFieldDisplayHeight();
-            if (hasSlots) {
-                contentHeight += SLOT_AREA_PADDING_TOP;
-            }
-        } else if (hasSlots) {
-            contentHeight += SLOT_AREA_PADDING_TOP;
-        } else if (type == NodeType.MESSAGE) {
-            contentHeight += getMessageFieldDisplayHeight();
-        } else if (hasBookTextInput()) {
-            contentHeight += getBookTextDisplayHeight();
-        } else if (hasStopTargetInputField()) {
-            contentHeight += getStopTargetFieldDisplayHeight();
-        } else if (hasBooleanToggle()) {
-            contentHeight += getBooleanToggleAreaHeight();
-        } else {
-            contentHeight += BODY_PADDING_NO_PARAMS;
-        }
-
-        if (hasSensorSlot()) {
-            if (showsSensorSlotHeader()) {
-                contentHeight += PARAMETER_SLOT_LABEL_HEIGHT;
-            }
-            contentHeight += getSensorSlotHeight();
-        }
-
-        if (hasActionSlot()) {
-            if (hasSensorSlot()) {
-                contentHeight += SLOT_VERTICAL_SPACING;
-            }
-            if (showsActionSlotHeader()) {
-                contentHeight += PARAMETER_SLOT_LABEL_HEIGHT;
-            }
-            contentHeight += getActionSlotHeight();
-        }
-
-        if (hasSlots) {
-            contentHeight += SLOT_AREA_PADDING_BOTTOM;
-        }
-        if (type == NodeType.CONTROL_REPEAT && hasAmountInputField()) {
-            contentHeight += getAmountFieldDisplayHeight();
-        }
-
-        int computedHeight = Math.max(MIN_HEIGHT, contentHeight);
-        int minHeight = usesMinimalNodePresentation() ? 32 : MIN_HEIGHT;
-        computedHeight = Math.max(minHeight, contentHeight);
-
-        int computedNodeHeight;
-        if (type == NodeType.EVENT_FUNCTION || type == NodeType.VARIABLE) {
-            computedNodeHeight = Math.max(EVENT_FUNCTION_MIN_HEIGHT, contentHeight);
-        } else {
-            computedNodeHeight = computedHeight;
-        }
-        layoutState.setSize(computedNodeWidth, computedNodeHeight);
-
-        // Function nodes used to be forced into a square layout. That made them as tall
-        // as they were wide and left a large amount of empty space around their input
-        // field. We now keep them compact by clamping their height to the minimal
-        // content they need instead of expanding to match their width.
 
         if (attachments.getAttachedSensor() != null) {
             updateAttachedSensorPosition();
@@ -4218,14 +3698,14 @@ public class Node {
         notifyParentControlOfResize();
     }
 
-    private boolean showsSensorSlotHeader() {
+    boolean showsSensorSlotHeader() {
         return type == NodeType.CONTROL_IF
             || type == NodeType.CONTROL_IF_ELSE
             || type == NodeType.CONTROL_REPEAT_UNTIL
             || type == NodeType.CONTROL_WAIT_UNTIL;
     }
 
-    private boolean showsActionSlotHeader() {
+    boolean showsActionSlotHeader() {
         return type == NodeType.CONTROL_REPEAT
             || type == NodeType.CONTROL_REPEAT_UNTIL
             || type == NodeType.CONTROL_FOREVER;
@@ -4245,7 +3725,7 @@ public class Node {
         return PARAM_PADDING_TOP + (parameterLineCount * PARAM_LINE_HEIGHT) + PARAM_PADDING_BOTTOM;
     }
 
-    private String getParameterWidthLabel(NodeParameter parameter) {
+    String getParameterWidthLabel(NodeParameter parameter) {
         if (parameter == null) {
             return "";
         }
@@ -4266,7 +3746,7 @@ public class Node {
         return getParameterLabel(parameter);
     }
 
-    private String getParameterWidthDisplayValue(NodeParameter parameter) {
+    String getParameterWidthDisplayValue(NodeParameter parameter) {
         if (parameter == null) {
             return "";
         }
