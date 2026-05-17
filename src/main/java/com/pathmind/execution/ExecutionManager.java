@@ -89,6 +89,8 @@ public class ExecutionManager {
         final Map<Node, Set<Integer>> joinBarrierInputs;
         final List<Node> graphNodes;
         final List<NodeConnection> graphConnections;
+        final List<Node> functionSourceNodes;
+        final List<NodeConnection> functionSourceConnections;
 
         ChainController(Node startNode, int rootExecutionId) {
             this(startNode, rootExecutionId, List.of(), List.of());
@@ -105,6 +107,8 @@ public class ExecutionManager {
             this.joinBarrierInputs = new ConcurrentHashMap<>();
             this.graphNodes = Collections.synchronizedList(new ArrayList<>(graphNodes == null ? List.of() : graphNodes));
             this.graphConnections = Collections.synchronizedList(new ArrayList<>(graphConnections == null ? List.of() : graphConnections));
+            this.functionSourceNodes = Collections.synchronizedList(new ArrayList<>(graphNodes == null ? List.of() : graphNodes));
+            this.functionSourceConnections = Collections.synchronizedList(new ArrayList<>(graphConnections == null ? List.of() : graphConnections));
         }
     }
 
@@ -1536,13 +1540,13 @@ public class ExecutionManager {
             return CompletableFuture.completedFuture(null);
         }
 
-        List<Node> handlers = resolveFunctionInvocationHandlers(eventName, controller);
+        List<EventHandlerLaunchData> handlers = resolveFunctionInvocationHandlers(eventName, controller);
         if (handlers.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
 
         List<CompletableFuture<Void>> handlerFutures = new ArrayList<>();
-        for (Node handler : handlers) {
+        for (EventHandlerLaunchData handler : handlers) {
             if (cancelRequested || controller.cancelRequested) {
                 break;
             }
@@ -1563,23 +1567,23 @@ public class ExecutionManager {
         return handlersComplete;
     }
 
-    private List<Node> resolveFunctionInvocationHandlers(String eventName, ChainController controller) {
+    private List<EventHandlerLaunchData> resolveFunctionInvocationHandlers(String eventName, ChainController controller) {
         if (eventName == null || eventName.isEmpty()) {
             return List.of();
         }
 
-        List<Node> sourceNodes = controller != null && controller.graphNodes != null && !controller.graphNodes.isEmpty()
-            ? snapshotList(controller.graphNodes)
+        List<Node> sourceNodes = controller != null && controller.functionSourceNodes != null && !controller.functionSourceNodes.isEmpty()
+            ? snapshotList(controller.functionSourceNodes)
             : (workspaceNodes != null && !workspaceNodes.isEmpty() ? workspaceNodes : activeNodes);
-        List<NodeConnection> sourceConnections = controller != null && controller.graphConnections != null && !controller.graphConnections.isEmpty()
-            ? snapshotList(controller.graphConnections)
+        List<NodeConnection> sourceConnections = controller != null && controller.functionSourceConnections != null && !controller.functionSourceConnections.isEmpty()
+            ? snapshotList(controller.functionSourceConnections)
             : (workspaceConnections != null && !workspaceConnections.isEmpty() ? workspaceConnections : activeConnections);
         if (sourceNodes == null || sourceNodes.isEmpty() || sourceConnections == null) {
             return List.of();
         }
 
         List<NodeConnection> filteredConnections = filterConnections(sourceConnections);
-        List<Node> handlers = new ArrayList<>();
+        List<EventHandlerLaunchData> handlers = new ArrayList<>();
         for (Node candidate : sourceNodes) {
             if (candidate == null || candidate.getType() != NodeType.EVENT_FUNCTION) {
                 continue;
@@ -1598,16 +1602,24 @@ public class ExecutionManager {
                 continue;
             }
 
-            mergeActiveGraph(launchData.branchData.nodes, launchData.branchData.connections);
-            mergeControllerGraph(controller, launchData.branchData.nodes, launchData.branchData.connections);
-            handlers.add(launchData.rootNode);
+            handlers.add(new EventHandlerLaunchData(launchData));
         }
 
         return handlers;
     }
 
     private List<Node> resolveFunctionInvocationHandlers(String eventName) {
-        return resolveFunctionInvocationHandlers(eventName, null);
+        List<EventHandlerLaunchData> handlerData = resolveFunctionInvocationHandlers(eventName, null);
+        if (handlerData.isEmpty()) {
+            return List.of();
+        }
+        List<Node> handlers = new ArrayList<>();
+        for (EventHandlerLaunchData handler : handlerData) {
+            if (handler != null && handler.rootNode != null) {
+                handlers.add(handler.rootNode);
+            }
+        }
+        return handlers;
     }
 
     private CompletableFuture<Void> continueFromNode(Node currentNode, ChainController controller, int executionId,
@@ -1774,14 +1786,19 @@ public class ExecutionManager {
         return node.getOutputSocketCount() > 1 ? 1 : 0;
     }
 
-    private CompletableFuture<Void> runEventHandler(Node handler, ChainController controller, int executionId, Node repeatUntilGuard) {
-        if (handler == null) {
+    private CompletableFuture<Void> runEventHandler(EventHandlerLaunchData handlerData, ChainController controller, int executionId, Node repeatUntilGuard) {
+        if (handlerData == null || handlerData.rootNode == null) {
             return CompletableFuture.completedFuture(null);
         }
 
+        Node handler = handlerData.rootNode;
+        mergeControllerGraph(controller, handlerData.branchNodes, handlerData.branchConnections);
         setEventFunctionActive(handler, true);
         return runChain(handler, controller, executionId, repeatUntilGuard)
-            .whenComplete((ignored, throwable) -> setEventFunctionActive(handler, false));
+            .whenComplete((ignored, throwable) -> {
+                setEventFunctionActive(handler, false);
+                removeControllerGraph(controller, handlerData.branchNodes, handlerData.branchConnections);
+            });
     }
 
     private boolean shouldExitRepeatUntilGuard(Node currentNode, ChainController controller, Node repeatUntilGuard) {
@@ -2343,6 +2360,22 @@ public class ExecutionManager {
         }
     }
 
+    private void removeControllerGraph(ChainController controller, List<Node> branchNodes, List<NodeConnection> branchConnections) {
+        if (controller == null) {
+            return;
+        }
+        if (branchConnections != null && !branchConnections.isEmpty()) {
+            synchronized (controller.graphConnections) {
+                controller.graphConnections.removeAll(branchConnections);
+            }
+        }
+        if (branchNodes != null && !branchNodes.isEmpty()) {
+            synchronized (controller.graphNodes) {
+                controller.graphNodes.removeAll(branchNodes);
+            }
+        }
+    }
+
     private static <T> List<T> snapshotList(List<T> source) {
         if (source == null || source.isEmpty()) {
             return List.of();
@@ -2448,6 +2481,18 @@ public class ExecutionManager {
         BranchLaunchData(BranchData branchData, Node rootNode) {
             this.branchData = branchData;
             this.rootNode = rootNode;
+        }
+    }
+
+    private static final class EventHandlerLaunchData {
+        final List<Node> branchNodes;
+        final List<NodeConnection> branchConnections;
+        final Node rootNode;
+
+        EventHandlerLaunchData(BranchLaunchData launchData) {
+            this.branchNodes = launchData.branchData.nodes;
+            this.branchConnections = launchData.branchData.connections;
+            this.rootNode = launchData.rootNode;
         }
     }
 

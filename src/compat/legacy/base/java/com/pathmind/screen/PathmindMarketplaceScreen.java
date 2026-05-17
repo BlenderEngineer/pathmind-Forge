@@ -279,7 +279,7 @@ public class PathmindMarketplaceScreen extends Screen {
                     return;
                 }
 
-                allPresets = results == null ? List.of() : List.copyOf(results);
+                allPresets = dedupePresetsById(results);
                 applyFilters();
             });
         });
@@ -505,10 +505,10 @@ public class PathmindMarketplaceScreen extends Screen {
             searchHovered || (searchField != null && searchField.isFocused()) ? getAccentColor() : UITheme.BORDER_SUBTLE,
             UITheme.PANEL_INNER_BORDER
         );
-        drawSearchIcon(context, searchX + 6, searchY + 5, UITheme.TEXT_SECONDARY);
+        drawSearchIcon(context, searchX + 6, searchY + 3, UITheme.TEXT_SECONDARY);
         if (searchField != null) {
-            searchField.setPosition(searchX + 18, searchY + 5);
-            searchField.setWidth(SEARCH_FIELD_WIDTH - 24);
+            searchField.setPosition(searchX + 22, searchY);
+            searchField.setWidth(SEARCH_FIELD_WIDTH - 28);
             searchField.render(context, mouseX, mouseY, 0.0f);
         }
 
@@ -3869,6 +3869,33 @@ public class PathmindMarketplaceScreen extends Screen {
         return List.copyOf(updated);
     }
 
+    private List<MarketplacePreset> dedupePresetsById(List<MarketplacePreset> source) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        Map<String, MarketplacePreset> presetsById = new LinkedHashMap<>();
+        List<MarketplacePreset> presetsWithoutId = new ArrayList<>();
+        for (MarketplacePreset preset : source) {
+            if (preset == null) {
+                continue;
+            }
+            String presetId = normalizePresetId(preset.getId());
+            if (presetId.isEmpty()) {
+                presetsWithoutId.add(preset);
+            } else {
+                presetsById.putIfAbsent(presetId, preset);
+            }
+        }
+        List<MarketplacePreset> deduped = new ArrayList<>(presetsById.size() + presetsWithoutId.size());
+        deduped.addAll(presetsById.values());
+        deduped.addAll(presetsWithoutId);
+        return List.copyOf(deduped);
+    }
+
+    private String normalizePresetId(String presetId) {
+        return presetId == null ? "" : presetId.trim().toLowerCase(Locale.ROOT);
+    }
+
     private List<MarketplacePreset> upsertPresetList(List<MarketplacePreset> source, MarketplacePreset preset) {
         List<MarketplacePreset> updated = new ArrayList<>(source == null ? List.of() : source);
         boolean replaced = false;
@@ -3883,7 +3910,7 @@ public class PathmindMarketplaceScreen extends Screen {
         if (!replaced) {
             updated.add(0, preset);
         }
-        return List.copyOf(updated);
+        return dedupePresetsById(updated);
     }
 
     private List<MarketplacePreset> updatePresetCountList(List<MarketplacePreset> source, String presetId, int likesDelta, int downloadsDelta) {
@@ -3967,13 +3994,16 @@ public class PathmindMarketplaceScreen extends Screen {
     }
 
     private void drawSearchIcon(DrawContext context, int x, int y, int color) {
-        context.drawHorizontalLine(x + 1, x + 5, y + 5, color);
-        context.drawVerticalLine(x, y + 2, y + 4, color);
-        context.drawVerticalLine(x + 6, y + 2, y + 4, color);
-        context.drawHorizontalLine(x + 2, x + 4, y + 1, color);
-        context.drawHorizontalLine(x + 2, x + 4, y + 9, color);
-        context.drawVerticalLine(x + 7, y + 7, y + 8, color);
-        context.drawHorizontalLine(x + 8, x + 9, y + 9, color);
+        context.drawHorizontalLine(x + 3, x + 6, y + 1, color);
+        context.drawHorizontalLine(x + 3, x + 6, y + 8, color);
+        context.drawVerticalLine(x + 1, y + 3, y + 6, color);
+        context.drawVerticalLine(x + 8, y + 3, y + 6, color);
+        context.drawHorizontalLine(x + 2, x + 2, y + 2, color);
+        context.drawHorizontalLine(x + 7, x + 7, y + 2, color);
+        context.drawHorizontalLine(x + 2, x + 2, y + 7, color);
+        context.drawHorizontalLine(x + 7, x + 7, y + 7, color);
+        context.fill(x + 8, y + 8, x + 10, y + 10, color);
+        context.fill(x + 10, y + 10, x + 12, y + 12, color);
     }
 
     private void drawDropdownChevron(DrawContext context, int x, int y, int color, boolean open) {
@@ -4401,7 +4431,7 @@ public class PathmindMarketplaceScreen extends Screen {
             }
         }
         filtered.sort(sortMode.comparator);
-        presets = List.copyOf(filtered);
+        presets = dedupePresetsById(filtered);
         authorResults = buildAuthorResults(filtered);
         pageIndex = Math.max(0, Math.min(pageIndex, getMaxPageIndex()));
         int currentCount = getCurrentResultCount();

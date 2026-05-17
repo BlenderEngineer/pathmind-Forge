@@ -4489,9 +4489,11 @@ public class Node {
                         yaw = -90.0F;
                         break;
                     case "up":
+                        yaw = client.player.getYaw();
                         pitch = -90.0F;
                         break;
                     case "down":
+                        yaw = client.player.getYaw();
                         pitch = 90.0F;
                         break;
                     default:
