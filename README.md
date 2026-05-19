@@ -3,13 +3,13 @@
 # Pathmind
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21--1.21.11-00AA00?style=for-the-badge&logo=minecraft)](https://minecraft.net)
-[![Fabric](https://img.shields.io/badge/Fabric-0.17.3%2B-CC6E3E?style=for-the-badge&logo=modrinth)](https://fabricmc.net)
+[![Forge](https://img.shields.io/badge/Forge-Neoforge-21.1.228%2B-CC6E3E?style=for-the-badge&logo=modrinth)](https://fabricmc.net)
 [![Java](https://img.shields.io/badge/Java-21+-FF6B6B?style=for-the-badge&logo=openjdk)](https://openjdk.java.net)
 [![License](https://img.shields.io/badge/License-See%20LICENSE-lightgrey?style=for-the-badge)](LICENSE.txt)
 
 A visual node editor for building Minecraft automation workflows.
 
-Created by `soymods`.
+Created by `soymods`, Ported by `BlenderEngineer`
 
 🇺🇸 English · 🇩🇪 Deutsch · 🇪🇸 Español · 🇫🇷 Français · 🇵🇱 Polski · 🇧🇷 Português (BR) · 🇷🇺 Русский
 
@@ -85,8 +85,8 @@ Pathmind also adds main-menu integration so the editor is reachable before joini
 ### Required
 
 - Minecraft `1.21` through `1.21.11`
-- Fabric Loader `0.17.3` or newer
-- Matching Fabric API
+- Forge Loader `Neoforge-21.1.228` or newer
+- Matching Forge API
 - Java `21+`
 
 ### Optional
@@ -96,8 +96,8 @@ Pathmind also adds main-menu integration so the editor is reachable before joini
 
 ### Steps
 
-1. Install Fabric Loader for your target Minecraft version.
-2. Install the matching Fabric API release.
+1. Install Forge Loader for your target Minecraft version.
+2. Install the matching Forge API release.
 3. Download the correct Pathmind jar from Modrinth.
 4. Place the jars in your `mods` folder.
 5. Launch the game and open Pathmind with the configured keybind.
@@ -185,5 +185,5 @@ In short:
 
 ## Acknowledgments
 
-- FabricMC for the modding framework
+- ForgeMC for the modding framework
 - Blender and Scratch for helping inspire the node-based workflow direction
