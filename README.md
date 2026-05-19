@@ -159,7 +159,7 @@ Convenience tasks:
 |-----------|---------|
 | Mod Version | `1.1.4` |
 | Supported Minecraft Versions | `1.21 - 1.21.11` |
-| Fabric Loader | `0.17.3+` |
+| NeoForge Loader | `neoforge-21.1.228+` |
 | Java | `21+` |
 
 ## Release Readiness
