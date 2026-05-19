@@ -5027,8 +5027,7 @@ public class Node {
 
         List<Integer> matches = new ArrayList<>();
         java.util.Set<Integer> seenMatches = new java.util.LinkedHashSet<>();
-        List<String> orderedSelections = new ArrayList<>();
-        orderedSelections.addAll(desiredTradeKeys);
+        List<String> orderedSelections = new ArrayList<>(desiredTradeKeys);
         for (String itemId : desiredItemIds) {
             if (!orderedSelections.contains(itemId)) {
                 orderedSelections.add(itemId);
@@ -6166,9 +6165,7 @@ public class Node {
             if (isJdkType(current)) {
                 break;
             }
-            for (java.lang.reflect.Field field : current.getDeclaredFields()) {
-                fields.add(field);
-            }
+            fields.addAll(Arrays.asList(current.getDeclaredFields()));
             current = current.getSuperclass();
         }
         return fields;
@@ -8460,7 +8457,7 @@ public class Node {
         if (list == null) {
             return Optional.of(0);
         }
-        return Optional.of(Math.max(0, list.getEntries().size()));
+        return Optional.of(list.getEntries().size());
     }
 
     ListSlotEntry resolveListItemSlotEntry(Node listNode, boolean reportErrors, CompletableFuture<Void> future) {
