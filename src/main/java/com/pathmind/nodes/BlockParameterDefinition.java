@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 final class BlockParameterDefinition {
     static NodeBehaviorDefinition create() {
@@ -26,10 +26,10 @@ final class BlockParameterDefinition {
         return values;
     }
 
-    private static Optional<Vec3d> resolvePositionTarget(Node owner, Node parameterNode, RuntimeParameterData data,
+    private static Optional<Vec3> resolvePositionTarget(Node owner, Node parameterNode, RuntimeParameterData data,
                                                          CompletableFuture<Void> future) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.world == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.player == null || client.level == null) {
             return Optional.empty();
         }
         String rawBlock = Node.getParameterString(parameterNode, "Block");
@@ -49,7 +49,7 @@ final class BlockParameterDefinition {
                 data.targetBlockPos = nearest.get();
                 data.targetBlockIds = new ArrayList<>();
             }
-            return Optional.of(Vec3d.ofCenter(nearest.get()));
+            return Optional.of(Vec3.atBottomCenterOf(nearest.get()));
         }
 
         Optional<BlockPos> match = owner.findNearestBlock(client, blocks, range);
@@ -61,16 +61,16 @@ final class BlockParameterDefinition {
             data.targetBlockPos = match.get();
             data.targetBlockIds = new ArrayList<>();
             for (BlockSelection selection : blocks) {
-                Identifier id = selection.getBlockId();
+                ResourceLocation id = selection.getBlockId();
                 if (id != null) {
                     data.targetBlockIds.add(selection.asString());
                 }
             }
         }
-        return Optional.of(Vec3d.ofCenter(match.get()));
+        return Optional.of(Vec3.atBottomCenterOf(match.get()));
     }
 
-    private static BlockPos resolveGotoFallbackTarget(Node owner, Node parameterNode, MinecraftClient client,
+    private static BlockPos resolveGotoFallbackTarget(Node owner, Node parameterNode, Minecraft client,
                                                       CompletableFuture<Void> future) {
         String blockId = owner.getBlockParameterValue(parameterNode);
         BlockPos pos = owner.resolveGotoFallbackTargetFromBlockId(blockId, future);

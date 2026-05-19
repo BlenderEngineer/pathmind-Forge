@@ -287,7 +287,7 @@ public class NodeGraphPersistence {
                 Integer stickyNoteHeight = nodeData.getStickyNoteHeight();
                 if (stickyNoteWidth != null || stickyNoteHeight != null) {
                     node.setStickyNoteSize(
-                        stickyNoteWidth != null ? stickyNoteWidth : node.getWidth(),
+                        stickyNoteWidth != null ? stickyNoteWidth : node.width(),
                         stickyNoteHeight != null ? stickyNoteHeight : node.getHeight()
                     );
                 }
@@ -599,7 +599,7 @@ public class NodeGraphPersistence {
     private static Node findBestSensorHost(List<Node> nodes, Node child) {
         Node bestHost = null;
         double bestScore = Double.MAX_VALUE;
-        int anchorX = child.getX() + Math.min(4, Math.max(0, child.getWidth() - 1));
+        int anchorX = child.getX() + Math.min(4, Math.max(0, child.width() - 1));
         int anchorY = child.getY() + Math.min(4, Math.max(0, child.getHeight() - 1));
         for (Node host : nodes) {
             if (host == null || host == child || !host.hasSensorSlot() || host.getAttachedSensor() != null) {
@@ -627,7 +627,7 @@ public class NodeGraphPersistence {
     private static Node findBestActionHost(List<Node> nodes, Node child) {
         Node bestHost = null;
         double bestScore = Double.MAX_VALUE;
-        int anchorX = child.getX() + Math.min(4, Math.max(0, child.getWidth() - 1));
+        int anchorX = child.getX() + Math.min(4, Math.max(0, child.width() - 1));
         int anchorY = child.getY() + Math.min(4, Math.max(0, child.getHeight() - 1));
         for (Node host : nodes) {
             if (host == null || host == child || !host.hasActionSlot() || host.getAttachedActionNode() != null
@@ -656,7 +656,7 @@ public class NodeGraphPersistence {
     private static ParameterAttachmentCandidate findBestParameterHost(List<Node> nodes, Node child) {
         ParameterAttachmentCandidate best = null;
         double bestScore = Double.MAX_VALUE;
-        int anchorX = child.getX() + Math.min(4, Math.max(0, child.getWidth() - 1));
+        int anchorX = child.getX() + Math.min(4, Math.max(0, child.width() - 1));
         int anchorY = child.getY() + Math.min(4, Math.max(0, child.getHeight() - 1));
         for (Node host : nodes) {
             if (host == null || host == child || !host.hasParameterSlot()) {
@@ -1118,7 +1118,7 @@ public class NodeGraphPersistence {
                 NodeParameter toggle = valueNode.getParameter("Toggle");
                 yield toggle == null ? "false" : toggle.getStringValue();
             }
-            case PARAM_HAND -> getNodeParameterValue(valueNode, "Hand");
+            case PARAM_HAND -> getNodeParameterValue(valueNode, "InteractionHand");
             case PARAM_GUI -> getNodeParameterValue(valueNode, "GUI");
             case PARAM_KEY -> getNodeParameterValue(valueNode, "Key");
             case PARAM_MOUSE_BUTTON -> getNodeParameterValue(valueNode, "MouseButton");

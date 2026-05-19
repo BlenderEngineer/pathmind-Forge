@@ -1,6 +1,9 @@
 # Gradle caches and build outputs
 .gradle/
 .gradle-home/
+.jdk/
+.jdk-home/
+openjdk-*_linux-x64_bin.tar.gz
 build/
 bin/
 run/

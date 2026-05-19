@@ -1,19 +1,20 @@
 package com.pathmind.nodes;
 
 import com.pathmind.util.PlayerInventoryBridge;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
-import net.minecraft.client.gui.screen.ingame.BookEditScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.WritableBookContentComponent;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
-import net.minecraft.text.RawFilteredPair;
-import net.minecraft.util.Hand;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
+import net.minecraft.client.gui.screens.inventory.BookEditScreen;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.WritableBookContent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.protocol.game.ServerboundEditBookPacket;
+import net.minecraft.server.network.Filterable;
+
+import net.minecraft.world.InteractionHand;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -39,7 +40,7 @@ final class NodeTextIoCommandExecutor {
         // Convert to 0-indexed page
         int pageIndex = Math.max(0, pageNumber - 1);
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             sendNodeErrorMessage(client, "Client or player not available");
             future.completeExceptionally(new RuntimeException("Client or player not available"));
@@ -47,13 +48,13 @@ final class NodeTextIoCommandExecutor {
         }
 
         // Check if a book edit screen is open
-        if (!(client.currentScreen instanceof BookEditScreen)) {
+        if (!(client.screen instanceof BookEditScreen)) {
             sendNodeErrorMessage(client, "No book and quill screen is open");
             future.completeExceptionally(new RuntimeException("No book and quill screen is open"));
             return;
         }
 
-        BookEditScreen bookScreen = (BookEditScreen) client.currentScreen;
+        BookEditScreen bookScreen = (BookEditScreen) client.screen;
 
         client.execute(() -> {
             try {
@@ -170,7 +171,7 @@ final class NodeTextIoCommandExecutor {
                         java.util.List<Object> list = (java.util.List<Object>) value;
                         if (list.isEmpty()) {
                             try {
-                                list.add(setPageTextMethod != null ? RawFilteredPair.of("") : "");
+                                list.add(setPageTextMethod != null ? Filterable.passThrough("") : "");
                             } catch (UnsupportedOperationException ignored) {
                                 // replace with mutable list if backing list is immutable
                                 list = null;
@@ -178,7 +179,7 @@ final class NodeTextIoCommandExecutor {
                         }
                         if (list == null) {
                             java.util.List<Object> seeded = new java.util.ArrayList<>();
-                            seeded.add(setPageTextMethod != null ? RawFilteredPair.of("") : "");
+                            seeded.add(setPageTextMethod != null ? Filterable.passThrough("") : "");
                             pagesField.set(bookScreen, seeded);
                             pages = seeded;
                         } else {
@@ -186,14 +187,14 @@ final class NodeTextIoCommandExecutor {
                         }
                     }
                 } else if (pages.isEmpty()) {
-                    pages.add(setPageTextMethod != null ? RawFilteredPair.of("") : "");
+                    pages.add(setPageTextMethod != null ? Filterable.passThrough("") : "");
                 }
 
-                boolean useRawFilteredPairs = false;
+                boolean useFilterables = false;
                 if (!pages.isEmpty()) {
-                    useRawFilteredPairs = !(pages.get(0) instanceof String);
+                    useFilterables = !(pages.get(0) instanceof String);
                 } else if (setPageTextMethod != null) {
-                    useRawFilteredPairs = true;
+                    useFilterables = true;
                 }
                 if (!pages.isEmpty()) {
                     Object first = pages.get(0);
@@ -225,11 +226,11 @@ final class NodeTextIoCommandExecutor {
                             pageCount = pages.size();
                         }
                         if (pages.size() == beforeSize && pageCount == beforeSize) {
-                            pages.add(useRawFilteredPairs ? RawFilteredPair.of("") : "");
+                            pages.add(useFilterables ? Filterable.passThrough("") : "");
                             pageCount = pages.size();
                         }
                     } else {
-                        pages.add(useRawFilteredPairs ? RawFilteredPair.of("") : "");
+                        pages.add(useFilterables ? Filterable.passThrough("") : "");
                         pageCount = pages.size();
                     }
                 }
@@ -261,7 +262,7 @@ final class NodeTextIoCommandExecutor {
                     }
                 }
                 if (!setViaMethod && pageIndex >= 0 && pageIndex < pages.size()) {
-                    pages.set(pageIndex, useRawFilteredPairs ? RawFilteredPair.of(truncatedText) : truncatedText);
+                    pages.set(pageIndex, useFilterables ? Filterable.passThrough(truncatedText) : truncatedText);
                     if (pagesField != null) {
                         java.util.List<Object> copy = new java.util.ArrayList<>(pages);
                         pagesField.set(bookScreen, copy);
@@ -280,9 +281,9 @@ final class NodeTextIoCommandExecutor {
                 for (Object page : pages) {
                     if (page instanceof String) {
                         pageStrings.add((String) page);
-                    } else if (page instanceof RawFilteredPair) {
+                    } else if (page instanceof Filterable) {
                         @SuppressWarnings("unchecked")
-                        RawFilteredPair<String> pair = (RawFilteredPair<String>) page;
+                        Filterable<String> pair = (Filterable<String>) page;
                         pageStrings.add(pair.get(false));
                     } else {
                         pageStrings.add("");
@@ -290,7 +291,7 @@ final class NodeTextIoCommandExecutor {
                 }
 
                 // Update any page-related fields to ensure the UI refreshes
-                TextFieldWidget editBox = null;
+                EditBox editBox = null;
                 for (Field field : bookScreen.getClass().getDeclaredFields()) {
                     String fieldName = field.getName().toLowerCase();
                     if (field.getType() == java.util.List.class) {
@@ -323,24 +324,24 @@ final class NodeTextIoCommandExecutor {
                         field.set(bookScreen, truncatedText);
                         continue;
                     }
-                    if (field.getType() == TextFieldWidget.class
+                    if (field.getType() == EditBox.class
                         && (fieldName.contains("page") || fieldName.contains("text"))) {
                         field.setAccessible(true);
                         Object value = field.get(bookScreen);
-                        if (value instanceof TextFieldWidget) {
-                            editBox = (TextFieldWidget) value;
-                            editBox.setText(truncatedText);
+                        if (value instanceof EditBox) {
+                            editBox = (EditBox) value;
+                            editBox.setValue(truncatedText);
                         }
                     }
                 }
                 if (editBox == null) {
                     for (Field field : bookScreen.getClass().getDeclaredFields()) {
-                        if (field.getType() == TextFieldWidget.class) {
+                        if (field.getType() == EditBox.class) {
                             field.setAccessible(true);
                             Object value = field.get(bookScreen);
-                            if (value instanceof TextFieldWidget) {
-                                editBox = (TextFieldWidget) value;
-                                editBox.setText(truncatedText);
+                            if (value instanceof EditBox) {
+                                editBox = (EditBox) value;
+                                editBox.setValue(truncatedText);
                                 break;
                             }
                         }
@@ -359,14 +360,14 @@ final class NodeTextIoCommandExecutor {
                         }
                     }
                 }
-                if (screenStack != null && screenStack.isOf(Items.WRITABLE_BOOK)) {
+                if (screenStack != null && screenStack.is(Items.WRITABLE_BOOK)) {
                     try {
-                        java.util.List<RawFilteredPair<String>> componentPages = new java.util.ArrayList<>();
+                        java.util.List<Filterable<String>> componentPages = new java.util.ArrayList<>();
                         for (String page : pageStrings) {
-                            componentPages.add(RawFilteredPair.of(page));
+                            componentPages.add(Filterable.passThrough(page));
                         }
-                        screenStack.set(DataComponentTypes.WRITABLE_BOOK_CONTENT,
-                            new WritableBookContentComponent(componentPages));
+                        screenStack.set(DataComponents.WRITABLE_BOOK_CONTENT,
+                            new WritableBookContent(componentPages));
                     } catch (Exception ignored) {
                         // Ignore component sync errors
                     }
@@ -382,58 +383,58 @@ final class NodeTextIoCommandExecutor {
                 }
 
                 // Send book update to server and client so text becomes visible immediately.
-                Hand hand = Hand.MAIN_HAND;
+                InteractionHand hand = InteractionHand.MAIN_HAND;
                 for (Field field : bookScreen.getClass().getDeclaredFields()) {
-                    if (field.getType() == Hand.class) {
+                    if (field.getType() == InteractionHand.class) {
                         field.setAccessible(true);
                         Object value = field.get(bookScreen);
-                        if (value instanceof Hand) {
-                            hand = (Hand) value;
+                        if (value instanceof InteractionHand) {
+                            hand = (InteractionHand) value;
                             break;
                         }
                     }
                 }
-                ItemStack main = client.player.getMainHandStack();
-                ItemStack offhand = client.player.getOffHandStack();
-                if (!main.isOf(Items.WRITABLE_BOOK) && offhand.isOf(Items.WRITABLE_BOOK)) {
-                    hand = Hand.OFF_HAND;
+                ItemStack main = client.player.getMainHandItem();
+                ItemStack offhand = client.player.getOffhandItem();
+                if (!main.is(Items.WRITABLE_BOOK) && offhand.is(Items.WRITABLE_BOOK)) {
+                    hand = InteractionHand.OFF_HAND;
                 }
-                ItemStack heldBook = client.player.getStackInHand(hand);
-                if (heldBook != null && heldBook.isOf(Items.WRITABLE_BOOK)) {
+                ItemStack heldBook = client.player.getItemInHand(hand);
+                if (heldBook != null && heldBook.is(Items.WRITABLE_BOOK)) {
                     // Keep stack component in sync so the UI reflects the change immediately
                     try {
-                        java.util.List<RawFilteredPair<String>> componentPages = new java.util.ArrayList<>();
+                        java.util.List<Filterable<String>> componentPages = new java.util.ArrayList<>();
                         for (String page : pageStrings) {
-                            componentPages.add(RawFilteredPair.of(page));
+                            componentPages.add(Filterable.passThrough(page));
                         }
-                        heldBook.set(DataComponentTypes.WRITABLE_BOOK_CONTENT,
-                            new WritableBookContentComponent(componentPages));
+                        heldBook.set(DataComponents.WRITABLE_BOOK_CONTENT,
+                            new WritableBookContent(componentPages));
                     } catch (Exception ignored) {
                         // Fallback to packet-only update
                     }
 
                     // Tell server (and client) via standard packet (works in dev env)
-                    int slot = hand == Hand.MAIN_HAND
+                    int slot = hand == InteractionHand.MAIN_HAND
                         ? PlayerInventoryBridge.getSelectedSlot(client.player.getInventory())
-                        : PlayerInventory.MAIN_SIZE + Node.PLAYER_ARMOR_SLOT_COUNT;
-                    client.getNetworkHandler().sendPacket(
-                        new BookUpdateC2SPacket(slot, pageStrings, java.util.Optional.empty())
+                        : Inventory.INVENTORY_SIZE + Node.PLAYER_ARMOR_SLOT_COUNT;
+                    client.getConnection().send(
+                        new ServerboundEditBookPacket(slot, pageStrings, java.util.Optional.empty())
                     );
 
                     // Reopen the book screen to force a full UI refresh of the edited text
                     ItemStack reopenStack = screenStack != null ? screenStack : heldBook;
-                    if (reopenStack != null && reopenStack.isOf(Items.WRITABLE_BOOK)) {
-                        WritableBookContentComponent content = reopenStack.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+                    if (reopenStack != null && reopenStack.is(Items.WRITABLE_BOOK)) {
+                        WritableBookContent content = reopenStack.get(DataComponents.WRITABLE_BOOK_CONTENT);
                         if (content == null) {
-                            content = WritableBookContentComponent.DEFAULT;
+                            content = WritableBookContent.EMPTY;
                         }
                         final ItemStack reopenStackFinal = reopenStack;
-                        final WritableBookContentComponent contentFinal = content;
-                        final Hand reopenHand = hand;
-                        final PlayerEntity playerFinal = client.player;
+                        final WritableBookContent contentFinal = content;
+                        final InteractionHand reopenHand = hand;
+                        final Player playerFinal = client.player;
                         client.execute(() -> {
                             if (playerFinal != null) {
-                                net.minecraft.client.gui.screen.Screen bookEditScreen = createBookEditScreen(playerFinal, reopenStackFinal, reopenHand, contentFinal);
+                                net.minecraft.client.gui.screens.Screen bookEditScreen = createBookEditScreen(playerFinal, reopenStackFinal, reopenHand, contentFinal);
                                 if (bookEditScreen != null) {
                                     client.setScreen(bookEditScreen);
                                 }
@@ -481,31 +482,31 @@ final class NodeTextIoCommandExecutor {
                             updatePageMethodFinal.invoke(bookScreenFinal);
                         }
                         // Force edit box text refresh on the next tick
-                        TextFieldWidget delayedEditBox = null;
+                        EditBox delayedEditBox = null;
                         try {
                             Field editBoxField = bookScreenFinal.getClass().getDeclaredField("editBox");
                             editBoxField.setAccessible(true);
                             Object value = editBoxField.get(bookScreenFinal);
-                            if (value instanceof TextFieldWidget) {
-                                delayedEditBox = (TextFieldWidget) value;
+                            if (value instanceof EditBox) {
+                                delayedEditBox = (EditBox) value;
                             }
                         } catch (NoSuchFieldException ignored) {
                             // fall back to scanning fields below
                         }
                         if (delayedEditBox == null) {
                             for (Field field : bookScreenFinal.getClass().getDeclaredFields()) {
-                                if (field.getType() == TextFieldWidget.class) {
+                                if (field.getType() == EditBox.class) {
                                     field.setAccessible(true);
                                     Object value = field.get(bookScreenFinal);
-                                    if (value instanceof TextFieldWidget) {
-                                        delayedEditBox = (TextFieldWidget) value;
+                                    if (value instanceof EditBox) {
+                                        delayedEditBox = (EditBox) value;
                                         break;
                                     }
                                 }
                             }
                         }
                         if (delayedEditBox != null) {
-                            delayedEditBox.setText(truncatedTextFinal);
+                            delayedEditBox.setValue(truncatedTextFinal);
                             bookScreenFinal.setFocused(delayedEditBox);
                         }
                     } catch (Exception ignored) {
@@ -525,13 +526,13 @@ final class NodeTextIoCommandExecutor {
         });
     }
 
-    private static net.minecraft.client.gui.screen.Screen createBookEditScreen(
-            PlayerEntity player, ItemStack stack, Hand hand, WritableBookContentComponent content) {
+    private static net.minecraft.client.gui.screens.Screen createBookEditScreen(
+            Player player, ItemStack stack, InteractionHand hand, WritableBookContent content) {
         try {
             // Try 4-arg constructor (newer MC versions)
             java.lang.reflect.Constructor<?> ctor = BookEditScreen.class.getConstructor(
-                PlayerEntity.class, ItemStack.class, Hand.class, WritableBookContentComponent.class);
-            return (net.minecraft.client.gui.screen.Screen) ctor.newInstance(player, stack, hand, content);
+                Player.class, ItemStack.class, InteractionHand.class, WritableBookContent.class);
+            return (net.minecraft.client.gui.screens.Screen) ctor.newInstance(player, stack, hand, content);
         } catch (NoSuchMethodException ignored) {
             // Fall through to 3-arg constructor
         } catch (ReflectiveOperationException e) {
@@ -540,8 +541,8 @@ final class NodeTextIoCommandExecutor {
         try {
             // Try 3-arg constructor (MC 1.21)
             java.lang.reflect.Constructor<?> ctor = BookEditScreen.class.getConstructor(
-                PlayerEntity.class, ItemStack.class, Hand.class);
-            return (net.minecraft.client.gui.screen.Screen) ctor.newInstance(player, stack, hand);
+                Player.class, ItemStack.class, InteractionHand.class);
+            return (net.minecraft.client.gui.screens.Screen) ctor.newInstance(player, stack, hand);
         } catch (ReflectiveOperationException e) {
             return null;
         }
@@ -552,14 +553,14 @@ final class NodeTextIoCommandExecutor {
             return;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             sendNodeErrorMessage(client, "Client or player not available");
             future.completeExceptionally(new RuntimeException("Client or player not available"));
             return;
         }
 
-        if (!(client.currentScreen instanceof AbstractSignEditScreen)) {
+        if (!(client.screen instanceof AbstractSignEditScreen)) {
             sendNodeErrorMessage(client, "No sign edit screen is open");
             future.completeExceptionally(new RuntimeException("No sign edit screen is open"));
             return;
@@ -575,7 +576,7 @@ final class NodeTextIoCommandExecutor {
         }
 
         final String[] signLines = lines;
-        final AbstractSignEditScreen signScreen = (AbstractSignEditScreen) client.currentScreen;
+        final AbstractSignEditScreen signScreen = (AbstractSignEditScreen) client.screen;
         client.execute(() -> {
             try {
                 Field currentRowField = null;
@@ -660,7 +661,7 @@ final class NodeTextIoCommandExecutor {
         return owner.getBookText();
     }
 
-    private void sendNodeErrorMessage(MinecraftClient client, String message) {
+    private void sendNodeErrorMessage(Minecraft client, String message) {
         owner.sendNodeErrorMessage(client, message);
     }
 }

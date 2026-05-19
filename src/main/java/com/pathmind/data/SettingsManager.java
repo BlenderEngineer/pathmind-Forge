@@ -2,8 +2,9 @@ package com.pathmind.data;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import com.pathmind.util.ModPaths;
+import net.neoforged.fml.ModList;
+import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -169,17 +170,14 @@ public final class SettingsManager {
     }
 
     private static Path getMinecraftDirectory() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.runDirectory != null) {
-            return client.runDirectory.toPath();
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.gameDirectory != null) {
+            return client.gameDirectory.toPath();
         }
         try {
-            FabricLoader loader = FabricLoader.getInstance();
-            if (loader != null) {
-                return loader.getGameDir();
-            }
+            return ModPaths.gameDir();
         } catch (IllegalStateException ignored) {
-            // Unit tests can exercise settings-backed node initialization before Fabric is ready.
+            // Unit tests can exercise settings-backed node initialization before the game is ready.
         }
         return Paths.get(System.getProperty("user.home"), ".minecraft");
     }

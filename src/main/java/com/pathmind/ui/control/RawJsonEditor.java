@@ -3,10 +3,10 @@ package com.pathmind.ui.control;
 import com.pathmind.ui.theme.UIStyleHelper;
 import com.pathmind.ui.theme.UITheme;
 import com.pathmind.util.DrawContextBridge;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayDeque;
@@ -57,7 +57,7 @@ public class RawJsonEditor {
 
     public void setText(String text) {
         this.text = text == null ? "" : text;
-        this.caretPosition = MathHelper.clamp(this.caretPosition, 0, this.text.length());
+        this.caretPosition = Mth.clamp(this.caretPosition, 0, this.text.length());
         clearSelection();
         preferredColumn = -1;
         verticalScroll = 0;
@@ -85,7 +85,7 @@ public class RawJsonEditor {
         this.textChangedListener = textChangedListener;
     }
 
-    public boolean undo(TextRenderer textRenderer) {
+    public boolean undo(Font textRenderer) {
         if (undoStack.isEmpty()) {
             return false;
         }
@@ -94,7 +94,7 @@ public class RawJsonEditor {
         return true;
     }
 
-    public boolean redo(TextRenderer textRenderer) {
+    public boolean redo(Font textRenderer) {
         if (redoStack.isEmpty()) {
             return false;
         }
@@ -103,7 +103,7 @@ public class RawJsonEditor {
         return true;
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         updateCaretBlink();
         UIStyleHelper.drawBeveledPanel(
             context,
@@ -117,10 +117,10 @@ public class RawJsonEditor {
         );
 
         int headerBottom = y + HEADER_HEIGHT;
-        context.drawTextWithShadow(textRenderer, "Raw JSON", x + PANEL_PADDING, y + 9, UITheme.TEXT_PRIMARY);
+        context.drawString(textRenderer, "Raw JSON", x + PANEL_PADDING, y + 9, UITheme.TEXT_PRIMARY);
         if (!statusMessage.isEmpty()) {
             int statusY = headerBottom + 4;
-            context.drawTextWithShadow(textRenderer, statusMessage, x + PANEL_PADDING, statusY, statusColor);
+            context.drawString(textRenderer, statusMessage, x + PANEL_PADDING, statusY, statusColor);
         }
 
         int editorX = x + PANEL_PADDING;
@@ -131,7 +131,7 @@ public class RawJsonEditor {
         DrawContextBridge.drawBorderInLayer(context, editorX, editorY, editorWidth, editorHeight, UITheme.BORDER_HIGHLIGHT);
 
         int gutterWidth = getGutterWidth(textRenderer);
-        int lineHeight = textRenderer.fontHeight + 2;
+        int lineHeight = textRenderer.lineHeight + 2;
         int textAreaX = editorX + gutterWidth;
         int textAreaY = editorY + TEXT_PADDING;
         int textAreaWidth = Math.max(1, editorWidth - gutterWidth - TEXT_PADDING);
@@ -155,13 +155,13 @@ public class RawJsonEditor {
 
             int lineNumberColor = lineIndex == getCaretLine() ? UITheme.TEXT_PRIMARY : UITheme.TEXT_TERTIARY;
             String lineNumber = Integer.toString(lineIndex + 1);
-            int lineNumberX = editorX + gutterWidth - GUTTER_PADDING - textRenderer.getWidth(lineNumber);
-            context.drawText(textRenderer, lineNumber, lineNumberX, lineY, lineNumberColor, false);
+            int lineNumberX = editorX + gutterWidth - GUTTER_PADDING - textRenderer.width(lineNumber);
+            context.drawString(textRenderer, lineNumber, lineNumberX, lineY, lineNumberColor, false);
 
             renderSelectionForLine(context, textRenderer, lineIndex, lineY, textAreaX, lineHeight);
             String lineText = lines.get(lineIndex);
             int textX = textAreaX + TEXT_PADDING - horizontalScroll;
-            context.drawText(textRenderer, lineText, textX, lineY, UITheme.TEXT_PRIMARY, false);
+            context.drawString(textRenderer, lineText, textX, lineY, UITheme.TEXT_PRIMARY, false);
         }
 
         if (caretVisible) {
@@ -170,7 +170,7 @@ public class RawJsonEditor {
                 context,
                 caret[0],
                 caret[1],
-                caret[1] + textRenderer.fontHeight,
+                caret[1] + textRenderer.lineHeight,
                 editorX + editorWidth - TEXT_PADDING,
                 UITheme.TEXT_PRIMARY
             );
@@ -180,7 +180,7 @@ public class RawJsonEditor {
         renderScrollIndicators(context, textRenderer, editorX, editorY, editorWidth, editorHeight, gutterWidth);
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY, int button, TextRenderer textRenderer) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button, Font textRenderer) {
         if (!isInsideEditor(mouseX, mouseY)) {
             draggingSelection = false;
             draggingVerticalScrollbar = false;
@@ -218,7 +218,7 @@ public class RawJsonEditor {
         return true;
     }
 
-    public boolean mouseDragged(double mouseX, double mouseY, int button, TextRenderer textRenderer) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, Font textRenderer) {
         if (button != 0) {
             return false;
         }
@@ -262,30 +262,30 @@ public class RawJsonEditor {
         return false;
     }
 
-    public boolean mouseScrolled(double amount, TextRenderer textRenderer) {
+    public boolean mouseScrolled(double amount, Font textRenderer) {
         if (isShiftDown()) {
-            int horizontalStep = Math.max(12, textRenderer.getWidth("    "));
+            int horizontalStep = Math.max(12, textRenderer.width("    "));
             int maxHorizontalScroll = getMaxHorizontalScroll(textRenderer);
-            horizontalScroll = MathHelper.clamp(horizontalScroll - (int) Math.round(amount * horizontalStep), 0, maxHorizontalScroll);
+            horizontalScroll = Mth.clamp(horizontalScroll - (int) Math.round(amount * horizontalStep), 0, maxHorizontalScroll);
         } else {
-            int lineHeight = textRenderer.fontHeight + 2;
+            int lineHeight = textRenderer.lineHeight + 2;
             int maxScroll = getMaxVerticalScroll(textRenderer);
-            verticalScroll = MathHelper.clamp(verticalScroll - (int) Math.round(amount * lineHeight * 2), 0, maxScroll);
+            verticalScroll = Mth.clamp(verticalScroll - (int) Math.round(amount * lineHeight * 2), 0, maxScroll);
         }
         return true;
     }
 
     private boolean isShiftDown() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.getWindow() == null) {
             return false;
         }
-        long handle = client.getWindow().getHandle();
+        long handle = client.getWindow().getWindow();
         return GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
             || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
     }
 
-    public boolean keyPressed(int keyCode, int modifiers, TextRenderer textRenderer) {
+    public boolean keyPressed(int keyCode, int modifiers, Font textRenderer) {
         boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0 || (modifiers & GLFW.GLFW_MOD_SUPER) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
 
@@ -391,7 +391,7 @@ public class RawJsonEditor {
         }
     }
 
-    public boolean charTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean charTyped(char chr, int modifiers, Font textRenderer) {
         if (chr < 32 || chr == 127) {
             return false;
         }
@@ -399,7 +399,7 @@ public class RawJsonEditor {
         return true;
     }
 
-    private void insertText(String insert, TextRenderer textRenderer) {
+    private void insertText(String insert, Font textRenderer) {
         if (insert == null || insert.isEmpty()) {
             return;
         }
@@ -416,32 +416,32 @@ public class RawJsonEditor {
         resetCaretBlink();
     }
 
-    private void moveCaretHorizontal(int delta, boolean extendSelection, TextRenderer textRenderer) {
-        int target = MathHelper.clamp(caretPosition + delta, 0, text.length());
+    private void moveCaretHorizontal(int delta, boolean extendSelection, Font textRenderer) {
+        int target = Mth.clamp(caretPosition + delta, 0, text.length());
         moveCaretTo(target, extendSelection, textRenderer, false);
     }
 
-    private void moveCaretVertical(int deltaLines, boolean extendSelection, TextRenderer textRenderer) {
+    private void moveCaretVertical(int deltaLines, boolean extendSelection, Font textRenderer) {
         LineColumn current = getLineColumnForIndex(caretPosition);
         if (preferredColumn < 0) {
             preferredColumn = current.column();
         }
         List<String> lines = getLines();
-        int targetLine = MathHelper.clamp(current.line() + deltaLines, 0, Math.max(0, lines.size() - 1));
+        int targetLine = Mth.clamp(current.line() + deltaLines, 0, Math.max(0, lines.size() - 1));
         int targetColumn = Math.min(preferredColumn, lines.get(targetLine).length());
         int targetIndex = getIndexForLineColumn(targetLine, targetColumn);
         moveCaretTo(targetIndex, extendSelection, textRenderer, true);
     }
 
-    private void moveCaretToLineBoundary(boolean start, boolean extendSelection, TextRenderer textRenderer) {
+    private void moveCaretToLineBoundary(boolean start, boolean extendSelection, Font textRenderer) {
         LineColumn current = getLineColumnForIndex(caretPosition);
         int targetIndex = getIndexForLineColumn(current.line(), start ? 0 : getLines().get(current.line()).length());
         moveCaretTo(targetIndex, extendSelection, textRenderer, false);
     }
 
-    private void moveCaretTo(int target, boolean extendSelection, TextRenderer textRenderer, boolean keepPreferredColumn) {
+    private void moveCaretTo(int target, boolean extendSelection, Font textRenderer, boolean keepPreferredColumn) {
         int previousCaret = caretPosition;
-        caretPosition = MathHelper.clamp(target, 0, text.length());
+        caretPosition = Mth.clamp(target, 0, text.length());
         if (extendSelection) {
             if (selectionAnchor < 0) {
                 selectionAnchor = hasSelection() ? previousCaret : previousCaret;
@@ -457,7 +457,7 @@ public class RawJsonEditor {
         resetCaretBlink();
     }
 
-    private void renderSelectionForLine(DrawContext context, TextRenderer textRenderer, int lineIndex, int lineY, int textX, int lineHeight) {
+    private void renderSelectionForLine(GuiGraphics context, Font textRenderer, int lineIndex, int lineY, int textX, int lineHeight) {
         if (!hasSelection()) {
             return;
         }
@@ -471,48 +471,48 @@ public class RawJsonEditor {
         String line = getLines().get(lineIndex);
         int selectionStartColumn = lineIndex == startLc.line() ? startLc.column() : 0;
         int selectionEndColumn = lineIndex == endLc.line() ? endLc.column() : line.length();
-        int selectionLeft = textX + TEXT_PADDING - horizontalScroll + textRenderer.getWidth(line.substring(0, Math.min(selectionStartColumn, line.length())));
-        int selectionRight = textX + TEXT_PADDING - horizontalScroll + textRenderer.getWidth(line.substring(0, Math.min(selectionEndColumn, line.length())));
+        int selectionLeft = textX + TEXT_PADDING - horizontalScroll + textRenderer.width(line.substring(0, Math.min(selectionStartColumn, line.length())));
+        int selectionRight = textX + TEXT_PADDING - horizontalScroll + textRenderer.width(line.substring(0, Math.min(selectionEndColumn, line.length())));
         if (selectionRight > selectionLeft) {
             context.fill(selectionLeft, lineY - 1, selectionRight, lineY + lineHeight - 1, 0x664F86C6);
         }
     }
 
-    private int[] getCaretRenderPosition(TextRenderer textRenderer) {
+    private int[] getCaretRenderPosition(Font textRenderer) {
         LineColumn lc = getLineColumnForIndex(caretPosition);
-        int lineHeight = textRenderer.fontHeight + 2;
+        int lineHeight = textRenderer.lineHeight + 2;
         int gutterWidth = getGutterWidth(textRenderer);
         int editorX = x + PANEL_PADDING;
         int editorY = y + HEADER_HEIGHT + STATUS_HEIGHT;
         int textAreaX = editorX + gutterWidth;
         int textAreaY = editorY + TEXT_PADDING;
         String line = getLines().get(lc.line());
-        int caretX = textAreaX + TEXT_PADDING - horizontalScroll + textRenderer.getWidth(line.substring(0, Math.min(lc.column(), line.length())));
+        int caretX = textAreaX + TEXT_PADDING - horizontalScroll + textRenderer.width(line.substring(0, Math.min(lc.column(), line.length())));
         int caretY = textAreaY - verticalScroll + lc.line() * lineHeight;
         return new int[]{caretX, caretY};
     }
 
-    private int getIndexAtPoint(int mouseX, int mouseY, TextRenderer textRenderer) {
+    private int getIndexAtPoint(int mouseX, int mouseY, Font textRenderer) {
         List<String> lines = getLines();
-        int lineHeight = textRenderer.fontHeight + 2;
+        int lineHeight = textRenderer.lineHeight + 2;
         int gutterWidth = getGutterWidth(textRenderer);
         int editorX = x + PANEL_PADDING;
         int editorY = y + HEADER_HEIGHT + STATUS_HEIGHT;
         int textAreaX = editorX + gutterWidth + TEXT_PADDING;
         int textAreaY = editorY + TEXT_PADDING;
-        int lineIndex = MathHelper.clamp((mouseY - textAreaY + verticalScroll) / lineHeight, 0, Math.max(0, lines.size() - 1));
+        int lineIndex = Mth.clamp((mouseY - textAreaY + verticalScroll) / lineHeight, 0, Math.max(0, lines.size() - 1));
         String line = lines.get(lineIndex);
         int localX = mouseX - textAreaX + horizontalScroll;
         int column = getColumnAtPixel(line, Math.max(0, localX), textRenderer);
         return getIndexForLineColumn(lineIndex, column);
     }
 
-    private int getColumnAtPixel(String line, int pixelX, TextRenderer textRenderer) {
+    private int getColumnAtPixel(String line, int pixelX, Font textRenderer) {
         int bestColumn = 0;
         for (int i = 1; i <= line.length(); i++) {
-            int width = textRenderer.getWidth(line.substring(0, i));
+            int width = textRenderer.width(line.substring(0, i));
             if (width > pixelX) {
-                int prevWidth = textRenderer.getWidth(line.substring(0, i - 1));
+                int prevWidth = textRenderer.width(line.substring(0, i - 1));
                 return pixelX - prevWidth < width - pixelX ? i - 1 : i;
             }
             bestColumn = i;
@@ -520,38 +520,38 @@ public class RawJsonEditor {
         return bestColumn;
     }
 
-    private int getGutterWidth(TextRenderer textRenderer) {
+    private int getGutterWidth(Font textRenderer) {
         int digits = Integer.toString(Math.max(1, getLines().size())).length();
-        return digits * textRenderer.getWidth("0") + GUTTER_PADDING * 2;
+        return digits * textRenderer.width("0") + GUTTER_PADDING * 2;
     }
 
     private int getCaretLine() {
         return getLineColumnForIndex(caretPosition).line();
     }
 
-    private int getMaxVerticalScroll(TextRenderer textRenderer) {
-        int lineHeight = textRenderer.fontHeight + 2;
+    private int getMaxVerticalScroll(Font textRenderer) {
+        int lineHeight = textRenderer.lineHeight + 2;
         int contentHeight = getLines().size() * lineHeight;
         int visibleHeight = Math.max(1, height - HEADER_HEIGHT - STATUS_HEIGHT - PANEL_PADDING - TEXT_PADDING * 2);
         return Math.max(0, contentHeight - visibleHeight);
     }
 
-    private int getMaxLineWidth(TextRenderer textRenderer) {
+    private int getMaxLineWidth(Font textRenderer) {
         int maxWidth = 0;
         for (String line : getLines()) {
-            maxWidth = Math.max(maxWidth, textRenderer.getWidth(line));
+            maxWidth = Math.max(maxWidth, textRenderer.width(line));
         }
         return maxWidth;
     }
 
-    private int getMaxHorizontalScroll(TextRenderer textRenderer) {
+    private int getMaxHorizontalScroll(Font textRenderer) {
         int gutterWidth = getGutterWidth(textRenderer);
         int editorWidth = Math.max(1, width - PANEL_PADDING * 2);
         int visibleWidth = Math.max(1, editorWidth - gutterWidth - TEXT_PADDING * 2 - SCROLLBAR_THICKNESS - SCROLLBAR_MARGIN);
         return Math.max(0, getMaxLineWidth(textRenderer) - visibleWidth);
     }
 
-    private void renderScrollIndicators(DrawContext context, TextRenderer textRenderer, int editorX, int editorY, int editorWidth, int editorHeight, int gutterWidth) {
+    private void renderScrollIndicators(GuiGraphics context, Font textRenderer, int editorX, int editorY, int editorWidth, int editorHeight, int gutterWidth) {
         int trackColor = UITheme.BORDER_DEFAULT;
         int thumbColor = UITheme.TEXT_TERTIARY;
         int activeThumbColor = UITheme.TEXT_SECONDARY;
@@ -593,7 +593,7 @@ public class RawJsonEditor {
         }
     }
 
-    private ScrollbarMetrics getVerticalScrollbar(TextRenderer textRenderer) {
+    private ScrollbarMetrics getVerticalScrollbar(Font textRenderer) {
         int editorX = x + PANEL_PADDING;
         int editorY = y + HEADER_HEIGHT + STATUS_HEIGHT;
         int editorWidth = Math.max(1, width - PANEL_PADDING * 2);
@@ -606,7 +606,7 @@ public class RawJsonEditor {
             return null;
         }
         int visibleHeight = Math.max(1, editorHeight - TEXT_PADDING * 2);
-        int contentHeight = getLines().size() * (textRenderer.fontHeight + 2);
+        int contentHeight = getLines().size() * (textRenderer.lineHeight + 2);
         int thumbLength = Math.max(MIN_SCROLLBAR_THUMB_SIZE, Math.round((visibleHeight / (float) Math.max(visibleHeight, contentHeight)) * trackLength));
         thumbLength = Math.min(trackLength, thumbLength);
         int thumbTravel = Math.max(0, trackLength - thumbLength);
@@ -614,7 +614,7 @@ public class RawJsonEditor {
         return new ScrollbarMetrics(false, trackX, trackY, SCROLLBAR_THICKNESS, trackLength, thumbStart, thumbLength, maxVerticalScroll);
     }
 
-    private ScrollbarMetrics getHorizontalScrollbar(TextRenderer textRenderer) {
+    private ScrollbarMetrics getHorizontalScrollbar(Font textRenderer) {
         int editorX = x + PANEL_PADDING;
         int editorY = y + HEADER_HEIGHT + STATUS_HEIGHT;
         int editorWidth = Math.max(1, width - PANEL_PADDING * 2);
@@ -641,9 +641,9 @@ public class RawJsonEditor {
             verticalScroll = 0;
             return;
         }
-        int clampedThumbStart = MathHelper.clamp(thumbStart, scrollbar.trackY(), scrollbar.trackY() + thumbTravel);
+        int clampedThumbStart = Mth.clamp(thumbStart, scrollbar.trackY(), scrollbar.trackY() + thumbTravel);
         float progress = (clampedThumbStart - scrollbar.trackY()) / (float) thumbTravel;
-        verticalScroll = MathHelper.clamp(Math.round(progress * scrollbar.maxScroll()), 0, scrollbar.maxScroll());
+        verticalScroll = Mth.clamp(Math.round(progress * scrollbar.maxScroll()), 0, scrollbar.maxScroll());
     }
 
     private void setHorizontalScrollFromThumb(int thumbStart, ScrollbarMetrics scrollbar) {
@@ -652,16 +652,16 @@ public class RawJsonEditor {
             horizontalScroll = 0;
             return;
         }
-        int clampedThumbStart = MathHelper.clamp(thumbStart, scrollbar.trackX(), scrollbar.trackX() + thumbTravel);
+        int clampedThumbStart = Mth.clamp(thumbStart, scrollbar.trackX(), scrollbar.trackX() + thumbTravel);
         float progress = (clampedThumbStart - scrollbar.trackX()) / (float) thumbTravel;
-        horizontalScroll = MathHelper.clamp(Math.round(progress * scrollbar.maxScroll()), 0, scrollbar.maxScroll());
+        horizontalScroll = Mth.clamp(Math.round(progress * scrollbar.maxScroll()), 0, scrollbar.maxScroll());
     }
 
     private int editorHeight() {
         return Math.max(1, height - HEADER_HEIGHT - STATUS_HEIGHT - PANEL_PADDING);
     }
 
-    private void ensureCaretVisible(TextRenderer textRenderer) {
+    private void ensureCaretVisible(Font textRenderer) {
         int[] caret = getCaretRenderPosition(textRenderer);
         int editorX = x + PANEL_PADDING;
         int editorY = y + HEADER_HEIGHT + STATUS_HEIGHT;
@@ -669,16 +669,16 @@ public class RawJsonEditor {
         int editorHeight = Math.max(1, height - HEADER_HEIGHT - STATUS_HEIGHT - PANEL_PADDING);
         if (caret[1] < editorY + TEXT_PADDING) {
             verticalScroll = Math.max(0, verticalScroll - ((editorY + TEXT_PADDING) - caret[1]));
-        } else if (caret[1] + textRenderer.fontHeight > editorY + editorHeight - TEXT_PADDING) {
-            verticalScroll += caret[1] + textRenderer.fontHeight - (editorY + editorHeight - TEXT_PADDING);
+        } else if (caret[1] + textRenderer.lineHeight > editorY + editorHeight - TEXT_PADDING) {
+            verticalScroll += caret[1] + textRenderer.lineHeight - (editorY + editorHeight - TEXT_PADDING);
         }
         if (caret[0] < editorX + getGutterWidth(textRenderer) + TEXT_PADDING) {
             horizontalScroll = Math.max(0, horizontalScroll - ((editorX + getGutterWidth(textRenderer) + TEXT_PADDING) - caret[0]));
         } else if (caret[0] > editorX + editorWidth - TEXT_PADDING) {
             horizontalScroll += caret[0] - (editorX + editorWidth - TEXT_PADDING);
         }
-        verticalScroll = MathHelper.clamp(verticalScroll, 0, getMaxVerticalScroll(textRenderer));
-        horizontalScroll = MathHelper.clamp(horizontalScroll, 0, getMaxHorizontalScroll(textRenderer));
+        verticalScroll = Mth.clamp(verticalScroll, 0, getMaxVerticalScroll(textRenderer));
+        horizontalScroll = Mth.clamp(horizontalScroll, 0, getMaxHorizontalScroll(textRenderer));
     }
 
     private boolean isInsideEditor(double mouseX, double mouseY) {
@@ -703,7 +703,7 @@ public class RawJsonEditor {
     }
 
     private LineColumn getLineColumnForIndex(int index) {
-        int clampedIndex = MathHelper.clamp(index, 0, text.length());
+        int clampedIndex = Mth.clamp(index, 0, text.length());
         int line = 0;
         int column = 0;
         for (int i = 0; i < clampedIndex; i++) {
@@ -719,7 +719,7 @@ public class RawJsonEditor {
 
     private int getIndexForLineColumn(int targetLine, int targetColumn) {
         List<String> lines = getLines();
-        int line = MathHelper.clamp(targetLine, 0, Math.max(0, lines.size() - 1));
+        int line = Mth.clamp(targetLine, 0, Math.max(0, lines.size() - 1));
         int column = Math.max(0, targetColumn);
         int index = 0;
         for (int i = 0; i < line; i++) {
@@ -770,16 +770,16 @@ public class RawJsonEditor {
         }
         int start = Math.min(selectionStart, selectionEnd);
         int end = Math.max(selectionStart, selectionEnd);
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(text.substring(start, end));
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            client.keyboardHandler.setClipboard(text.substring(start, end));
         }
     }
 
     private String getClipboardText() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            String clipboard = client.keyboard.getClipboard();
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            String clipboard = client.keyboardHandler.getClipboard();
             return clipboard == null ? "" : clipboard;
         }
         return "";
@@ -825,12 +825,12 @@ public class RawJsonEditor {
         );
     }
 
-    private void restoreState(EditorState state, TextRenderer textRenderer) {
+    private void restoreState(EditorState state, Font textRenderer) {
         if (state == null) {
             return;
         }
         text = state.text();
-        caretPosition = MathHelper.clamp(state.caretPosition(), 0, text.length());
+        caretPosition = Mth.clamp(state.caretPosition(), 0, text.length());
         selectionStart = state.selectionStart();
         selectionEnd = state.selectionEnd();
         selectionAnchor = state.selectionAnchor();

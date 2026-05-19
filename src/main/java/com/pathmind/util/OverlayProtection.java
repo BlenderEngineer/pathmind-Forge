@@ -1,7 +1,7 @@
 package com.pathmind.util;
 
 import com.pathmind.screen.PathmindScreens;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * Utility class to prevent other mods' overlays from rendering when Pathmind GUI is open.
@@ -33,8 +33,8 @@ public class OverlayProtection {
      * Should be called during mod initialization.
      *
      * Note: The actual protection is implemented via multiple mixins:
-     * - InGameHudMixin: Blocks HUD rendering during gameplay
-     * - DrawContextMixin: Blocks draw calls from other mods during screen rendering
+     * - GuiMixin: Blocks HUD rendering during gameplay
+     * - GuiGraphicsMixin: Blocks draw calls from other mods during screen rendering
      * - GameRendererMixin: Provides injection points for additional blocking
      */
     public static void register() {
@@ -49,7 +49,7 @@ public class OverlayProtection {
 
     /**
      * Marks that Pathmind is currently rendering.
-     * This prevents the DrawContextMixin from blocking Pathmind's own draw calls.
+     * This prevents the GuiGraphicsMixin from blocking Pathmind's own draw calls.
      *
      * @param rendering true if Pathmind is rendering, false otherwise
      */
@@ -70,9 +70,9 @@ public class OverlayProtection {
      * @return true if the Pathmind GUI is currently open
      */
     public static boolean isProtectionActive() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client.currentScreen != null
-            && PathmindScreens.isVisualEditorScreen(client.currentScreen);
+        Minecraft client = Minecraft.getInstance();
+        return client.screen != null
+            && PathmindScreens.isVisualEditorScreen(client.screen);
     }
 
     /**

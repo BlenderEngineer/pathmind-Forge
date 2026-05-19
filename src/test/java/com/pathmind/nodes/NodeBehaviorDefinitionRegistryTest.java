@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -101,9 +101,9 @@ class NodeBehaviorDefinitionRegistryTest {
         RuntimeParameterData data = new RuntimeParameterData();
         NodeBehaviorDefinition definition = NodeBehaviorDefinitionRegistry.get(NodeType.PARAM_COORDINATE);
 
-        Optional<Vec3d> resolved = definition.resolvePositionTarget(owner, coordinate, data, null);
+        Optional<Vec3> resolved = definition.resolvePositionTarget(owner, coordinate, data, null);
 
-        assertEquals(Optional.of(Vec3d.ofCenter(new BlockPos(10, 64, -3))), resolved);
+        assertEquals(Optional.of(new Vec3(10.5, 64.0, -2.5)), resolved);
         assertEquals(new BlockPos(10, 64, -3), data.targetBlockPos);
         assertEquals(Optional.of("10 64 -3"), definition.resolveComparableString(owner, coordinate));
     }
@@ -118,11 +118,11 @@ class NodeBehaviorDefinitionRegistryTest {
         schematic.getParameter("Z").setStringValue("3");
         RuntimeParameterData data = new RuntimeParameterData();
 
-        Optional<Vec3d> resolved = NodeBehaviorDefinitionRegistry
+        Optional<Vec3> resolved = NodeBehaviorDefinitionRegistry
             .get(NodeType.PARAM_SCHEMATIC)
             .resolvePositionTarget(owner, schematic, data, null);
 
-        assertEquals(Optional.of(Vec3d.ofCenter(new BlockPos(1, 2, 3))), resolved);
+        assertEquals(Optional.of(new Vec3(1.5, 2.0, 3.5)), resolved);
         assertEquals(new BlockPos(1, 2, 3), data.targetBlockPos);
         assertEquals("house", data.schematicName);
     }
@@ -137,11 +137,11 @@ class NodeBehaviorDefinitionRegistryTest {
         placeTarget.getParameter("Z").setStringValue("6");
         RuntimeParameterData data = new RuntimeParameterData();
 
-        Optional<Vec3d> resolved = NodeBehaviorDefinitionRegistry
+        Optional<Vec3> resolved = NodeBehaviorDefinitionRegistry
             .get(NodeType.PARAM_PLACE_TARGET)
             .resolvePositionTarget(owner, placeTarget, data, null);
 
-        assertEquals(Optional.of(Vec3d.ofCenter(new BlockPos(4, 5, 6))), resolved);
+        assertEquals(Optional.of(new Vec3(4.5, 5.0, 6.5)), resolved);
         assertEquals(new BlockPos(4, 5, 6), data.targetBlockPos);
         assertEquals("stone", data.targetBlockId);
     }

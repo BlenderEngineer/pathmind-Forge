@@ -5,9 +5,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.pathmind.PathmindMod;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Util;
+import com.pathmind.util.ModPaths;
+import net.neoforged.fml.ModList;
+import net.minecraft.client.Minecraft;
+import net.minecraft.Util;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -386,7 +387,7 @@ public final class MarketplaceAuthManager {
             return;
         }
         try {
-            Util.getOperatingSystem().open(url);
+            Util.getPlatform().openUri(uri);
             return;
         } catch (Exception ignored) {
         }
@@ -651,11 +652,11 @@ public final class MarketplaceAuthManager {
     }
 
     private static Path getBaseDirectory() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.runDirectory != null) {
-            return client.runDirectory.toPath().resolve(BASE_DIRECTORY_NAME);
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.gameDirectory != null) {
+            return client.gameDirectory.toPath().resolve(BASE_DIRECTORY_NAME);
         }
-        return FabricLoader.getInstance().getGameDir().resolve(BASE_DIRECTORY_NAME);
+        return ModPaths.gameDir().resolve(BASE_DIRECTORY_NAME);
     }
 
     private static final class PendingLogin {

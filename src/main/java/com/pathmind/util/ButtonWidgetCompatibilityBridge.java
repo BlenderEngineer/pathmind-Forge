@@ -1,6 +1,6 @@
 package com.pathmind.util;
 
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.components.AbstractButton;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 /**
- * Bridges ButtonWidget press helpers across 1.21.x.
+ * Bridges AbstractButton press helpers across 1.21.x.
  */
 public final class ButtonWidgetCompatibilityBridge {
     private static final Class<?> ABSTRACT_INPUT_CLASS = resolveClass("net.minecraft.client.input.AbstractInput");
@@ -20,7 +20,7 @@ public final class ButtonWidgetCompatibilityBridge {
     private ButtonWidgetCompatibilityBridge() {
     }
 
-    public static void press(ButtonWidget button) {
+    public static void press(AbstractButton button) {
         if (button == null) {
             return;
         }
@@ -51,7 +51,7 @@ public final class ButtonWidgetCompatibilityBridge {
 
     private static Method resolveMethod() {
         try {
-            Method method = ButtonWidget.class.getMethod("onPress");
+            Method method = AbstractButton.class.getMethod("onPress");
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException ignored) {
@@ -64,7 +64,7 @@ public final class ButtonWidgetCompatibilityBridge {
             return null;
         }
         try {
-            Method method = ButtonWidget.class.getMethod("onPress", inputClass);
+            Method method = AbstractButton.class.getMethod("onPress", inputClass);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException ignored) {
@@ -74,7 +74,7 @@ public final class ButtonWidgetCompatibilityBridge {
 
     private static Method resolveLegacyPressMethod() {
         try {
-            Method method = ButtonWidget.class.getMethod("method_25306");
+            Method method = AbstractButton.class.getMethod("method_25306");
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException ignored) {

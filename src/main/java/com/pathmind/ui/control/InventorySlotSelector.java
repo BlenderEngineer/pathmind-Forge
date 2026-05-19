@@ -7,11 +7,11 @@ import com.pathmind.ui.theme.UIStyleHelper;
 import com.pathmind.ui.theme.UITheme;
 import com.pathmind.util.DrawContextBridge;
 import com.pathmind.util.DropdownLayoutHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +101,7 @@ public class InventorySlotSelector {
         return mode.id;
     }
 
-    public int render(DrawContext context, TextRenderer textRenderer, int x, int y, int width, int mouseX, int mouseY, float alpha) {
+    public int render(GuiGraphics context, Font textRenderer, int x, int y, int width, int mouseX, int mouseY, float alpha) {
         this.renderX = x;
         this.renderY = y;
         this.renderWidth = width;
@@ -109,14 +109,14 @@ public class InventorySlotSelector {
         int sectionY = y;
 
         // Mode label
-        context.drawTextWithShadow(
+        context.drawString(
             textRenderer,
-            Text.literal("Interface Mode:"),
+            Component.literal("Interface Mode:"),
             x,
             sectionY,
             applyAlpha(UITheme.TEXT_PRIMARY, alpha)
         );
-        sectionY += textRenderer.fontHeight + 4;
+        sectionY += textRenderer.lineHeight + 4;
 
         // Mode button
         buttonX = x;
@@ -132,9 +132,9 @@ public class InventorySlotSelector {
         int textColor = AnimationHelper.lerpColor(UITheme.TEXT_PRIMARY, UITheme.TEXT_HEADER, hoverProgress);
         context.fill(buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, applyAlpha(buttonBg, alpha));
         DrawContextBridge.drawBorder(context, buttonX, buttonY, buttonWidth, buttonHeight, applyAlpha(borderColor, alpha));
-        context.drawTextWithShadow(
+        context.drawString(
             textRenderer,
-            Text.literal(mode.displayName),
+            Component.literal(mode.displayName),
             buttonX + MODE_BUTTON_TEXT_PADDING,
             buttonY + 6,
             applyAlpha(textColor, alpha)
@@ -149,14 +149,14 @@ public class InventorySlotSelector {
         if (selectedSlotIsPlayerSection != null) {
             selectionText += selectedSlotIsPlayerSection ? " (Inventory)" : " (GUI)";
         }
-        context.drawTextWithShadow(
+        context.drawString(
             textRenderer,
-            Text.literal(selectionText),
+            Component.literal(selectionText),
             x,
             sectionY,
             applyAlpha(UITheme.TEXT_SECONDARY, alpha)
         );
-        sectionY += textRenderer.fontHeight;
+        sectionY += textRenderer.lineHeight;
 
         if (dropdownOpen || dropdownAnimation.getValue() > 0.001f || dropdownAnimation.isAnimating()) {
             renderDropdown(context, textRenderer, mouseX, mouseY, alpha);
@@ -174,7 +174,7 @@ public class InventorySlotSelector {
         return header + gridHeight + footer;
     }
 
-    private int renderGrid(DrawContext context, TextRenderer textRenderer, int top, int width, int mouseX, int mouseY, float alpha) {
+    private int renderGrid(GuiGraphics context, Font textRenderer, int top, int width, int mouseX, int mouseY, float alpha) {
         InventoryLayout layout = mode.getLayout();
         int backgroundWidth = Math.max(width, layout.width + GRID_PADDING * 2);
         int backgroundHeight = layout.height + GRID_PADDING * 2;
@@ -216,10 +216,10 @@ public class InventorySlotSelector {
             );
 
             String label = String.valueOf(position.slotId);
-            int textWidth = textRenderer.getWidth(label);
+            int textWidth = textRenderer.width(label);
             int textX = slotX + (SLOT_SIZE - textWidth) / 2;
             int textY = slotY + 4;
-            context.drawTextWithShadow(textRenderer, Text.literal(label), textX, textY, applyAlpha(UITheme.TEXT_PRIMARY, alpha));
+            context.drawString(textRenderer, Component.literal(label), textX, textY, applyAlpha(UITheme.TEXT_PRIMARY, alpha));
         }
 
         return backgroundHeight;
@@ -235,7 +235,7 @@ public class InventorySlotSelector {
         return selectedSlotIsPlayerSection == playerSection;
     }
 
-    private void renderDropdown(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY, float alpha) {
+    private void renderDropdown(GuiGraphics context, Font textRenderer, int mouseX, int mouseY, float alpha) {
         dropdownAnimation.animateTo(dropdownOpen ? 1f : 0f, UITheme.TRANSITION_ANIM_MS, AnimationHelper::easeOutQuad);
         dropdownAnimation.tick();
         float animProgress = AnimationHelper.easeOutQuad(dropdownAnimation.getValue());
@@ -246,7 +246,7 @@ public class InventorySlotSelector {
         int dropdownY = buttonY + buttonHeight;
         int dropdownWidth = buttonWidth;
         int totalOptions = InventoryGuiMode.values().length;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             totalOptions,
             DROPDOWN_OPTION_HEIGHT,
@@ -262,7 +262,7 @@ public class InventorySlotSelector {
         context.enableScissor(dropdownX, dropdownY, dropdownX + dropdownWidth, dropdownY + animatedHeight + 1);
         context.fill(dropdownX, dropdownY, dropdownX + dropdownWidth, dropdownY + dropdownHeight, applyAlpha(UITheme.BACKGROUND_SIDEBAR, alpha));
         DrawContextBridge.drawBorder(context, dropdownX, dropdownY, dropdownWidth, dropdownHeight, applyAlpha(UITheme.BORDER_DEFAULT, alpha));
-        context.drawHorizontalLine(dropdownX, dropdownX + dropdownWidth, dropdownY + dropdownHeight, applyAlpha(UITheme.BORDER_DEFAULT, alpha));
+        context.hLine(dropdownX, dropdownX + dropdownWidth, dropdownY + dropdownHeight, applyAlpha(UITheme.BORDER_DEFAULT, alpha));
 
         dropdownHoverIndex = -1;
         InventoryGuiMode[] modes = InventoryGuiMode.values();
@@ -283,9 +283,9 @@ public class InventorySlotSelector {
                 bg = UITheme.BACKGROUND_TERTIARY;
             }
             context.fill(dropdownX + 1, optionTop, dropdownX + dropdownWidth - 1, optionTop + DROPDOWN_OPTION_HEIGHT, applyAlpha(bg, alpha));
-            context.drawTextWithShadow(
+            context.drawString(
                 textRenderer,
-                Text.literal(option.displayName),
+                Component.literal(option.displayName),
                 dropdownX + MODE_BUTTON_TEXT_PADDING,
                 optionTop + 5,
                 applyAlpha(UITheme.TEXT_PRIMARY, alpha)
@@ -321,7 +321,7 @@ public class InventorySlotSelector {
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
-        int outA = MathHelper.clamp(Math.round(a * alpha), 0, 255);
+        int outA = Mth.clamp(Math.round(a * alpha), 0, 255);
         return (outA << 24) | (r << 16) | (g << 8) | b;
     }
 
@@ -362,7 +362,7 @@ public class InventorySlotSelector {
         int dropdownY = buttonY + buttonHeight;
         int dropdownWidth = buttonWidth;
         int totalOptions = InventoryGuiMode.values().length;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             totalOptions,
             DROPDOWN_OPTION_HEIGHT,
@@ -429,7 +429,7 @@ public class InventorySlotSelector {
         int dropdownY = buttonY + buttonHeight;
         int dropdownWidth = buttonWidth;
         int totalOptions = InventoryGuiMode.values().length;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             totalOptions,
             DROPDOWN_OPTION_HEIGHT,
@@ -572,7 +572,7 @@ public class InventorySlotSelector {
         }
     }
 
-    private static void addPlayerInventoryGrid(SlotLayoutBuilder builder, int startX, int startY) {
+    private static void addInventoryGrid(SlotLayoutBuilder builder, int startX, int startY) {
         builder.addGrid(9, 9, 3, startX, startY, SlotCategory.PLAYER);
     }
 
@@ -596,7 +596,7 @@ public class InventorySlotSelector {
         CARTOGRAPHY_TABLE("cartography_table", "Cartography Table", InventorySlotSelector::buildCartographyLayout),
         BARREL("barrel", "Barrel / Single Chest", InventorySlotSelector::buildSingleChestLayout),
         CHEST_DOUBLE("double_chest", "Double Chest", InventorySlotSelector::buildDoubleChestLayout),
-        SHULKER_BOX("shulker_box", "Shulker Box", InventorySlotSelector::buildSingleChestLayout),
+        SHULKER_BOX("shulker_box", "Shulker AABB", InventorySlotSelector::buildSingleChestLayout),
         HOPPER("hopper", "Hopper", InventorySlotSelector::buildHopperLayout),
         DISPENSER("dispenser", "Dispenser / Dropper", InventorySlotSelector::buildDispenserLayout),
         BEACON("beacon", "Beacon", InventorySlotSelector::buildBeaconLayout);
@@ -671,7 +671,7 @@ public class InventorySlotSelector {
         builder.addSlot(0, columnSpacing * 3 + SLOT_SPACING, columnSpacing, SlotCategory.RESULT);
 
         int mainStartY = columnSpacing * 3 + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -686,7 +686,7 @@ public class InventorySlotSelector {
         builder.addSlot(2, columnSpacing * 2, columnSpacing / 2, SlotCategory.OUTPUT);
 
         int mainStartY = columnSpacing * 2 + 10;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -698,7 +698,7 @@ public class InventorySlotSelector {
         builder.addSlot(1, SLOT_SIZE + SLOT_SPACING, 0, SlotCategory.INPUT);
 
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -713,7 +713,7 @@ public class InventorySlotSelector {
         builder.addRow(0, 3, columnSpacing, columnSpacing * 2, SlotCategory.CONTAINER); // bottles
 
         int mainStartY = columnSpacing * 3 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -728,7 +728,7 @@ public class InventorySlotSelector {
         builder.addSlot(2, columnSpacing * 3, 0, SlotCategory.RESULT);
 
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -742,7 +742,7 @@ public class InventorySlotSelector {
         builder.addSlot(2, columnSpacing * 3, 0, SlotCategory.RESULT);
 
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -754,7 +754,7 @@ public class InventorySlotSelector {
         builder.addSlot(1, (SLOT_SIZE + SLOT_SPACING) * 2, 0, SlotCategory.RESULT);
 
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -769,7 +769,7 @@ public class InventorySlotSelector {
         builder.addSlot(3, columnSpacing * 3, columnSpacing, SlotCategory.RESULT);
 
         int mainStartY = columnSpacing * 3 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -784,7 +784,7 @@ public class InventorySlotSelector {
         builder.addSlot(3, columnSpacing * 3, columnSpacing / 2, SlotCategory.RESULT);
 
         int mainStartY = columnSpacing * 2 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -798,7 +798,7 @@ public class InventorySlotSelector {
         builder.addSlot(2, columnSpacing * 3, 0, SlotCategory.RESULT);
 
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + columnSpacing * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -809,7 +809,7 @@ public class InventorySlotSelector {
         builder.addGrid(0, 9, 3, 0, 0, SlotCategory.CONTAINER);
 
         int mainStartY = (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -820,7 +820,7 @@ public class InventorySlotSelector {
         builder.addGrid(0, 9, 6, 0, 0, SlotCategory.CONTAINER);
 
         int mainStartY = (SLOT_SIZE + SLOT_SPACING) * 6 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -830,7 +830,7 @@ public class InventorySlotSelector {
         SlotLayoutBuilder builder = new SlotLayoutBuilder();
         builder.addRow(0, 5, 0, 0, SlotCategory.CONTAINER);
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -840,7 +840,7 @@ public class InventorySlotSelector {
         SlotLayoutBuilder builder = new SlotLayoutBuilder();
         builder.addGrid(0, 3, 3, 0, 0, SlotCategory.CONTAINER);
         int mainStartY = (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();
@@ -850,7 +850,7 @@ public class InventorySlotSelector {
         SlotLayoutBuilder builder = new SlotLayoutBuilder();
         builder.addSlot(0, 0, 0, SlotCategory.SPECIAL);
         int mainStartY = SLOT_SIZE + SLOT_SPACING * 2;
-        addPlayerInventoryGrid(builder, 0, mainStartY);
+        addInventoryGrid(builder, 0, mainStartY);
         int hotbarY = mainStartY + (SLOT_SIZE + SLOT_SPACING) * 3 + SLOT_SPACING;
         addPlayerHotbarRow(builder, 0, hotbarY);
         return builder.build();

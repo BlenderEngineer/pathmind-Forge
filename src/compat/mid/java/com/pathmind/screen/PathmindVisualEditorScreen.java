@@ -424,46 +424,46 @@ public class PathmindVisualEditorScreen extends Screen {
         if (createPresetField == null) {
             createPresetField = new PathmindTextField(this.textRenderer, 0, 0, 200, 20, Text.translatable("pathmind.field.presetName"));
             createPresetField.setMaxLength(64);
-            createPresetField.setDrawsBackground(false);
+            createPresetField.setBordered(false);
             createPresetField.setVisible(false);
             createPresetField.setEditable(false);
-            createPresetField.setEditableColor(UITheme.TEXT_PRIMARY);
-            createPresetField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            createPresetField.setChangedListener(value -> clearCreatePresetStatus());
-            this.addSelectableChild(createPresetField);
+            createPresetField.setTextColor(UITheme.TEXT_PRIMARY);
+            createPresetField.setTextColor(UITheme.TEXT_TERTIARY);
+            createPresetField.setResponder(value -> clearCreatePresetStatus());
+            this.addRenderableWidget(createPresetField);
         }
 
         if (renamePresetField == null) {
             renamePresetField = new PathmindTextField(this.textRenderer, 0, 0, 200, 20, Text.translatable("pathmind.field.newPresetName"));
             renamePresetField.setMaxLength(64);
-            renamePresetField.setDrawsBackground(false);
+            renamePresetField.setBordered(false);
             renamePresetField.setVisible(false);
             renamePresetField.setEditable(false);
-            renamePresetField.setEditableColor(UITheme.TEXT_PRIMARY);
-            renamePresetField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            renamePresetField.setChangedListener(value -> clearRenamePresetStatus());
-            this.addSelectableChild(renamePresetField);
+            renamePresetField.setTextColor(UITheme.TEXT_PRIMARY);
+            renamePresetField.setTextColor(UITheme.TEXT_TERTIARY);
+            renamePresetField.setResponder(value -> clearRenamePresetStatus());
+            this.addRenderableWidget(renamePresetField);
         }
         if (inlinePresetRenameField == null) {
             inlinePresetRenameField = new PathmindTextField(this.textRenderer, 0, 0, 200, 20, Text.translatable("pathmind.field.newPresetName"));
             inlinePresetRenameField.setMaxLength(64);
-            inlinePresetRenameField.setDrawsBackground(false);
+            inlinePresetRenameField.setBordered(false);
             inlinePresetRenameField.setVisible(false);
             inlinePresetRenameField.setEditable(false);
-            inlinePresetRenameField.setEditableColor(UITheme.TEXT_PRIMARY);
-            inlinePresetRenameField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            this.addSelectableChild(inlinePresetRenameField);
+            inlinePresetRenameField.setTextColor(UITheme.TEXT_PRIMARY);
+            inlinePresetRenameField.setTextColor(UITheme.TEXT_TERTIARY);
+            this.addRenderableWidget(inlinePresetRenameField);
         }
         if (nodeDelayField == null) {
             nodeDelayField = new PathmindTextField(this.textRenderer, 0, 0, 120, 20, Text.literal("Delay"));
             nodeDelayField.setMaxLength(6);
-            nodeDelayField.setDrawsBackground(false);
+            nodeDelayField.setBordered(false);
             nodeDelayField.setVisible(false);
             nodeDelayField.setEditable(false);
-            nodeDelayField.setEditableColor(UITheme.TEXT_HEADER);
-            nodeDelayField.setUneditableColor(UITheme.TEXT_HEADER);
-            nodeDelayField.setTextPredicate(value -> value == null || value.isEmpty() || value.chars().allMatch(Character::isDigit));
-            nodeDelayField.setChangedListener(value -> {
+            nodeDelayField.setTextColor(UITheme.TEXT_HEADER);
+            nodeDelayField.setTextColor(UITheme.TEXT_HEADER);
+            nodeDelayField.setFilter(value -> value == null || value.isEmpty() || value.chars().allMatch(Character::isDigit));
+            nodeDelayField.setResponder(value -> {
                 Integer parsed = parseDelayFieldValue(value);
                 if (parsed != null && parsed != nodeDelayMs) {
                     nodeDelayMs = parsed;
@@ -471,18 +471,18 @@ public class PathmindVisualEditorScreen extends Screen {
                     SettingsManager.save(currentSettings);
                 }
             });
-            this.addSelectableChild(nodeDelayField);
+            this.addRenderableWidget(nodeDelayField);
         }
         if (createListRadiusField == null) {
             createListRadiusField = new PathmindTextField(this.textRenderer, 0, 0, 120, 20, Text.literal("Radius"));
             createListRadiusField.setMaxLength(6);
-            createListRadiusField.setDrawsBackground(false);
+            createListRadiusField.setBordered(false);
             createListRadiusField.setVisible(false);
             createListRadiusField.setEditable(false);
-            createListRadiusField.setEditableColor(UITheme.TEXT_HEADER);
-            createListRadiusField.setUneditableColor(UITheme.TEXT_HEADER);
-            createListRadiusField.setTextPredicate(value -> value == null || value.isEmpty() || value.chars().allMatch(Character::isDigit));
-            createListRadiusField.setChangedListener(value -> {
+            createListRadiusField.setTextColor(UITheme.TEXT_HEADER);
+            createListRadiusField.setTextColor(UITheme.TEXT_HEADER);
+            createListRadiusField.setFilter(value -> value == null || value.isEmpty() || value.chars().allMatch(Character::isDigit));
+            createListRadiusField.setResponder(value -> {
                 Node targetNode = getEffectiveSettingsTargetNode();
                 Integer parsed = parseCreateListRadiusFieldValue(value);
                 if (parsed != null && (targetNode == null || targetNode.getType() == NodeType.CREATE_LIST)
@@ -490,32 +490,32 @@ public class PathmindVisualEditorScreen extends Screen {
                     setCreateListSettingsRadius(targetNode, parsed);
                 }
             });
-            this.addSelectableChild(createListRadiusField);
+            this.addRenderableWidget(createListRadiusField);
         }
         if (nodeSearchField == null) {
             nodeSearchField = new PathmindTextField(this.textRenderer, 0, 0, NODE_SEARCH_FIELD_WIDTH, NODE_SEARCH_FIELD_HEIGHT, Text.literal("Search nodes"));
             nodeSearchField.setMaxLength(64);
-            nodeSearchField.setDrawsBackground(false);
+            nodeSearchField.setBordered(false);
             nodeSearchField.setVisible(false);
             nodeSearchField.setEditable(false);
-            nodeSearchField.setEditableColor(UITheme.TEXT_PRIMARY);
-            nodeSearchField.setUneditableColor(UITheme.TEXT_TERTIARY);
+            nodeSearchField.setTextColor(UITheme.TEXT_PRIMARY);
+            nodeSearchField.setTextColor(UITheme.TEXT_TERTIARY);
             nodeSearchField.setHeight(Math.max(10, NODE_SEARCH_FIELD_HEIGHT - TEXT_FIELD_VERTICAL_PADDING * 2));
-            nodeSearchField.setChangedListener(value -> updateNodeSearchMatch());
-            this.addSelectableChild(nodeSearchField);
+            nodeSearchField.setResponder(value -> updateNodeSearchMatch());
+            this.addRenderableWidget(nodeSearchField);
         }
         if (settingsNodeSearchField == null) {
             settingsNodeSearchField = new PathmindTextField(this.textRenderer, 0, 0, NODE_SEARCH_FIELD_WIDTH, SETTINGS_NODE_TYPE_SEARCH_HEIGHT, Text.literal("Search node settings"));
             settingsNodeSearchField.setMaxLength(64);
-            settingsNodeSearchField.setDrawsBackground(false);
+            settingsNodeSearchField.setBordered(false);
             settingsNodeSearchField.setVisible(false);
             settingsNodeSearchField.setEditable(false);
-            settingsNodeSearchField.setEditableColor(UITheme.TEXT_PRIMARY);
-            settingsNodeSearchField.setUneditableColor(UITheme.TEXT_TERTIARY);
+            settingsNodeSearchField.setTextColor(UITheme.TEXT_PRIMARY);
+            settingsNodeSearchField.setTextColor(UITheme.TEXT_TERTIARY);
             settingsNodeSearchField.setSuggestion("Search node settings");
             settingsNodeSearchField.setHeight(Math.max(10, SETTINGS_NODE_TYPE_SEARCH_HEIGHT - TEXT_FIELD_VERTICAL_PADDING * 2));
-            settingsNodeSearchField.setChangedListener(value -> settingsNodeSelectorScrollOffset = 0);
-            this.addSelectableChild(settingsNodeSearchField);
+            settingsNodeSearchField.setResponder(value -> settingsNodeSelectorScrollOffset = 0);
+            this.addRenderableWidget(settingsNodeSearchField);
         }
 
         updateImportExportPathFromPreset();
@@ -2967,8 +2967,8 @@ public class PathmindVisualEditorScreen extends Screen {
             DrawContextBridge.drawBorderInLayer(context, frameX, frameY, frameWidth, frameHeight, getAccentColor());
             inlinePresetRenameField.setVisible(true);
             inlinePresetRenameField.setEditable(true);
-            inlinePresetRenameField.setEditableColor(UITheme.TEXT_PRIMARY);
-            inlinePresetRenameField.setUneditableColor(UITheme.TEXT_TERTIARY);
+            inlinePresetRenameField.setTextColor(UITheme.TEXT_PRIMARY);
+            inlinePresetRenameField.setTextColor(UITheme.TEXT_TERTIARY);
             inlinePresetRenameField.setPosition(fieldX, fieldY);
             inlinePresetRenameField.setWidth(fieldWidth);
             inlinePresetRenameField.setHeight(fieldHeight);
@@ -3241,7 +3241,7 @@ public class PathmindVisualEditorScreen extends Screen {
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         nodeGraph.persistSessionViewportState();
         autoSaveWorkspace();
         restoreSystemCursor();
@@ -5102,8 +5102,8 @@ public class PathmindVisualEditorScreen extends Screen {
             createPresetField.setEditable(true);
             int textColor = getPopupAnimatedColor(createPresetPopupAnimation, UITheme.TEXT_PRIMARY);
             int textDisabledColor = getPopupAnimatedColor(createPresetPopupAnimation, UITheme.TEXT_TERTIARY);
-            createPresetField.setEditableColor(textColor);
-            createPresetField.setUneditableColor(textDisabledColor);
+            createPresetField.setTextColor(textColor);
+            createPresetField.setTextColor(textDisabledColor);
             int textFieldHeight = Math.max(10, fieldHeight - TEXT_FIELD_VERTICAL_PADDING * 2);
             createPresetField.setPosition(fieldX + 4, fieldY + TEXT_FIELD_VERTICAL_PADDING);
             createPresetField.setWidth(fieldWidth - 8);
@@ -6016,8 +6016,8 @@ public class PathmindVisualEditorScreen extends Screen {
         }
         field.setVisible(true);
         field.setEditable(true);
-        field.setEditableColor(UITheme.TEXT_HEADER);
-        field.setUneditableColor(UITheme.TEXT_HEADER);
+        field.setTextColor(UITheme.TEXT_HEADER);
+        field.setTextColor(UITheme.TEXT_HEADER);
         int textFieldHeight = Math.max(10, VALIDATION_INPUT_FIELD_HEIGHT - TEXT_FIELD_VERTICAL_PADDING * 2);
         field.setPosition(fieldX + 4, fieldY + TEXT_FIELD_VERTICAL_PADDING);
         field.setWidth(VALIDATION_INPUT_FIELD_WIDTH - 8);
@@ -6319,18 +6319,18 @@ public class PathmindVisualEditorScreen extends Screen {
         }
         TextFieldWidget field = new PathmindTextField(this.textRenderer, 0, 0, VALIDATION_INPUT_FIELD_WIDTH, 20, Text.literal(port.getName()));
         field.setMaxLength(96);
-        field.setDrawsBackground(false);
+        field.setBordered(false);
         field.setVisible(false);
         field.setEditable(false);
-        field.setEditableColor(UITheme.TEXT_HEADER);
-        field.setUneditableColor(UITheme.TEXT_HEADER);
+        field.setTextColor(UITheme.TEXT_HEADER);
+        field.setTextColor(UITheme.TEXT_HEADER);
         if (isPresetIntegerPort(port)) {
-            field.setTextPredicate(value -> value == null || value.isEmpty() || value.matches("-?\\d*"));
+            field.setFilter(value -> value == null || value.isEmpty() || value.matches("-?\\d*"));
         } else if (isPresetDecimalPort(port)) {
-            field.setTextPredicate(value -> value == null || value.isEmpty() || value.matches("-?\\d*(\\.\\d*)?"));
+            field.setFilter(value -> value == null || value.isEmpty() || value.matches("-?\\d*(\\.\\d*)?"));
         }
-        field.setChangedListener(value -> setPresetInputValue(port, value));
-        this.addSelectableChild(field);
+        field.setResponder(value -> setPresetInputValue(port, value));
+        this.addRenderableWidget(field);
         presetInputFields.put(fieldKey, field);
         return field;
     }
@@ -6799,8 +6799,8 @@ public class PathmindVisualEditorScreen extends Screen {
             }
             nodeDelayField.setVisible(true);
             nodeDelayField.setEditable(true);
-            nodeDelayField.setEditableColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
-            nodeDelayField.setUneditableColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
+            nodeDelayField.setTextColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
+            nodeDelayField.setTextColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
             int textFieldHeight = Math.max(10, valueBoxHeight - TEXT_FIELD_VERTICAL_PADDING * 2);
             nodeDelayField.setPosition(valueBoxX + 4, valueBoxY + TEXT_FIELD_VERTICAL_PADDING);
             nodeDelayField.setWidth(valueBoxWidth - 8);
@@ -6864,8 +6864,8 @@ public class PathmindVisualEditorScreen extends Screen {
             }
             createListRadiusField.setVisible(true);
             createListRadiusField.setEditable(true);
-            createListRadiusField.setEditableColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
-            createListRadiusField.setUneditableColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
+            createListRadiusField.setTextColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
+            createListRadiusField.setTextColor(getPopupAnimatedColor(settingsPopupAnimation, UITheme.TEXT_HEADER));
             int textFieldHeight = Math.max(10, valueBoxHeight - TEXT_FIELD_VERTICAL_PADDING * 2);
             createListRadiusField.setPosition(valueBoxX + 4, valueBoxY + TEXT_FIELD_VERTICAL_PADDING);
             createListRadiusField.setWidth(valueBoxWidth - 8);

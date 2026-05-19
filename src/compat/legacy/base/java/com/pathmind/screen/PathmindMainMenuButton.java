@@ -1,19 +1,19 @@
 package com.pathmind.screen;
 
 import com.pathmind.PathmindMod;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.MutableText;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import com.pathmind.util.TextCompatibilityBridge;
 
 /**
  * A small icon button used on the title screen to open the Pathmind visual editor.
  */
-public class PathmindMainMenuButton extends ButtonWidget {
-    private static final Identifier ICON_TEXTURE = PathmindMod.id("textures/gui/icons/button_logo.png");
+public class PathmindMainMenuButton extends Button {
+    private static final ResourceLocation ICON_TEXTURE = PathmindMod.id("textures/gui/icons/button_logo.png");
     private static final int ICON_PADDING = 2;
     private static final int BUTTON_FILL = 0xFF4C4C4C;
     private static final int BUTTON_HOVER = 0xFF5A5A5A;
@@ -25,14 +25,14 @@ public class PathmindMainMenuButton extends ButtonWidget {
     private static final String OPEN_EDITOR_KEY = "gui.pathmind.open_editor";
     private static final String OPEN_EDITOR_FALLBACK = "Open Pathmind";
 
-    public PathmindMainMenuButton(int x, int y, int size, PressAction pressAction) {
-        super(x, y, size, size, TextCompatibilityBridge.empty(), pressAction, DEFAULT_NARRATION_SUPPLIER);
-        this.setTooltip(Tooltip.of(resolveOpenEditorText()));
+    public PathmindMainMenuButton(int x, int y, int size, OnPress onPress) {
+        super(x, y, size, size, TextCompatibilityBridge.empty(), onPress, DEFAULT_NARRATION);
+        this.setTooltip(Tooltip.create(resolveOpenEditorText()));
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.setTooltip(Tooltip.of(resolveOpenEditorText()));
+    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        this.setTooltip(Tooltip.create(resolveOpenEditorText()));
         drawButtonBackground(context);
 
         int iconSize = this.width - ICON_PADDING * 2;
@@ -48,16 +48,16 @@ public class PathmindMainMenuButton extends ButtonWidget {
             rgb = 0xFFFFFF;
         }
 
-        int alphaComponent = MathHelper.ceil(this.alpha * 255.0F);
+        int alphaComponent = Mth.ceil(this.alpha * 255.0F);
         if (alphaComponent <= 0) {
-            return; // let the icon fade in with the button instead of flashing
+            return;
         }
         int color = (alphaComponent << 24) | rgb;
 
         GuiTextureRenderer.drawIcon(context, ICON_TEXTURE, iconX, iconY, iconSize, color);
     }
 
-    private void drawButtonBackground(DrawContext context) {
+    private void drawButtonBackground(GuiGraphics context) {
         int baseFill = !this.active ? BUTTON_DISABLED : (this.isHovered() ? BUTTON_HOVER : BUTTON_FILL);
         int fill = applyAlpha(baseFill, this.alpha);
         boolean hovered = this.active && this.isHovered();
@@ -80,17 +80,16 @@ public class PathmindMainMenuButton extends ButtonWidget {
 
     private static int applyAlpha(int color, float alphaMultiplier) {
         int alpha = (color >>> 24) & 0xFF;
-        int scaledAlpha = MathHelper.ceil(alpha * Math.max(0.0f, Math.min(1.0f, alphaMultiplier)));
+        int scaledAlpha = Mth.ceil(alpha * Math.max(0.0f, Math.min(1.0f, alphaMultiplier)));
         return (scaledAlpha << 24) | (color & 0x00FFFFFF);
     }
 
-    @Override
-    public MutableText getNarrationMessage() {
+    public MutableComponent getNarrationMessage() {
         return TextCompatibilityBridge.copy(resolveOpenEditorText());
     }
 
-    private static MutableText resolveOpenEditorText() {
-        MutableText text = TextCompatibilityBridge.translatable(OPEN_EDITOR_KEY);
+    private static MutableComponent resolveOpenEditorText() {
+        MutableComponent text = TextCompatibilityBridge.translatable(OPEN_EDITOR_KEY);
         if (OPEN_EDITOR_KEY.equals(text.getString())) {
             return TextCompatibilityBridge.literal(OPEN_EDITOR_FALLBACK);
         }

@@ -1,13 +1,13 @@
 package com.pathmind.util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * Bridges Text factory methods across 1.21.x.
+ * Bridges Component factory methods across 1.21.x.
  */
 public final class TextCompatibilityBridge {
     private static final Method TRANSLATABLE = resolveStatic("translatable", String.class);
@@ -23,13 +23,13 @@ public final class TextCompatibilityBridge {
     private TextCompatibilityBridge() {
     }
 
-    public static MutableText translatable(String key) {
+    public static MutableComponent translatable(String key) {
         return translatable(key, new Object[0]);
     }
 
-    public static MutableText translatable(String key, Object... args) {
+    public static MutableComponent translatable(String key, Object... args) {
         Object[] safeArgs = args == null ? new Object[0] : args;
-        MutableText value = invokeStatic(TRANSLATABLE_WITH_ARGS, key, safeArgs);
+        MutableComponent value = invokeStatic(TRANSLATABLE_WITH_ARGS, key, safeArgs);
         if (value != null) {
             return value;
         }
@@ -42,13 +42,13 @@ public final class TextCompatibilityBridge {
         return literal(key == null ? "" : key);
     }
 
-    public static MutableText translatableWithFallback(String key, String fallback) {
+    public static MutableComponent translatableWithFallback(String key, String fallback) {
         return translatableWithFallback(key, fallback, new Object[0]);
     }
 
-    public static MutableText translatableWithFallback(String key, String fallback, Object... args) {
+    public static MutableComponent translatableWithFallback(String key, String fallback, Object... args) {
         Object[] safeArgs = args == null ? new Object[0] : args;
-        MutableText value = invokeStatic(TRANSLATABLE_WITH_FALLBACK_ARGS, key, fallback, safeArgs);
+        MutableComponent value = invokeStatic(TRANSLATABLE_WITH_FALLBACK_ARGS, key, fallback, safeArgs);
         if (value != null) {
             return value;
         }
@@ -66,19 +66,19 @@ public final class TextCompatibilityBridge {
         return literal(fallback == null ? "" : fallback);
     }
 
-    public static MutableText empty() {
-        MutableText value = invokeStatic(EMPTY);
+    public static MutableComponent empty() {
+        MutableComponent value = invokeStatic(EMPTY);
         if (value != null) {
             return value;
         }
         return literal("");
     }
 
-    public static MutableText copy(Text text) {
+    public static MutableComponent copy(Component text) {
         if (text == null) {
             return empty();
         }
-        MutableText value = invokeVirtual(text, COPY);
+        MutableComponent value = invokeVirtual(text, COPY);
         if (value != null) {
             return value;
         }
@@ -89,25 +89,21 @@ public final class TextCompatibilityBridge {
         return literal(text.getString());
     }
 
-    public static MutableText literal(String text) {
-        try {
-            return Text.literal(text == null ? "" : text);
-        } catch (RuntimeException ignored) {
-            return Text.of(text == null ? "" : text).copy();
-        }
+    public static MutableComponent literal(String text) {
+        return Component.literal(text == null ? "" : text);
     }
 
-    private static MutableText invokeStatic(Method method, Object... args) {
+    private static MutableComponent invokeStatic(Method method, Object... args) {
         if (method == null) {
             return null;
         }
         try {
             Object result = method.invoke(null, args);
-            if (result instanceof MutableText mutable) {
+            if (result instanceof MutableComponent mutable) {
                 return mutable;
             }
-            if (result instanceof Text text) {
-                return copy(text);
+            if (result instanceof Component component) {
+                return copy(component);
             }
             return null;
         } catch (IllegalAccessException | InvocationTargetException ignored) {
@@ -115,13 +111,13 @@ public final class TextCompatibilityBridge {
         }
     }
 
-    private static MutableText invokeVirtual(Text text, Method method) {
+    private static MutableComponent invokeVirtual(Component text, Method method) {
         if (method == null) {
             return null;
         }
         try {
             Object result = method.invoke(text);
-            return result instanceof MutableText mutable ? mutable : null;
+            return result instanceof MutableComponent mutable ? mutable : null;
         } catch (IllegalAccessException | InvocationTargetException ignored) {
             return null;
         }
@@ -129,7 +125,7 @@ public final class TextCompatibilityBridge {
 
     private static Method resolveStatic(String name, Class<?>... params) {
         try {
-            Method method = Text.class.getMethod(name, params);
+            Method method = Component.class.getMethod(name, params);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException ignored) {
@@ -139,7 +135,7 @@ public final class TextCompatibilityBridge {
 
     private static Method resolveVirtual(String name) {
         try {
-            Method method = Text.class.getMethod(name);
+            Method method = Component.class.getMethod(name);
             method.setAccessible(true);
             return method;
         } catch (NoSuchMethodException ignored) {

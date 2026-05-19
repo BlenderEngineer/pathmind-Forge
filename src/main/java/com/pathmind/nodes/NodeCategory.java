@@ -1,6 +1,6 @@
 package com.pathmind.nodes;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Enum representing different categories of nodes for sidebar organization.
@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 public enum NodeCategory {
     FLOW("pathmind.node.category.flow", 0xFFE91E63, "pathmind.node.category.flow.desc", "★"),
     CONTROL("pathmind.node.category.control", 0xFFFFC107, "pathmind.node.category.control.desc", "🧠"),
-    WORLD("pathmind.node.category.world", 0xFF00BCD4, "pathmind.node.category.world.desc", "⇄"),
+    WORLD("pathmind.node.category.level", 0xFF00BCD4, "pathmind.node.category.level.desc", "⇄"),
     PLAYER("pathmind.node.category.player", 0xFF7E57C2, "pathmind.node.category.player.desc", "✋"),
     INTERFACE("pathmind.node.category.interface", 0xFF607D8B, "pathmind.node.category.interface.desc", "🖥"),
     DATA("pathmind.node.category.data", 0xFFFF9800, "pathmind.node.category.data.desc", "Σ"),
@@ -29,7 +29,7 @@ public enum NodeCategory {
     }
 
     public String getDisplayName() {
-        return Text.translatable(translationKey).getString();
+        return Component.translatable(translationKey).getString();
     }
 
     public int getColor() {
@@ -37,7 +37,7 @@ public enum NodeCategory {
     }
 
     public String getDescription() {
-        return Text.translatable(descriptionKey).getString();
+        return Component.translatable(descriptionKey).getString();
     }
 
     public String getIcon() {

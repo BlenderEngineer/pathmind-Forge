@@ -15,10 +15,10 @@ import com.pathmind.util.BaritoneDependencyChecker;
 import com.pathmind.util.UiUtilsDependencyChecker;
 import com.pathmind.util.DrawContextBridge;
 import com.pathmind.util.ScrollbarHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -511,7 +511,7 @@ public class Sidebar {
         maxScroll = Math.max(0, totalHeight - sidebarHeight + 100); // Extra 100px for better scrolling
     }
     
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY,
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY,
                        int sidebarStartY, int sidebarHeight, boolean interactionsEnabled, boolean showTooltips) {
         refreshCustomNodes();
         int effectiveMouseX = interactionsEnabled ? mouseX : Integer.MIN_VALUE;
@@ -568,9 +568,9 @@ public class Sidebar {
 
         List<String> headerLines = null;
         int headerHeight = 0;
-        final int headerLineHeight = textRenderer.fontHeight + CATEGORY_HEADER_LINE_SPACING;
-        final int groupLineHeight = textRenderer.fontHeight + GROUP_HEADER_LINE_SPACING;
-        final int nodeLineHeight = textRenderer.fontHeight + NODE_LINE_SPACING;
+        final int headerLineHeight = textRenderer.lineHeight + CATEGORY_HEADER_LINE_SPACING;
+        final int groupLineHeight = textRenderer.lineHeight + GROUP_HEADER_LINE_SPACING;
+        final int nodeLineHeight = textRenderer.lineHeight + NODE_LINE_SPACING;
         if (selectedCategory != null) {
             headerLines = wrapText(selectedCategory.getDisplayName(), textRenderer, maxContentWidth);
             headerHeight = Math.max(CATEGORY_HEADER_HEIGHT, headerLines.size() * headerLineHeight);
@@ -600,7 +600,7 @@ public class Sidebar {
 
         // Inner sidebar background (for tabs)
         context.fill(0, sidebarStartY, currentInnerSidebarWidth, sidebarStartY + sidebarHeight, UITheme.BACKGROUND_SIDEBAR);
-        context.drawVerticalLine(currentInnerSidebarWidth, sidebarStartY, sidebarStartY + sidebarHeight, UITheme.BORDER_SUBTLE);
+        context.vLine(currentInnerSidebarWidth, sidebarStartY, sidebarStartY + sidebarHeight, UITheme.BORDER_SUBTLE);
 
         // Tabs stay static (don't scroll with content)
         int currentY = sidebarStartY + TOP_PADDING;
@@ -646,10 +646,10 @@ public class Sidebar {
 
             // Render centered icon
             String icon = category.getIcon();
-            int iconX = tabX + (tabSize - textRenderer.getWidth(icon)) / 2;
-            int iconY = tabY + (tabSize - textRenderer.fontHeight) / 2 + 1;
+            int iconX = tabX + (tabSize - textRenderer.width(icon)) / 2;
+            int iconY = tabY + (tabSize - textRenderer.lineHeight) / 2 + 1;
 
-            context.drawTextWithShadow(textRenderer, icon, iconX, iconY, UITheme.TEXT_HEADER);
+            context.drawString(textRenderer, icon, iconX, iconY, UITheme.TEXT_HEADER);
 
             // Update hover state
             if (tabHovered) {
@@ -678,9 +678,9 @@ public class Sidebar {
             int headerTextY = contentY + 4;
             if (headerLines != null && !headerLines.isEmpty()) {
                 for (String line : headerLines) {
-                    context.drawTextWithShadow(
+                    context.drawString(
                         textRenderer,
-                        Text.literal(line),
+                        Component.literal(line),
                         headerTextX,
                         headerTextY,
                         selectedCategory.getColor()
@@ -715,9 +715,9 @@ public class Sidebar {
 
                         int lineY = contentY + 4;
                         for (String line : customNode.lines()) {
-                            context.drawTextWithShadow(
+                            context.drawString(
                                 textRenderer,
-                                Text.literal(line),
+                                Component.literal(line),
                                 indicatorX + indicatorSize + 4,
                                 lineY,
                                 UITheme.TEXT_PRIMARY
@@ -739,9 +739,9 @@ public class Sidebar {
 
                         int groupTextY = contentY + 2;
                         for (String line : groupInfo.getLines()) {
-                            context.drawTextWithShadow(
+                            context.drawString(
                                 textRenderer,
-                                Text.literal(line),
+                                Component.literal(line),
                                 contentTextX,
                                 groupTextY,
                                 getSidebarGroupHeaderColor(selectedCategory)
@@ -784,9 +784,9 @@ public class Sidebar {
 
                             int lineY = contentY + 4;
                             for (String line : row.lines()) {
-                                context.drawTextWithShadow(
+                                context.drawString(
                                     textRenderer,
-                                    Text.literal(line),
+                                    Component.literal(line),
                                     indicatorX + indicatorSize + 4,
                                     lineY,
                                     getSidebarNodeTextColor(selectedCategory, nodeHovered)
@@ -832,9 +832,9 @@ public class Sidebar {
 
                         int lineY = contentY + 4;
                         for (String line : row.lines()) {
-                            context.drawTextWithShadow(
+                            context.drawString(
                                 textRenderer,
-                                Text.literal(line),
+                                Component.literal(line),
                                 indicatorX + indicatorSize + 4, // Position after the indicator with some spacing
                                 lineY,
                                 getSidebarNodeTextColor(selectedCategory, nodeHovered)
@@ -868,8 +868,8 @@ public class Sidebar {
                 hoveredCustomNode.getDescription(),
                 mouseX,
                 mouseY,
-                MinecraftClient.getInstance().getWindow().getScaledWidth(),
-                MinecraftClient.getInstance().getWindow().getScaledHeight()
+                Minecraft.getInstance().getWindow().getGuiScaledWidth(),
+                Minecraft.getInstance().getWindow().getGuiScaledHeight()
             );
         } else if (interactionsEnabled && showTooltips && hoveredNodeType != null) {
             TooltipRenderer.render(
@@ -878,8 +878,8 @@ public class Sidebar {
                 hoveredNodeType.getDescription(),
                 mouseX,
                 mouseY,
-                MinecraftClient.getInstance().getWindow().getScaledWidth(),
-                MinecraftClient.getInstance().getWindow().getScaledHeight()
+                Minecraft.getInstance().getWindow().getGuiScaledWidth(),
+                Minecraft.getInstance().getWindow().getGuiScaledHeight()
             );
         }
         
@@ -971,6 +971,10 @@ public class Sidebar {
         return null;
     }
     
+    public int width() {
+        return getWidth();
+    }
+
     public int getWidth() {
         return currentRenderedWidth;
     }
@@ -1096,7 +1100,7 @@ public class Sidebar {
         return hovered ? AnimationHelper.lerpColor(baseColor, UITheme.TEXT_HEADER, 0.18f) : baseColor;
     }
 
-    private List<String> wrapText(String text, TextRenderer textRenderer, int maxWidth) {
+    private List<String> wrapText(String text, Font textRenderer, int maxWidth) {
         List<String> lines = new ArrayList<>();
         if (text == null || text.isEmpty()) {
             lines.add("");
@@ -1117,13 +1121,13 @@ public class Sidebar {
 
             if (currentLine.length() > 0) {
                 String candidate = currentLine + " " + word;
-                if (textRenderer.getWidth(candidate) <= maxWidth) {
+                if (textRenderer.width(candidate) <= maxWidth) {
                     currentLine.append(" ").append(word);
                     continue;
                 }
             }
 
-            if (textRenderer.getWidth(word) <= maxWidth) {
+            if (textRenderer.width(word) <= maxWidth) {
                 if (currentLine.length() > 0) {
                     lines.add(currentLine.toString());
                 }
@@ -1155,14 +1159,14 @@ public class Sidebar {
         return lines;
     }
 
-    private int findBreakIndex(String text, TextRenderer textRenderer, int maxWidth) {
+    private int findBreakIndex(String text, Font textRenderer, int maxWidth) {
         if (text.isEmpty() || maxWidth <= 0) {
             return Math.max(1, text.length());
         }
 
         int breakIndex = 1;
         while (breakIndex <= text.length() &&
-            textRenderer.getWidth(text.substring(0, breakIndex)) <= maxWidth) {
+            textRenderer.width(text.substring(0, breakIndex)) <= maxWidth) {
             breakIndex++;
         }
 
@@ -1173,7 +1177,7 @@ public class Sidebar {
         return Math.max(1, breakIndex - 1);
     }
 
-    private List<NodeRowInfo> buildNodeRowsForCategory(NodeCategory category, TextRenderer textRenderer, int maxWidth, int lineHeight) {
+    private List<NodeRowInfo> buildNodeRowsForCategory(NodeCategory category, Font textRenderer, int maxWidth, int lineHeight) {
         List<NodeType> nodes = categoryNodes.get(category);
         if (nodes == null || textRenderer == null) {
             return java.util.Collections.emptyList();
@@ -1181,7 +1185,7 @@ public class Sidebar {
         return buildNodeRows(nodes, textRenderer, maxWidth, lineHeight);
     }
 
-    private List<NodeRowInfo> buildCustomNodeRows(TextRenderer textRenderer, int maxWidth, int lineHeight) {
+    private List<NodeRowInfo> buildCustomNodeRows(Font textRenderer, int maxWidth, int lineHeight) {
         if (textRenderer == null) {
             return java.util.Collections.emptyList();
         }
@@ -1193,7 +1197,7 @@ public class Sidebar {
         return rows;
     }
 
-    private List<NodeRowInfo> buildNodeRows(List<NodeType> nodes, TextRenderer textRenderer, int maxWidth, int lineHeight) {
+    private List<NodeRowInfo> buildNodeRows(List<NodeType> nodes, Font textRenderer, int maxWidth, int lineHeight) {
         List<NodeRowInfo> rows = new ArrayList<>();
         for (NodeType nodeType : nodes) {
             List<String> lines = wrapText(nodeType.getDisplayName(), textRenderer, maxWidth);
@@ -1206,7 +1210,7 @@ public class Sidebar {
         return Math.max(NODE_HEIGHT, Math.max(1, lineCount) * lineHeight + 7);
     }
 
-    private void renderCategoryScrollbar(DrawContext context, int totalWidth, int contentTop, int contentBottom) {
+    private void renderCategoryScrollbar(GuiGraphics context, int totalWidth, int contentTop, int contentBottom) {
         if (maxScroll <= 0 || contentBottom <= contentTop) {
             return;
         }

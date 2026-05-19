@@ -1,6 +1,6 @@
 package com.pathmind.nodes;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Enum representing different types of nodes in the Pathmind visual editor.
@@ -190,9 +190,9 @@ public enum NodeType {
 
     public String getDisplayName() {
         if (this == DROP_SLOT) {
-            return Text.translatable("pathmind.node.type.dropItem").getString();
+            return Component.translatable("pathmind.node.type.dropItem").getString();
         }
-        return Text.translatable(translationKey).getString();
+        return Component.translatable(translationKey).getString();
     }
 
     public int getColor() {
@@ -211,9 +211,9 @@ public enum NodeType {
 
     public String getDescription() {
         if (this == DROP_SLOT) {
-            return Text.translatable("pathmind.node.type.dropItem.desc").getString();
+            return Component.translatable("pathmind.node.type.dropItem.desc").getString();
         }
-        return Text.translatable(descriptionKey).getString();
+        return Component.translatable(descriptionKey).getString();
     }
 
     public boolean isInputNode() {

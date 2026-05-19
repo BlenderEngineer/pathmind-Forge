@@ -2,10 +2,10 @@ package com.pathmind.mixin;
 
 import com.pathmind.PathmindClientMod;
 import com.pathmind.screen.PathmindScreens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.DeltaTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,37 +16,41 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * This ensures that overlay mods (like minimaps, HUD additions, etc.) don't interfere
  * with the Pathmind visual editor screen.
  */
-@Mixin(InGameHud.class)
-public class InGameHudMixin {
+@Mixin(Gui.class)
+public class GuiMixin {
 
     /**
      * Cancels HUD rendering when the Pathmind visual editor screen is open.
      * This prevents other mods from rendering overlays on top of our GUI.
      */
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void pathmind$preventHudWhenScreenOpen(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private void pathmind$preventHudWhenScreenOpen(GuiGraphics context, DeltaTracker tickCounter, CallbackInfo ci) {
+        Minecraft client = Minecraft.getInstance();
 
         // If the Pathmind visual editor is open, cancel all HUD rendering
         // This prevents other mods' overlays from showing on top of our GUI
-        if (client.currentScreen != null && PathmindScreens.isVisualEditorScreen(client.currentScreen)) {
+        if (client.screen != null && PathmindScreens.isVisualEditorScreen(client.screen)) {
             ci.cancel();
         }
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void pathmind$renderHudOverlaysAboveVanilla(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen != null && PathmindScreens.isVisualEditorScreen(client.currentScreen)) {
+    private void pathmind$renderHudOverlaysAboveVanilla(GuiGraphics context, DeltaTracker tickCounter, CallbackInfo ci) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen != null && PathmindScreens.isVisualEditorScreen(client.screen)) {
             return;
         }
         PathmindClientMod.renderHudOverlays(context, client);
     }
 
-    @Inject(method = "renderHeldItemTooltip", at = @At("TAIL"))
-    private void pathmind$renderHudNotificationsAboveItems(DrawContext context, CallbackInfo ci) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.currentScreen != null && PathmindScreens.isVisualEditorScreen(client.currentScreen)) {
+    @Inject(
+        method = "renderSelectedItemName(Lnet/minecraft/client/gui/GuiGraphics;I)V",
+        at = @At("TAIL"),
+        require = 0
+    )
+    private void pathmind$renderHudNotificationsAboveItems(GuiGraphics context, int yShift, CallbackInfo ci) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen != null && PathmindScreens.isVisualEditorScreen(client.screen)) {
             return;
         }
         PathmindClientMod.renderHudNotifications(context, client);

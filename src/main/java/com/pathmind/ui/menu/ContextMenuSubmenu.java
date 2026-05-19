@@ -4,8 +4,8 @@ import com.pathmind.nodes.NodeCategory;
 import com.pathmind.nodes.NodeType;
 import com.pathmind.ui.sidebar.Sidebar;
 import com.pathmind.ui.theme.UITheme;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,7 +115,7 @@ public class ContextMenuSubmenu {
     /**
      * Renders the submenu.
      */
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         // Render background with full border (overlaps with main menu border by 1px)
         ContextMenuRenderer.renderMenuBackground(context, submenuX, submenuY, MENU_WIDTH, submenuHeight, true);
 
@@ -207,7 +207,7 @@ public class ContextMenuSubmenu {
     /**
      * Renders a scrollbar indicator.
      */
-    private void renderScrollbar(DrawContext context) {
+    private void renderScrollbar(GuiGraphics context) {
         int scrollbarHeight = submenuHeight - (PADDING * 2);
         int scrollbarX = submenuX + MENU_WIDTH - 8;
         int scrollbarY = submenuY + PADDING;
@@ -231,7 +231,7 @@ public class ContextMenuSubmenu {
     /**
      * Simple scissor enable (clips rendering to a rectangle).
      */
-    private void enableScissor(DrawContext context, int x, int y, int width, int height) {
+    private void enableScissor(GuiGraphics context, int x, int y, int width, int height) {
         // Use Minecraft's built-in scissor if available
         try {
             int screenX = (int) Math.floor(anchorX + (x - anchorX) * scale);
@@ -248,7 +248,7 @@ public class ContextMenuSubmenu {
     /**
      * Disables scissor.
      */
-    private void disableScissor(DrawContext context) {
+    private void disableScissor(GuiGraphics context) {
         try {
             context.disableScissor();
         } catch (Exception e) {

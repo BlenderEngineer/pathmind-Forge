@@ -828,7 +828,7 @@ public class ExecutionManager {
                 putRuntimeValue(values, "Toggle", Boolean.toString(Boolean.parseBoolean(safeValue)));
                 putRuntimeValue(values, "Variable", "");
             }
-            case PARAM_HAND -> putRuntimeValue(values, "Hand", safeValue.isEmpty() ? "main" : safeValue);
+            case PARAM_HAND -> putRuntimeValue(values, "InteractionHand", safeValue.isEmpty() ? "main" : safeValue);
             case PARAM_GUI -> putRuntimeValue(values, "GUI", safeValue);
             case PARAM_KEY -> putRuntimeValue(values, "Key", safeValue);
             case PARAM_MOUSE_BUTTON -> putRuntimeValue(values, "MouseButton", safeValue);

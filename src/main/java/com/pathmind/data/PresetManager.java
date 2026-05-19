@@ -1,7 +1,8 @@
 package com.pathmind.data;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import com.pathmind.util.ModPaths;
+import net.neoforged.fml.ModList;
+import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -441,17 +442,14 @@ public final class PresetManager {
     }
 
     private static Path getMinecraftDirectory() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.runDirectory != null) {
-            return client.runDirectory.toPath();
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.gameDirectory != null) {
+            return client.gameDirectory.toPath();
         }
         try {
-            FabricLoader loader = FabricLoader.getInstance();
-            if (loader != null) {
-                return loader.getGameDir();
-            }
+            return ModPaths.gameDir();
         } catch (IllegalStateException ignored) {
-            // Unit tests can exercise preset logic before Fabric has finalized its game directory.
+            // Unit tests can exercise preset logic before the game directory is available.
         }
         return Paths.get(System.getProperty("user.home"), ".minecraft");
     }

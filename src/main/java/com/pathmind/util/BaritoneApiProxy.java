@@ -1,6 +1,6 @@
 package com.pathmind.util;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 import java.io.File;
 import java.lang.reflect.Constructor;

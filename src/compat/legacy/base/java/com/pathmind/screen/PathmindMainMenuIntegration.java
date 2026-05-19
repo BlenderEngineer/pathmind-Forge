@@ -1,11 +1,10 @@
 package com.pathmind.screen;
 
 import com.pathmind.mixin.ScreenAccessor;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -18,34 +17,28 @@ public final class PathmindMainMenuIntegration {
     private PathmindMainMenuIntegration() {
     }
 
-    public static void register() {
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (screen instanceof TitleScreen) {
-                addButton(screen);
-                registerKeyHandler(client, screen);
-            }
-        });
+    public static void onScreenInit(ScreenEvent.Init.Post event) {
+        if (event.getScreen() instanceof TitleScreen screen) {
+            addButton(screen);
+        }
+    }
+
+    public static void onScreenKeyPressed(ScreenEvent.KeyPressed.Post event) {
+        if (!(event.getScreen() instanceof TitleScreen)) {
+            return;
+        }
+        if (event.getKeyCode() == GLFW.GLFW_KEY_RIGHT_ALT) {
+            PathmindScreens.openVisualEditorOrWarn(Minecraft.getInstance(), event.getScreen());
+        }
     }
 
     private static void addButton(Screen screen) {
         int x = BUTTON_MARGIN;
         int y = BUTTON_MARGIN;
 
-        ((ScreenAccessor) screen).pathmind$addDrawableChild(new PathmindMainMenuButton(x, y, BUTTON_SIZE, button -> {
-            MinecraftClient client = MinecraftClient.getInstance();
+        ((ScreenAccessor) screen).pathmind$addRenderableWidget(new PathmindMainMenuButton(x, y, BUTTON_SIZE, button -> {
+            Minecraft client = Minecraft.getInstance();
             PathmindScreens.openVisualEditorOrWarn(client, screen);
         }));
-    }
-
-    private static void registerKeyHandler(MinecraftClient client, Screen screen) {
-        ScreenKeyboardEvents.afterKeyPress(screen).register((currentScreen, keyCode, scanCode, modifiers) -> {
-            if (!(currentScreen instanceof TitleScreen)) {
-                return;
-            }
-
-            if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) {
-                PathmindScreens.openVisualEditorOrWarn(client, currentScreen);
-            }
-        });
     }
 }

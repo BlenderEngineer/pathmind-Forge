@@ -10,7 +10,7 @@ final class HandParameterDefinition {
     }
 
     private static Map<String, String> exportValues(Node node, Map<String, String> values) {
-        String hand = values.get("Hand");
+        String hand = values.get("InteractionHand");
         if (hand != null) {
             NodeBehaviorDefinitionSupport.put(values, "SourceHand", hand);
             NodeBehaviorDefinitionSupport.put(values, "TargetHand", hand);

@@ -5,9 +5,9 @@ import com.pathmind.ui.animation.AnimatedValue;
 import com.pathmind.ui.animation.AnimationHelper;
 import com.pathmind.ui.theme.UITheme;
 import com.pathmind.util.DrawContextBridge;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public final class NavigatorDebugOverlay {
         return enabled;
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer, int screenWidth, int screenHeight) {
+    public void render(GuiGraphics context, Font textRenderer, int screenWidth, int screenHeight) {
         PathmindNavigator.DebugInfo info = PathmindNavigator.getInstance().getDebugInfo();
         boolean shouldShow = enabled;
 
@@ -58,7 +58,7 @@ public final class NavigatorDebugOverlay {
         }
 
         List<String> lines = buildLines(info);
-        int lineHeight = textRenderer.fontHeight + LINE_SPACING;
+        int lineHeight = textRenderer.lineHeight + LINE_SPACING;
         int overlayHeight = PADDING * 2 + (lineHeight * lines.size());
         int slideOffset = (int) ((1f - progress) * SLIDE_OFFSET);
         int overlayX = MARGIN - slideOffset;
@@ -85,9 +85,9 @@ public final class NavigatorDebugOverlay {
         for (int i = 0; i < lines.size(); i++) {
             int color = i == 0 ? UITheme.ACCENT_SKY : UITheme.TEXT_HEADER;
             String line = trimTextToWidth(lines.get(i), textRenderer, OVERLAY_WIDTH - PADDING * 2);
-            context.drawTextWithShadow(
+            context.drawString(
                 textRenderer,
-                Text.literal(line),
+                Component.literal(line),
                 textX,
                 textY + i * lineHeight,
                 applyAlpha(color, progress)
@@ -129,7 +129,7 @@ public final class NavigatorDebugOverlay {
         return enabled ? "on" : "off";
     }
 
-    private String formatPos(net.minecraft.util.math.BlockPos pos) {
+    private String formatPos(net.minecraft.core.BlockPos pos) {
         if (pos == null) {
             return "--";
         }
@@ -140,17 +140,17 @@ public final class NavigatorDebugOverlay {
         return value == null || value.isBlank() ? "--" : value;
     }
 
-    private String trimTextToWidth(String text, TextRenderer textRenderer, int maxWidth) {
-        if (textRenderer.getWidth(text) <= maxWidth) {
+    private String trimTextToWidth(String text, Font textRenderer, int maxWidth) {
+        if (textRenderer.width(text) <= maxWidth) {
             return text;
         }
         String ellipsis = "...";
-        int ellipsisWidth = textRenderer.getWidth(ellipsis);
+        int ellipsisWidth = textRenderer.width(ellipsis);
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             builder.append(c);
-            if (textRenderer.getWidth(builder.toString()) + ellipsisWidth > maxWidth) {
+            if (textRenderer.width(builder.toString()) + ellipsisWidth > maxWidth) {
                 builder.setLength(Math.max(0, builder.length() - 1));
                 return builder + ellipsis;
             }

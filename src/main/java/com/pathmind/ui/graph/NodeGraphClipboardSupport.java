@@ -128,7 +128,7 @@ final class NodeGraphClipboardSupport {
                 Integer stickyNoteHeight = nodeData.getStickyNoteHeight();
                 if (stickyNoteWidth != null || stickyNoteHeight != null) {
                     newNode.setStickyNoteSize(
-                        stickyNoteWidth != null ? stickyNoteWidth : newNode.getWidth(),
+                        stickyNoteWidth != null ? stickyNoteWidth : newNode.width(),
                         stickyNoteHeight != null ? stickyNoteHeight : newNode.getHeight()
                     );
                 }

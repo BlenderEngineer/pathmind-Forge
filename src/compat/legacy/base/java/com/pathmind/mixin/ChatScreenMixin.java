@@ -2,9 +2,9 @@ package com.pathmind.mixin;
 
 import com.pathmind.ui.overlay.NavigatorChatSuggestions;
 import com.pathmind.util.DrawContextBridge;
-import com.pathmind.util.MatrixStackBridge;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
+import com.pathmind.util.PoseStackBridge;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,15 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChatScreen.class)
 public class ChatScreenMixin {
     @Inject(method = "render", at = @At("TAIL"))
-    private void pathmind$renderNavigatorSuggestions(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void pathmind$renderNavigatorSuggestions(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         DrawContextBridge.startNewRootLayer(context);
-        Object matrices = context.getMatrices();
-        MatrixStackBridge.push(matrices);
-        MatrixStackBridge.translateZ(matrices, 500.0f);
+        Object matrices = context.pose();
+        PoseStackBridge.push(matrices);
+        PoseStackBridge.translateZ(matrices, 500.0f);
         try {
             NavigatorChatSuggestions.getInstance().render((ChatScreen) (Object) this, context, mouseX, mouseY);
         } finally {
-            MatrixStackBridge.pop(matrices);
+            PoseStackBridge.pop(matrices);
         }
     }
 

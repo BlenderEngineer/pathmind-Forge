@@ -2,10 +2,10 @@ package com.pathmind.ui.menu;
 
 import com.pathmind.ui.animation.PopupAnimationHandler;
 import com.pathmind.ui.theme.UITheme;
-import com.pathmind.util.MatrixStackBridge;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import com.pathmind.util.PoseStackBridge;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 import java.util.Arrays;
 import java.util.List;
@@ -134,7 +134,7 @@ public class NodeContextMenu {
         return null;
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer) {
+    public void render(GuiGraphics context, Font textRenderer) {
         if (!isOpen) {
             return;
         }
@@ -146,11 +146,11 @@ public class NodeContextMenu {
 
         int menuHeight = PADDING * 2 + (actions.size() * ITEM_HEIGHT);
 
-        var matrices = context.getMatrices();
-        MatrixStackBridge.push(matrices);
-        MatrixStackBridge.translate(matrices, menuX, menuY);
-        MatrixStackBridge.scale(matrices, scale, scale);
-        MatrixStackBridge.translate(matrices, -menuX, -menuY);
+        var matrices = context.pose();
+        PoseStackBridge.push(matrices);
+        PoseStackBridge.translate(matrices, menuX, menuY);
+        PoseStackBridge.scale(matrices, scale, scale);
+        PoseStackBridge.translate(matrices, -menuX, -menuY);
 
         ContextMenuRenderer.renderMenuBackground(context, menuX, menuY, MENU_WIDTH, menuHeight);
 
@@ -159,12 +159,12 @@ public class NodeContextMenu {
             boolean hovered = i == hoveredIndex;
             ContextMenuRenderer.renderMenuItem(context, menuX, itemY, MENU_WIDTH, ITEM_HEIGHT, hovered);
             int textX = menuX + TEXT_OFFSET_X;
-            int textY = itemY + (ITEM_HEIGHT - textRenderer.fontHeight) / 2;
-            context.drawTextWithShadow(textRenderer, Text.literal(actions.get(i).getLabel()), textX, textY, UITheme.CONTEXT_MENU_TEXT);
+            int textY = itemY + (ITEM_HEIGHT - textRenderer.lineHeight) / 2;
+            context.drawString(textRenderer, Component.literal(actions.get(i).getLabel()), textX, textY, UITheme.CONTEXT_MENU_TEXT);
             itemY += ITEM_HEIGHT;
         }
 
-        MatrixStackBridge.pop(matrices);
+        PoseStackBridge.pop(matrices);
     }
 
     private int toMenuSpaceX(int mouseX) {

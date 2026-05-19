@@ -53,7 +53,7 @@ public final class DropdownLayoutHelper {
         }
     }
 
-    public static void drawOutline(net.minecraft.client.gui.DrawContext context,
+    public static void drawOutline(net.minecraft.client.gui.GuiGraphics context,
                                    int x,
                                    int y,
                                    int width,
@@ -62,7 +62,7 @@ public final class DropdownLayoutHelper {
         DrawContextBridge.drawBorder(context, x, y, width, height, color);
     }
 
-    public static void drawScrollBar(net.minecraft.client.gui.DrawContext context,
+    public static void drawScrollBar(net.minecraft.client.gui.GuiGraphics context,
                                      int x,
                                      int y,
                                      int width,

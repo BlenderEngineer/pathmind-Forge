@@ -2,9 +2,9 @@ package com.pathmind.nodes;
 
 import java.util.Map;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 
 final class InventorySlotParameterDefinition {
     static NodeBehaviorDefinition create() {
@@ -25,7 +25,7 @@ final class InventorySlotParameterDefinition {
         }
         ItemStack resolvedStack = InventorySlotValueResolver.resolveComparableInventorySlotStack(values);
         if (resolvedStack != null && !resolvedStack.isEmpty()) {
-            Identifier itemId = Registries.ITEM.getId(resolvedStack.getItem());
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(resolvedStack.getItem());
             if (itemId != null) {
                 String itemValue = itemId.toString();
                 NodeBehaviorDefinitionSupport.put(values, "Item", itemValue);

@@ -8,8 +8,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Draws un-atlased GUI textures across the wildly different 1.21.x renderer APIs.
@@ -25,14 +25,14 @@ final class GuiTextureRenderer {
         return BACKEND != RendererBackend.NO_OP;
     }
 
-    static void drawIcon(DrawContext context, Identifier texture, int x, int y, int size, int color) {
+    static void drawIcon(GuiGraphics context, ResourceLocation texture, int x, int y, int size, int color) {
         drawIcon(context, List.of(texture), x, y, size, color);
     }
 
-    static void drawIcon(DrawContext context, List<Identifier> textures, int x, int y, int size, int color) {
+    static void drawIcon(GuiGraphics context, List<ResourceLocation> textures, int x, int y, int size, int color) {
         try {
             RuntimeException lastException = null;
-            for (Identifier texture : textures) {
+            for (ResourceLocation texture : textures) {
                 try {
                     BACKEND.draw(context, texture, x, y, size, color);
                     return;
@@ -53,7 +53,7 @@ final class GuiTextureRenderer {
     private static RendererBackend detectBackend() {
         RendererBackend backend = DirectBackend.tryCreate();
         if (backend != null) {
-            PathmindMod.LOGGER.debug("Using direct DrawContext GUI renderer.");
+            PathmindMod.LOGGER.debug("Using direct GuiGraphics GUI renderer.");
             return backend;
         }
 
@@ -84,7 +84,7 @@ final class GuiTextureRenderer {
     }
 
     private interface RendererBackend {
-        void draw(DrawContext context, Identifier texture, int x, int y, int size, int color);
+        void draw(GuiGraphics context, ResourceLocation texture, int x, int y, int size, int color);
 
         RendererBackend NO_OP = (context, texture, x, y, size, color) -> {
         };
@@ -109,7 +109,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawGuiTextureMethod() {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 if (!"drawGuiTexture".equals(method.getName())) {
                     continue;
                 }
@@ -117,7 +117,7 @@ final class GuiTextureRenderer {
                 if (parameters.length != 5) {
                     continue;
                 }
-                if (!Identifier.class.isAssignableFrom(parameters[0])) {
+                if (!ResourceLocation.class.isAssignableFrom(parameters[0])) {
                     continue;
                 }
                 boolean allInts = true;
@@ -137,7 +137,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawTextureMethod() {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 if (!"drawTexture".equals(method.getName())) {
                     continue;
                 }
@@ -145,7 +145,7 @@ final class GuiTextureRenderer {
                 if (parameters.length != 9) {
                     continue;
                 }
-                if (!Identifier.class.isAssignableFrom(parameters[0])) {
+                if (!ResourceLocation.class.isAssignableFrom(parameters[0])) {
                     continue;
                 }
                 if (parameters[1] != int.class || parameters[2] != int.class) {
@@ -164,7 +164,7 @@ final class GuiTextureRenderer {
         }
 
         @Override
-        public void draw(DrawContext context, Identifier texture, int x, int y, int size, int color) {
+        public void draw(GuiGraphics context, ResourceLocation texture, int x, int y, int size, int color) {
             float alpha = ((color >>> 24) & 0xFF) / 255.0f;
             float red = ((color >>> 16) & 0xFF) / 255.0f;
             float green = ((color >>> 8) & 0xFF) / 255.0f;
@@ -179,9 +179,9 @@ final class GuiTextureRenderer {
                     drawGuiTextureMethod.invoke(context, texture, x, y, size, size);
                     return;
                 }
-                throw new IllegalStateException("No direct DrawContext texture method available");
+                throw new IllegalStateException("No direct GuiGraphics texture method available");
             } catch (IllegalAccessException | InvocationTargetException exception) {
-                throw new RuntimeException("Direct DrawContext backend failed", exception);
+                throw new RuntimeException("Direct GuiGraphics backend failed", exception);
             } finally {
                 RenderStateBridge.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             }
@@ -244,7 +244,7 @@ final class GuiTextureRenderer {
                         continue;
                     }
                     Object location = getLocationMethod.invoke(candidate);
-                    if (location instanceof Identifier identifier) {
+                    if (location instanceof ResourceLocation identifier) {
                         String path = identifier.getPath();
                         if (path.endsWith("gui_textured")) {
                             return candidate;
@@ -262,7 +262,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawTextureMethod(Class<?> pipelineClass) {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (!matchesCommonParameters(parameters, pipelineClass)) {
                     continue;
@@ -274,7 +274,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawGuiTextureMethod(Class<?> pipelineClass) {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (!matchesGuiTextureParameters(parameters, pipelineClass)) {
                     continue;
@@ -286,7 +286,7 @@ final class GuiTextureRenderer {
         }
 
         @Override
-        public void draw(DrawContext context, Identifier texture, int x, int y, int size, int color) {
+        public void draw(GuiGraphics context, ResourceLocation texture, int x, int y, int size, int color) {
             boolean needsShaderTint = (drawGuiTextureMethod != null && !guiTextureSupportsTint && !texture.getPath().startsWith("textures/"))
                 || (drawTextureMethod != null && !supportsTint);
             if (needsShaderTint) {
@@ -315,11 +315,11 @@ final class GuiTextureRenderer {
     private static final class LegacyBackend implements RendererBackend {
         private final Method drawGuiTextureMethod;
         private final Method drawTextureMethod;
-        private final Function<Identifier, Object> renderLayerFactory;
+        private final Function<ResourceLocation, Object> renderLayerFactory;
         private final boolean guiTextureSupportsTint;
         private final boolean supportsTint;
 
-        private LegacyBackend(Method drawGuiTextureMethod, Method drawTextureMethod, Function<Identifier, Object> renderLayerFactory) {
+        private LegacyBackend(Method drawGuiTextureMethod, Method drawTextureMethod, Function<ResourceLocation, Object> renderLayerFactory) {
             this.drawGuiTextureMethod = drawGuiTextureMethod;
             this.drawTextureMethod = drawTextureMethod;
             this.renderLayerFactory = renderLayerFactory;
@@ -334,7 +334,7 @@ final class GuiTextureRenderer {
                 if (drawTextureMethod == null && drawGuiTextureMethod == null) {
                     return null;
                 }
-                Function<Identifier, Object> factory = locateRenderLayerFactory();
+                Function<ResourceLocation, Object> factory = locateRenderLayerFactory();
                 if (factory == null) {
                     return null;
                 }
@@ -345,7 +345,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawTextureMethod() {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (!matchesCommonParameters(parameters, Function.class)) {
                     continue;
@@ -357,7 +357,7 @@ final class GuiTextureRenderer {
         }
 
         private static Method findDrawGuiTextureMethod() {
-            for (Method method : DrawContext.class.getMethods()) {
+            for (Method method : GuiGraphics.class.getMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
                 if (!matchesGuiTextureParameters(parameters, Function.class)) {
                     continue;
@@ -368,9 +368,9 @@ final class GuiTextureRenderer {
             return null;
         }
 
-        private static Function<Identifier, Object> locateRenderLayerFactory() {
+        private static Function<ResourceLocation, Object> locateRenderLayerFactory() {
             Class<?> renderLayerClass = tryLoadClass(
-                "net.minecraft.client.render.RenderLayer",
+                "net.minecraft.client.renderer.RenderLayer",
                 "net.minecraft.class_1921"
             );
             if (renderLayerClass == null) {
@@ -396,7 +396,7 @@ final class GuiTextureRenderer {
             };
             for (String name : candidateNames) {
                 try {
-                    Method method = renderLayerClass.getMethod(name, Identifier.class);
+                    Method method = renderLayerClass.getMethod(name, ResourceLocation.class);
                     if (!renderLayerClass.isAssignableFrom(method.getReturnType())) {
                         continue;
                     }
@@ -409,7 +409,7 @@ final class GuiTextureRenderer {
         }
 
         @Override
-        public void draw(DrawContext context, Identifier texture, int x, int y, int size, int color) {
+        public void draw(GuiGraphics context, ResourceLocation texture, int x, int y, int size, int color) {
             boolean needsShaderTint = (drawGuiTextureMethod != null && !guiTextureSupportsTint && !texture.getPath().startsWith("textures/"))
                 || (drawTextureMethod != null && !supportsTint);
             if (needsShaderTint) {
@@ -454,7 +454,7 @@ final class GuiTextureRenderer {
         if (!firstParameterType.isAssignableFrom(parameters[0])) {
             return false;
         }
-        if (!Identifier.class.isAssignableFrom(parameters[1])) {
+        if (!ResourceLocation.class.isAssignableFrom(parameters[1])) {
             return false;
         }
         if (parameters[2] != int.class || parameters[3] != int.class) {
@@ -479,7 +479,7 @@ final class GuiTextureRenderer {
         if (!firstParameterType.isAssignableFrom(parameters[0])) {
             return false;
         }
-        if (!Identifier.class.isAssignableFrom(parameters[1])) {
+        if (!ResourceLocation.class.isAssignableFrom(parameters[1])) {
             return false;
         }
         for (int index = 2; index < parameters.length; index++) {
@@ -492,7 +492,7 @@ final class GuiTextureRenderer {
 
     private static Object[] createCommonParameters(
         Object firstParameter,
-        Identifier texture,
+        ResourceLocation texture,
         int x,
         int y,
         int size,
@@ -518,7 +518,7 @@ final class GuiTextureRenderer {
 
     private static Object[] createGuiTextureParameters(
         Object firstParameter,
-        Identifier texture,
+        ResourceLocation texture,
         int x,
         int y,
         int size,

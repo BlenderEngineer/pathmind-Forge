@@ -9,9 +9,9 @@ import com.pathmind.nodes.NodeType;
 import com.pathmind.ui.animation.AnimatedValue;
 import com.pathmind.ui.animation.AnimationHelper;
 import com.pathmind.ui.theme.UITheme;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +41,7 @@ public class VariablesOverlay {
         this.lastDisplayLines = List.of();
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer, int screenWidth, int screenHeight) {
+    public void render(GuiGraphics context, Font textRenderer, int screenWidth, int screenHeight) {
         List<RuntimeVariableEntry> entries = executionManager.getRuntimeVariableEntries();
         List<RuntimeListEntry> listEntries = executionManager.getRuntimeListEntries();
         List<String> lines = (entries.isEmpty() && listEntries.isEmpty()) ? List.of() : buildDisplayLines(entries, listEntries);
@@ -63,7 +63,7 @@ public class VariablesOverlay {
             return;
         }
 
-        int lineHeight = textRenderer.fontHeight + LINE_SPACING;
+        int lineHeight = textRenderer.lineHeight + LINE_SPACING;
         int overlayHeight = PADDING * 2 + lineHeight * lines.size();
         int slideOffset = (int) ((1f - progress) * SLIDE_OFFSET);
         int overlayX = MARGIN - slideOffset;
@@ -90,9 +90,9 @@ public class VariablesOverlay {
         for (int i = 0; i < lines.size(); i++) {
             String line = trimTextToWidth(lines.get(i), textRenderer, OVERLAY_WIDTH - PADDING * 2);
             int color = i == 0 ? UITheme.ACCENT_AMBER : UITheme.TEXT_HEADER;
-            context.drawTextWithShadow(
+            context.drawString(
                 textRenderer,
-                Text.literal(line),
+                Component.literal(line),
                 textX,
                 textY + i * lineHeight,
                 applyAlpha(color, progress)
@@ -250,7 +250,7 @@ public class VariablesOverlay {
                 result = formatSingle(values, "Toggle", "toggle");
                 break;
             case PARAM_HAND:
-                result = formatSingle(values, "Hand", "hand");
+                result = formatSingle(values, "InteractionHand", "hand");
                 break;
             case PARAM_PLACE_TARGET:
                 result = formatPlaceTarget(values);
@@ -409,15 +409,15 @@ public class VariablesOverlay {
         return trimmed.substring(0, 6);
     }
 
-    private String trimTextToWidth(String text, TextRenderer textRenderer, int maxWidth) {
+    private String trimTextToWidth(String text, Font textRenderer, int maxWidth) {
         if (text == null || textRenderer == null) {
             return "";
         }
-        if (textRenderer.getWidth(text) <= maxWidth) {
+        if (textRenderer.width(text) <= maxWidth) {
             return text;
         }
         String trimmed = text;
-        while (trimmed.length() > 0 && textRenderer.getWidth(trimmed + "...") > maxWidth) {
+        while (trimmed.length() > 0 && textRenderer.width(trimmed + "...") > maxWidth) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed + "...";

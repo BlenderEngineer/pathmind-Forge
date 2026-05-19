@@ -17,42 +17,23 @@ import com.pathmind.util.BlockSelection;
 import com.pathmind.util.ChatMessageTracker;
 import com.pathmind.util.DrawContextBridge;
 import com.pathmind.util.FabricEventTracker;
-import com.pathmind.util.MatrixStackBridge;
+import com.pathmind.util.PoseStackBridge;
 import com.pathmind.util.ServerJoinTracker;
-import com.pathmind.util.UseItemCallbackCompat;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
-import net.fabricmc.fabric.api.client.networking.v1.C2SConfigurationChannelEvents;
-import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientConfigurationConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientLoginConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.MerchantScreen;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.item.Item;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.MerchantScreen;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,8 +49,10 @@ import java.util.concurrent.CompletableFuture;
  * This class initializes client-specific features and event handlers.
  */
 @SuppressWarnings({"deprecation", "removal"})
-public class PathmindClientMod implements ClientModInitializer {
+@Mod(value = PathmindMod.MOD_ID, dist = Dist.CLIENT)
+public class PathmindClientMod {
     private static final Logger LOGGER = LoggerFactory.getLogger("Pathmind/Client");
+    private static PathmindClientMod instance;
     private static final String RECIPE_CACHE_NOTIFICATION_KEY = "recipe_cache_warmup";
     private static final int NAVIGATOR_NOTIFICATION_COLOR = 0xFF66D8FF;
     private static final double NAVIGATOR_PARAMETER_SEARCH_RADIUS = 64.0D;
@@ -113,12 +96,12 @@ public class PathmindClientMod implements ClientModInitializer {
 
     private static final String EVT_MESSAGE_RECEIVE_ALLOW_CHAT = "fabric.client.message.receive_allow_chat";
     private static final String EVT_MESSAGE_RECEIVE_ALLOW_GAME = "fabric.client.message.receive_allow_game";
-    private static final String EVT_MESSAGE_RECEIVE_CHAT = "fabric.client.message.receive_chat";
+    public static final String EVT_MESSAGE_RECEIVE_CHAT = "fabric.client.message.receive_chat";
     private static final String EVT_MESSAGE_RECEIVE_CHAT_CANCELED = "fabric.client.message.receive_chat_canceled";
     private static final String EVT_MESSAGE_RECEIVE_GAME = "fabric.client.message.receive_game";
     private static final String EVT_MESSAGE_RECEIVE_GAME_CANCELED = "fabric.client.message.receive_game_canceled";
     private static final String EVT_MESSAGE_RECEIVE_MODIFY_GAME = "fabric.client.message.receive_modify_game";
-    private static final String EVT_MESSAGE_SEND_ALLOW_CHAT = "fabric.client.message.send_allow_chat";
+    public static final String EVT_MESSAGE_SEND_ALLOW_CHAT = "fabric.client.message.send_allow_chat";
     private static final String EVT_MESSAGE_SEND_ALLOW_COMMAND = "fabric.client.message.send_allow_command";
     private static final String EVT_MESSAGE_SEND_CHAT = "fabric.client.message.send_chat";
     private static final String EVT_MESSAGE_SEND_CHAT_CANCELED = "fabric.client.message.send_chat_canceled";
@@ -128,15 +111,15 @@ public class PathmindClientMod implements ClientModInitializer {
     private static final String EVT_MESSAGE_SEND_MODIFY_COMMAND = "fabric.client.message.send_modify_command";
     private static final String EVT_SERVER_MESSAGE_CHAT = "fabric.server.message.chat_message";
 
-    private static final String EVT_RENDER_HUD = "fabric.client.render.hud";
-    private static final String EVT_PLAYER_ATTACK_BLOCK = "fabric.player.attack_block";
-    private static final String EVT_PLAYER_ATTACK_ENTITY = "fabric.player.attack_entity";
-    private static final String EVT_PLAYER_USE_BLOCK = "fabric.player.use_block";
-    private static final String EVT_PLAYER_USE_ENTITY = "fabric.player.use_entity";
-    private static final String EVT_PLAYER_USE_ITEM = "fabric.player.use_item";
+    public static final String EVT_RENDER_HUD = "fabric.client.render.hud";
+    public static final String EVT_PLAYER_ATTACK_BLOCK = "fabric.player.attack_block";
+    public static final String EVT_PLAYER_ATTACK_ENTITY = "fabric.player.attack_entity";
+    public static final String EVT_PLAYER_USE_BLOCK = "fabric.player.use_block";
+    public static final String EVT_PLAYER_USE_ENTITY = "fabric.player.use_entity";
+    public static final String EVT_PLAYER_USE_ITEM = "fabric.player.use_item";
 
-    @Override
-    public void onInitializeClient() {
+    public PathmindClientMod(IEventBus modBus) {
+        instance = this;
         LOGGER.info("Initializing Pathmind client mod");
 
         PresetManager.initialize();
@@ -146,86 +129,67 @@ public class PathmindClientMod implements ClientModInitializer {
         nodeErrorNotificationOverlay = NodeErrorNotificationOverlay.getInstance();
         variablesOverlay = new VariablesOverlay();
 
-        // Register keybindings
-        PathmindKeybinds.registerKeybinds();
-        KeyBindingHelper.registerKeyBinding(PathmindKeybinds.OPEN_VISUAL_EDITOR);
-        KeyBindingHelper.registerKeyBinding(PathmindKeybinds.PLAY_GRAPHS);
-        KeyBindingHelper.registerKeyBinding(PathmindKeybinds.STOP_GRAPHS);
-
-        // Hook into the main menu for button and keyboard support
-        PathmindMainMenuIntegration.register();
-
-        registerFabricEventForwarders();
-
-        // Register client tick events for keybind handling and event forwarding
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            handleKeybinds(client);
-            handleRecipeCacheWarmup(client);
-            NavigatorChatSuggestions.getInstance().tick(client);
-            PathmindNavigator.getInstance().tick(client);
-            ServerJoinTracker.tick(client);
-            fireFabricEvent(EVT_CLIENT_TICK_END);
-        });
-
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            worldShutdownHandled = false;
-            ChatMessageTracker.clear();
-            FabricEventTracker.clear();
-            ServerJoinTracker.recordClientJoin(client);
-            if (nodeErrorNotificationOverlay != null) {
-                nodeErrorNotificationOverlay.clear();
-            }
-            Node.resetRecipeCacheWarmup();
-            recipeCacheWarmed = false;
-            recipeCacheWarmupCooldownTicks = 0;
-            fireFabricEvent(EVT_CLIENT_PLAY_JOIN);
-        });
-
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            handleClientShutdown("play disconnect", false);
-            PathmindNavigator.getInstance().reset();
-            ChatMessageTracker.clear();
-            FabricEventTracker.clear();
-            ServerJoinTracker.clear();
-            if (nodeErrorNotificationOverlay != null) {
-                nodeErrorNotificationOverlay.clear();
-            }
-            Node.resetRecipeCacheWarmup();
-            fireFabricEvent(EVT_CLIENT_PLAY_DISCONNECT);
-        });
-
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-            handleClientShutdown("client stopping", true);
-            PathmindNavigator.getInstance().reset();
-            ChatMessageTracker.clear();
-            FabricEventTracker.clear();
-            ServerJoinTracker.clear();
-            if (nodeErrorNotificationOverlay != null) {
-                nodeErrorNotificationOverlay.clear();
-            }
-            Node.resetRecipeCacheWarmup();
-            fireFabricEvent(EVT_CLIENT_LIFECYCLE_STOPPING);
-        });
-
-        ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
-            if (sender == null || message == null) {
-                fireFabricEvent(EVT_MESSAGE_RECEIVE_CHAT);
-                return;
-            }
-            long timestamp = receptionTimestamp != null ? receptionTimestamp.toEpochMilli() : System.currentTimeMillis();
-            ChatMessageTracker.record(com.pathmind.util.GameProfileCompatibilityBridge.getName(sender), message.getString(), timestamp);
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_CHAT);
-        });
-        
-        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-            fireFabricEvent(EVT_RENDER_HUD);
-        });
-        
         LOGGER.info("Pathmind client mod initialized successfully");
     }
 
-    public static void renderHudOverlays(DrawContext drawContext, MinecraftClient client) {
-        if (client == null || client.player == null || client.textRenderer == null) {
+    public static void onEndClientTick(Minecraft client) {
+        if (instance == null) {
+            return;
+        }
+        instance.handleKeybinds(client);
+        instance.handleRecipeCacheWarmup(client);
+        NavigatorChatSuggestions.getInstance().tick(client);
+        PathmindNavigator.getInstance().tick(client);
+        ServerJoinTracker.tick(client);
+        fireLoaderEvent("fabric.client.lifecycle.end_client_tick");
+    }
+
+    public static void onPlayJoin() {
+        if (instance == null) {
+            return;
+        }
+        instance.worldShutdownHandled = false;
+        ChatMessageTracker.clear();
+        FabricEventTracker.clear();
+        ServerJoinTracker.recordClientJoin(Minecraft.getInstance());
+        if (nodeErrorNotificationOverlay != null) {
+            nodeErrorNotificationOverlay.clear();
+        }
+        Node.resetRecipeCacheWarmup();
+        instance.recipeCacheWarmed = false;
+        instance.recipeCacheWarmupCooldownTicks = 0;
+        fireLoaderEvent("fabric.client.networking.play_connection_join");
+    }
+
+    public static void onPlayDisconnect() {
+        if (instance == null) {
+            return;
+        }
+        instance.handleClientShutdown("play disconnect", false);
+        PathmindNavigator.getInstance().reset();
+        ChatMessageTracker.clear();
+        FabricEventTracker.clear();
+        ServerJoinTracker.clear();
+        if (nodeErrorNotificationOverlay != null) {
+            nodeErrorNotificationOverlay.clear();
+        }
+        Node.resetRecipeCacheWarmup();
+        fireLoaderEvent("fabric.client.networking.play_connection_disconnect");
+    }
+
+    public static void onChatReceived(String message) {
+        fireLoaderEvent(EVT_MESSAGE_RECEIVE_CHAT);
+    }
+
+    public static boolean handlePathmindNavigatorChat(String message) {
+        if (instance == null) {
+            return false;
+        }
+        return instance.handlePathmindNavigatorChatInternal(message);
+    }
+
+    public static void renderHudOverlays(GuiGraphics drawContext, Minecraft client) {
+        if (client == null || client.player == null || client.font == null) {
             return;
         }
 
@@ -235,30 +199,30 @@ public class PathmindClientMod implements ClientModInitializer {
             return;
         }
 
-        int scaledWidth = client.getWindow().getScaledWidth();
-        int scaledHeight = client.getWindow().getScaledHeight();
+        int scaledWidth = client.getWindow().getGuiScaledWidth();
+        int scaledHeight = client.getWindow().getGuiScaledHeight();
         DrawContextBridge.startNewRootLayer(drawContext);
-        Object matrices = drawContext.getMatrices();
-        MatrixStackBridge.push(matrices);
-        MatrixStackBridge.translateZ(matrices, 500.0f);
+        Object matrices = drawContext.pose();
+        PoseStackBridge.push(matrices);
+        PoseStackBridge.translateZ(matrices, 500.0f);
 
         try {
             if (activeNodeOverlay != null) {
-                activeNodeOverlay.render(drawContext, client.textRenderer, scaledWidth, scaledHeight);
+                activeNodeOverlay.render(drawContext, client.font, scaledWidth, scaledHeight);
             }
             if (variablesOverlay != null) {
-                variablesOverlay.render(drawContext, client.textRenderer, scaledWidth, scaledHeight);
+                variablesOverlay.render(drawContext, client.font, scaledWidth, scaledHeight);
             }
             if (navigatorDebugOverlay != null) {
-                navigatorDebugOverlay.render(drawContext, client.textRenderer, scaledWidth, scaledHeight);
+                navigatorDebugOverlay.render(drawContext, client.font, scaledWidth, scaledHeight);
             }
         } finally {
-            MatrixStackBridge.pop(matrices);
+            PoseStackBridge.pop(matrices);
         }
     }
 
-    public static void renderHudNotifications(DrawContext drawContext, MinecraftClient client) {
-        if (client == null || client.player == null || client.textRenderer == null || nodeErrorNotificationOverlay == null) {
+    public static void renderHudNotifications(GuiGraphics drawContext, Minecraft client) {
+        if (client == null || client.player == null || client.font == null || nodeErrorNotificationOverlay == null) {
             return;
         }
 
@@ -268,119 +232,31 @@ public class PathmindClientMod implements ClientModInitializer {
             return;
         }
 
-        int scaledWidth = client.getWindow().getScaledWidth();
-        int scaledHeight = client.getWindow().getScaledHeight();
+        int scaledWidth = client.getWindow().getGuiScaledWidth();
+        int scaledHeight = client.getWindow().getGuiScaledHeight();
         DrawContextBridge.startNewRootLayer(drawContext);
-        Object matrices = drawContext.getMatrices();
-        MatrixStackBridge.push(matrices);
-        MatrixStackBridge.translateZ(matrices, 500.0f);
+        Object matrices = drawContext.pose();
+        PoseStackBridge.push(matrices);
+        PoseStackBridge.translateZ(matrices, 500.0f);
         try {
-            nodeErrorNotificationOverlay.render(drawContext, client.textRenderer, scaledWidth, scaledHeight);
+            nodeErrorNotificationOverlay.render(drawContext, client.font, scaledWidth, scaledHeight);
         } finally {
-            MatrixStackBridge.pop(matrices);
+            PoseStackBridge.pop(matrices);
         }
     }
 
-    private void registerFabricEventForwarders() {
-        // Client lifecycle and world lifecycle events (ordered by API class / field name)
-        ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, world) -> fireFabricEvent(EVT_CLIENT_BLOCK_ENTITY_LOAD));
-        ClientBlockEntityEvents.BLOCK_ENTITY_UNLOAD.register((blockEntity, world) -> fireFabricEvent(EVT_CLIENT_BLOCK_ENTITY_UNLOAD));
-        ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> fireFabricEvent(EVT_CLIENT_CHUNK_LOAD));
-        ClientChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> fireFabricEvent(EVT_CLIENT_CHUNK_UNLOAD));
-        ClientEntityEvents.ENTITY_LOAD.register((entity, world) -> fireFabricEvent(EVT_CLIENT_ENTITY_LOAD));
-        ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> fireFabricEvent(EVT_CLIENT_ENTITY_UNLOAD));
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> fireFabricEvent(EVT_CLIENT_LIFECYCLE_STARTED));
-        ClientTickEvents.START_CLIENT_TICK.register(client -> fireFabricEvent(EVT_CLIENT_TICK_START));
-        ClientTickEvents.START_WORLD_TICK.register(world -> fireFabricEvent(EVT_CLIENT_WORLD_TICK_START));
-        ClientTickEvents.END_WORLD_TICK.register(world -> fireFabricEvent(EVT_CLIENT_WORLD_TICK_END));
-        // Client networking events
-        C2SConfigurationChannelEvents.REGISTER.register((handler, sender, client, channels) -> fireFabricEvent(EVT_CLIENT_CONFIG_CHANNEL_REGISTER));
-        C2SConfigurationChannelEvents.UNREGISTER.register((handler, sender, client, channels) -> fireFabricEvent(EVT_CLIENT_CONFIG_CHANNEL_UNREGISTER));
-        C2SPlayChannelEvents.REGISTER.register((handler, sender, client, channels) -> fireFabricEvent(EVT_CLIENT_PLAY_CHANNEL_REGISTER));
-        C2SPlayChannelEvents.UNREGISTER.register((handler, sender, client, channels) -> fireFabricEvent(EVT_CLIENT_PLAY_CHANNEL_UNREGISTER));
-        ClientConfigurationConnectionEvents.INIT.register((handler, client) -> fireFabricEvent(EVT_CLIENT_CONFIGURATION_INIT));
-        ClientConfigurationConnectionEvents.START.register((handler, client) -> fireFabricEvent(EVT_CLIENT_CONFIGURATION_START));
-        ClientConfigurationConnectionEvents.COMPLETE.register((handler, client) -> fireFabricEvent(EVT_CLIENT_CONFIGURATION_COMPLETE));
-        ClientConfigurationConnectionEvents.DISCONNECT.register((handler, client) -> fireFabricEvent(EVT_CLIENT_CONFIGURATION_DISCONNECT));
-        ClientLoginConnectionEvents.INIT.register((handler, client) -> fireFabricEvent(EVT_CLIENT_LOGIN_INIT));
-        ClientLoginConnectionEvents.QUERY_START.register((handler, client) -> fireFabricEvent(EVT_CLIENT_LOGIN_QUERY_START));
-        ClientLoginConnectionEvents.DISCONNECT.register((handler, client) -> fireFabricEvent(EVT_CLIENT_LOGIN_DISCONNECT));
-        ClientPlayConnectionEvents.INIT.register((handler, client) -> fireFabricEvent(EVT_CLIENT_PLAY_INIT));
-
-        // Client message events
-        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_ALLOW_CHAT);
-            return true;
-        });
-        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_ALLOW_GAME);
-            return true;
-        });
-        ClientReceiveMessageEvents.MODIFY_GAME.register((message, overlay) -> {
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_MODIFY_GAME);
-            return message;
-        });
-        ClientReceiveMessageEvents.GAME.register((message, overlay) -> fireFabricEvent(EVT_MESSAGE_RECEIVE_GAME));
-        ClientReceiveMessageEvents.CHAT_CANCELED.register((message, signedMessage, sender, params, receptionTimestamp) ->
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_CHAT_CANCELED));
-        ClientReceiveMessageEvents.GAME_CANCELED.register((message, overlay) -> fireFabricEvent(EVT_MESSAGE_RECEIVE_GAME_CANCELED));
-        ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-            fireFabricEvent(EVT_SERVER_MESSAGE_CHAT);
-            fireFabricEvent(EVT_MESSAGE_RECEIVE_CHAT);
-        });
-
-        ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
-            fireFabricEvent(EVT_MESSAGE_SEND_ALLOW_CHAT);
-            if (handlePathmindNavigatorChat(message)) {
-                return false;
-            }
-            return true;
-        });
-        ClientSendMessageEvents.ALLOW_COMMAND.register(command -> {
-            fireFabricEvent(EVT_MESSAGE_SEND_ALLOW_COMMAND);
-            if (handlePathmindNavigatorCommand(command)) {
-                return false;
-            }
-            return true;
-        });
-        ClientSendMessageEvents.MODIFY_CHAT.register(message -> {
-            fireFabricEvent(EVT_MESSAGE_SEND_MODIFY_CHAT);
-            return message;
-        });
-        ClientSendMessageEvents.MODIFY_COMMAND.register(command -> {
-            fireFabricEvent(EVT_MESSAGE_SEND_MODIFY_COMMAND);
-            return command;
-        });
-        ClientSendMessageEvents.CHAT.register(message -> fireFabricEvent(EVT_MESSAGE_SEND_CHAT));
-        ClientSendMessageEvents.COMMAND.register(command -> fireFabricEvent(EVT_MESSAGE_SEND_COMMAND));
-        ClientSendMessageEvents.CHAT_CANCELED.register(message -> fireFabricEvent(EVT_MESSAGE_SEND_CHAT_CANCELED));
-        ClientSendMessageEvents.COMMAND_CANCELED.register(command -> fireFabricEvent(EVT_MESSAGE_SEND_COMMAND_CANCELED));
-
-        // Player interaction events
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            fireFabricEvent(EVT_PLAYER_ATTACK_BLOCK);
-            return ActionResult.PASS;
-        });
-        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            fireFabricEvent(EVT_PLAYER_ATTACK_ENTITY);
-            return ActionResult.PASS;
-        });
-        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-            fireFabricEvent(EVT_PLAYER_USE_BLOCK);
-            return ActionResult.PASS;
-        });
-        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            fireFabricEvent(EVT_PLAYER_USE_ENTITY);
-            return ActionResult.PASS;
-        });
-        UseItemCallbackCompat.register(this::fireFabricEvent, EVT_PLAYER_USE_ITEM);
-    }
-
-    private void fireFabricEvent(String eventName) {
+    public static void fireLoaderEvent(String eventName) {
         if (eventName == null || eventName.isEmpty()) {
             return;
         }
         FabricEventTracker.record(eventName);
+    }
+
+    public static boolean handlePathmindNavigatorCommand(String command) {
+        if (instance == null) {
+            return false;
+        }
+        return instance.handlePathmindNavigatorCommandInternal(command);
     }
 
     private void handleClientShutdown(String reason) {
@@ -396,26 +272,26 @@ public class PathmindClientMod implements ClientModInitializer {
         ExecutionManager.getInstance().requestStopAll();
     }
 
-    private void handleKeybinds(MinecraftClient client) {
+    private void handleKeybinds(Minecraft client) {
         if (client == null) {
             return;
         }
 
         // Check if visual editor keybind was pressed (Title screen only)
-        while (PathmindKeybinds.OPEN_VISUAL_EDITOR.wasPressed()) {
-            if (client.currentScreen != null && !(client.currentScreen instanceof TitleScreen)) {
+        while (PathmindKeybinds.OPEN_VISUAL_EDITOR.consumeClick()) {
+            if (client.screen != null && !(client.screen instanceof TitleScreen)) {
                 continue;
             }
-            PathmindScreens.openVisualEditorOrWarn(client, client.currentScreen);
+            PathmindScreens.openVisualEditorOrWarn(client, client.screen);
         }
 
         ExecutionManager manager = ExecutionManager.getInstance();
-        boolean editorOpen = PathmindScreens.isVisualEditorScreen(client.currentScreen);
+        boolean editorOpen = PathmindScreens.isVisualEditorScreen(client.screen);
         // Allow execution to continue while GUIs are open so key-pressed sensors can fire.
-        manager.setSingleplayerPaused(client.isInSingleplayer() && editorOpen);
+        manager.setSingleplayerPaused(client.isLocalServer() && editorOpen);
 
-        if (client.world == null) {
-            if (!PathmindScreens.isVisualEditorScreen(client.currentScreen)) {
+        if (client.level == null) {
+            if (!PathmindScreens.isVisualEditorScreen(client.screen)) {
                 handleClientShutdown("world unavailable", false);
             }
             return;
@@ -424,7 +300,7 @@ public class PathmindClientMod implements ClientModInitializer {
         // Don't handle k/j keybinds when chat or Pathmind GUI is open
         boolean chatOrGuiOpen = shouldIgnoreKeybinds(client);
 
-        boolean stopDown = PathmindKeybinds.STOP_GRAPHS.isPressed();
+        boolean stopDown = PathmindKeybinds.STOP_GRAPHS.isDown();
         if (!chatOrGuiOpen && stopDown && !stopGraphsKeyDown) {
             ExecutionManager.getInstance().requestStopAll();
         }
@@ -434,32 +310,32 @@ public class PathmindClientMod implements ClientModInitializer {
             return;
         }
 
-        boolean playDown = PathmindKeybinds.PLAY_GRAPHS.isPressed();
+        boolean playDown = PathmindKeybinds.PLAY_GRAPHS.isDown();
         if (!chatOrGuiOpen && playDown && !playGraphsKeyDown) {
             ExecutionManager.getInstance().playAllGraphs();
         }
         playGraphsKeyDown = playDown;
     }
 
-    private boolean shouldIgnoreKeybinds(MinecraftClient client) {
-        if (client == null || client.currentScreen == null) {
+    private boolean shouldIgnoreKeybinds(Minecraft client) {
+        if (client == null || client.screen == null) {
             return false;
         }
         // Check if chat screen is open
-        if (client.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen) {
+        if (client.screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
             return true;
         }
         // Check if Pathmind visual editor is open
-        if (PathmindScreens.isVisualEditorScreen(client.currentScreen)) {
+        if (PathmindScreens.isVisualEditorScreen(client.screen)) {
             return true;
         }
         return false;
     }
 
-    private void handleRecipeCacheWarmup(MinecraftClient client) {
+    private void handleRecipeCacheWarmup(Minecraft client) {
         // Integrated-server availability is the real prerequisite for recipe-cache warmup.
         // Using it directly is more robust across version-specific singleplayer state handling.
-        if (client == null || client.getServer() == null) {
+        if (client == null || client.getSingleplayerServer() == null) {
             if (nodeErrorNotificationOverlay != null) {
                 nodeErrorNotificationOverlay.dismiss(RECIPE_CACHE_NOTIFICATION_KEY);
             }
@@ -490,7 +366,7 @@ public class PathmindClientMod implements ClientModInitializer {
                 0.0f
             );
         }
-        if (client.getServer() == null) {
+        if (client.getSingleplayerServer() == null) {
             if (nodeErrorNotificationOverlay != null) {
                 nodeErrorNotificationOverlay.showProgress(
                     RECIPE_CACHE_NOTIFICATION_KEY,
@@ -534,7 +410,7 @@ public class PathmindClientMod implements ClientModInitializer {
         }
     }
 
-    private boolean handlePathmindNavigatorChat(String message) {
+    private boolean handlePathmindNavigatorChatInternal(String message) {
         if (message == null) {
             return false;
         }
@@ -545,7 +421,7 @@ public class PathmindClientMod implements ClientModInitializer {
         return runNavigatorCommand(trimmed.substring(1).trim());
     }
 
-    private boolean handlePathmindNavigatorCommand(String command) {
+    private boolean handlePathmindNavigatorCommandInternal(String command) {
         if (command == null) {
             return false;
         }
@@ -557,7 +433,7 @@ public class PathmindClientMod implements ClientModInitializer {
     }
 
     private boolean runNavigatorCommand(String rawCommand) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return true;
         }
@@ -612,8 +488,8 @@ public class PathmindClientMod implements ClientModInitializer {
         return true;
     }
 
-    private void handleNavigatorGoto(MinecraftClient client, String[] parts) {
-        if (client == null || client.player == null || client.world == null) {
+    private void handleNavigatorGoto(Minecraft client, String[] parts) {
+        if (client == null || client.player == null || client.level == null) {
             showNavigatorMessage("Pathmind Nav is unavailable right now.");
             return;
         }
@@ -634,8 +510,8 @@ public class PathmindClientMod implements ClientModInitializer {
         showNavigatorMessage("Pathmind Nav: heading to " + target.pos().getX() + " " + target.pos().getY() + " " + target.pos().getZ());
     }
 
-    private void handleNavigatorPathPreview(MinecraftClient client, String[] parts) {
-        if (client == null || client.player == null || client.world == null) {
+    private void handleNavigatorPathPreview(Minecraft client, String[] parts) {
+        if (client == null || client.player == null || client.level == null) {
             showNavigatorMessage("Pathmind Nav is unavailable right now.");
             return;
         }
@@ -659,7 +535,7 @@ public class PathmindClientMod implements ClientModInitializer {
     private record NavigatorTarget(BlockPos pos, boolean nearBlock) {
     }
 
-    private NavigatorTarget parseNavigatorTarget(MinecraftClient client, String[] parts, int coordinateStartIndex, String usageCommand) {
+    private NavigatorTarget parseNavigatorTarget(Minecraft client, String[] parts, int coordinateStartIndex, String usageCommand) {
         if (client == null || client.player == null) {
             showNavigatorMessage("Pathmind Nav is unavailable right now.");
             return null;
@@ -697,8 +573,8 @@ public class PathmindClientMod implements ClientModInitializer {
         return null;
     }
 
-    private NavigatorTarget resolveNavigatorBlockTarget(MinecraftClient client, String rawBlockId, String usageCommand) {
-        if (client == null || client.player == null || client.world == null) {
+    private NavigatorTarget resolveNavigatorBlockTarget(Minecraft client, String rawBlockId, String usageCommand) {
+        if (client == null || client.player == null || client.level == null) {
             showNavigatorMessage("Pathmind Nav is unavailable right now.");
             return null;
         }
@@ -707,8 +583,8 @@ public class PathmindClientMod implements ClientModInitializer {
             showNavigatorMessage("Usage: " + usageCommand + " block <block_id>");
             return null;
         }
-        Identifier identifier = Identifier.tryParse(normalized);
-        if (identifier == null || !Registries.BLOCK.containsId(identifier)) {
+        ResourceLocation identifier = ResourceLocation.tryParse(normalized);
+        if (identifier == null || !BuiltInRegistries.BLOCK.containsKey(identifier)) {
             showNavigatorMessage("Unknown block identifier: " + rawBlockId);
             return null;
         }
@@ -728,8 +604,8 @@ public class PathmindClientMod implements ClientModInitializer {
         return new NavigatorTarget(nearest.get(), true);
     }
 
-    private NavigatorTarget resolveNavigatorItemTarget(MinecraftClient client, String rawItemId, String usageCommand) {
-        if (client == null || client.player == null || client.world == null) {
+    private NavigatorTarget resolveNavigatorItemTarget(Minecraft client, String rawItemId, String usageCommand) {
+        if (client == null || client.player == null || client.level == null) {
             showNavigatorMessage("Pathmind Nav is unavailable right now.");
             return null;
         }
@@ -738,19 +614,19 @@ public class PathmindClientMod implements ClientModInitializer {
             showNavigatorMessage("Usage: " + usageCommand + " item <item_id>");
             return null;
         }
-        Identifier identifier = Identifier.tryParse(normalized);
-        if (identifier == null || !Registries.ITEM.containsId(identifier)) {
+        ResourceLocation identifier = ResourceLocation.tryParse(normalized);
+        if (identifier == null || !BuiltInRegistries.ITEM.containsKey(identifier)) {
             showNavigatorMessage("Unknown item identifier: " + rawItemId);
             return null;
         }
 
-        Item item = Registries.ITEM.get(identifier);
+        Item item = BuiltInRegistries.ITEM.get(identifier);
         Optional<ItemEntity> nearest = findNearestDroppedItemEntity(client, item, NAVIGATOR_PARAMETER_SEARCH_RADIUS);
         if (nearest.isEmpty()) {
             showNavigatorMessage("No nearby dropped item found for " + normalized + ".");
             return null;
         }
-        return new NavigatorTarget(nearest.get().getBlockPos(), false);
+        return new NavigatorTarget(nearest.get().blockPosition(), false);
     }
 
     private String normalizeNavigatorResourceId(String rawId, boolean block) {
@@ -762,24 +638,24 @@ public class PathmindClientMod implements ClientModInitializer {
             return null;
         }
         if (block) {
-            Identifier identifier = BlockSelection.extractBlockIdentifier(trimmed);
+            ResourceLocation identifier = BlockSelection.extractBlockResourceLocation(trimmed);
             return identifier != null ? identifier.toString() : null;
         }
-        Identifier identifier = Identifier.tryParse(trimmed);
+        ResourceLocation identifier = ResourceLocation.tryParse(trimmed);
         if (identifier != null) {
             return identifier.toString();
         }
-        Identifier namespaced = Identifier.tryParse("minecraft:" + trimmed.toLowerCase(Locale.ROOT));
+        ResourceLocation namespaced = ResourceLocation.tryParse("minecraft:" + trimmed.toLowerCase(Locale.ROOT));
         return namespaced != null ? namespaced.toString() : null;
     }
 
-    private Optional<BlockPos> findNearestBlock(MinecraftClient client, List<BlockSelection> selections, double range) {
-        if (client == null || client.player == null || client.world == null || selections == null || selections.isEmpty()) {
+    private Optional<BlockPos> findNearestBlock(Minecraft client, List<BlockSelection> selections, double range) {
+        if (client == null || client.player == null || client.level == null || selections == null || selections.isEmpty()) {
             return Optional.empty();
         }
         int radius = Math.max(1, Math.min((int) Math.ceil(range), 64));
-        BlockPos playerPos = client.player.getBlockPos();
-        BlockPos.Mutable mutable = new BlockPos.Mutable();
+        BlockPos playerPos = client.player.blockPosition();
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
         BlockPos bestPos = null;
         double bestDistance = Double.MAX_VALUE;
 
@@ -787,7 +663,7 @@ public class PathmindClientMod implements ClientModInitializer {
             for (int dy = -radius; dy <= radius; dy++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     mutable.set(playerPos.getX() + dx, playerPos.getY() + dy, playerPos.getZ() + dz);
-                    BlockState state = client.world.getBlockState(mutable);
+                    BlockState state = client.level.getBlockState(mutable);
                     if (state == null || state.isAir()) {
                         continue;
                     }
@@ -801,10 +677,10 @@ public class PathmindClientMod implements ClientModInitializer {
                     if (!matches) {
                         continue;
                     }
-                    double distance = mutable.getSquaredDistance(playerPos);
+                    double distance = mutable.distSqr(playerPos);
                     if (distance < bestDistance) {
                         bestDistance = distance;
-                        bestPos = mutable.toImmutable();
+                        bestPos = mutable.immutable();
                     }
                 }
             }
@@ -813,22 +689,22 @@ public class PathmindClientMod implements ClientModInitializer {
         return Optional.ofNullable(bestPos);
     }
 
-    private Optional<ItemEntity> findNearestDroppedItemEntity(MinecraftClient client, Item item, double range) {
-        if (client == null || client.player == null || client.world == null || item == null) {
+    private Optional<ItemEntity> findNearestDroppedItemEntity(Minecraft client, Item item, double range) {
+        if (client == null || client.player == null || client.level == null || item == null) {
             return Optional.empty();
         }
         double searchRadius = Math.max(1.0D, range);
-        Box searchBox = client.player.getBoundingBox().expand(searchRadius);
-        List<ItemEntity> entities = client.world.getEntitiesByClass(
+        AABB searchBox = client.player.getBoundingBox().inflate(searchRadius);
+        List<ItemEntity> entities = client.level.getEntitiesOfClass(
             ItemEntity.class,
             searchBox,
-            entity -> entity != null && !entity.isRemoved() && !entity.getStack().isEmpty() && entity.getStack().isOf(item)
+            entity -> entity != null && !entity.isRemoved() && !entity.getItem().isEmpty() && entity.getItem().is(item)
         );
         if (entities.isEmpty()) {
             return Optional.empty();
         }
         ItemEntity nearest = entities.stream()
-            .min(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(client.player)))
+            .min(Comparator.comparingDouble(entity -> entity.distanceToSqr(client.player)))
             .orElse(null);
         return Optional.ofNullable(nearest);
     }

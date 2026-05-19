@@ -221,35 +221,35 @@ public class PathmindMarketplaceScreen extends Screen {
         if (searchField == null) {
             searchField = new PathmindTextField(this.textRenderer, 0, 0, SEARCH_FIELD_WIDTH, SEARCH_FIELD_HEIGHT, Text.literal("Search presets"));
             searchField.setMaxLength(64);
-            searchField.setDrawsBackground(false);
-            searchField.setEditableColor(UITheme.TEXT_PRIMARY);
-            searchField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            searchField.setChangedListener(value -> applyFilters());
-            this.addSelectableChild(searchField);
+            searchField.setBordered(false);
+            searchField.setTextColor(UITheme.TEXT_PRIMARY);
+            searchField.setTextColor(UITheme.TEXT_TERTIARY);
+            searchField.setResponder(value -> applyFilters());
+            this.addRenderableWidget(searchField);
         }
         if (publishNameField == null) {
             publishNameField = new PathmindTextField(this.textRenderer, 0, 0, 240, 18, Text.literal("Preset name"));
             publishNameField.setMaxLength(64);
-            publishNameField.setDrawsBackground(false);
-            publishNameField.setEditableColor(UITheme.TEXT_PRIMARY);
-            publishNameField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            this.addSelectableChild(publishNameField);
+            publishNameField.setBordered(false);
+            publishNameField.setTextColor(UITheme.TEXT_PRIMARY);
+            publishNameField.setTextColor(UITheme.TEXT_TERTIARY);
+            this.addRenderableWidget(publishNameField);
         }
         if (publishDescriptionField == null) {
             publishDescriptionField = new PathmindTextField(this.textRenderer, 0, 0, 240, 18, Text.literal("Description"));
             publishDescriptionField.setMaxLength(180);
-            publishDescriptionField.setDrawsBackground(false);
-            publishDescriptionField.setEditableColor(UITheme.TEXT_PRIMARY);
-            publishDescriptionField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            this.addSelectableChild(publishDescriptionField);
+            publishDescriptionField.setBordered(false);
+            publishDescriptionField.setTextColor(UITheme.TEXT_PRIMARY);
+            publishDescriptionField.setTextColor(UITheme.TEXT_TERTIARY);
+            this.addRenderableWidget(publishDescriptionField);
         }
         if (publishTagsField == null) {
             publishTagsField = new PathmindTextField(this.textRenderer, 0, 0, 240, 18, Text.literal("Tags"));
             publishTagsField.setMaxLength(96);
-            publishTagsField.setDrawsBackground(false);
-            publishTagsField.setEditableColor(UITheme.TEXT_PRIMARY);
-            publishTagsField.setUneditableColor(UITheme.TEXT_TERTIARY);
-            this.addSelectableChild(publishTagsField);
+            publishTagsField.setBordered(false);
+            publishTagsField.setTextColor(UITheme.TEXT_PRIMARY);
+            publishTagsField.setTextColor(UITheme.TEXT_TERTIARY);
+            this.addRenderableWidget(publishTagsField);
         }
         if (!initialFetchStarted && !editorPopupMode) {
             initialFetchStarted = true;
@@ -2298,7 +2298,7 @@ public class PathmindMarketplaceScreen extends Screen {
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         if (pendingConfirmAction != null || confirmPopupAnimation.isVisible()) {
             closeConfirmPopup();
             return;

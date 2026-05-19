@@ -137,10 +137,10 @@ final class NodeParameterDefinitionRegistry {
             of("equip_armor_slot", "ArmorSlot", ParameterType.STRING, "head"));
         registerType(NodeType.EQUIP_HAND,
             of("equip_hand_source_slot", "SourceSlot", ParameterType.INTEGER, "0"),
-            of("equip_hand_hand", "Hand", ParameterType.STRING, "main"));
+            of("equip_hand_hand", "InteractionHand", ParameterType.STRING, "main"));
         registerType(NodeType.WRITE_BOOK, of("Page", ParameterType.INTEGER, "1"));
         registerType(NodeType.USE,
-            of("Hand", ParameterType.STRING, "main"),
+            of("InteractionHand", ParameterType.STRING, "main"),
             of("UseDurationSeconds", ParameterType.DOUBLE, "0.0"),
             of("UseAmount", ParameterType.BOOLEAN, "false"),
             of("RepeatCount", ParameterType.INTEGER, "1"),
@@ -156,7 +156,7 @@ final class NodeParameterDefinitionRegistry {
             of("Duration", ParameterType.DOUBLE, "0.0"),
             of("UseAmount", ParameterType.BOOLEAN, "false"));
         registerType(NodeType.INTERACT,
-            of("Hand", ParameterType.STRING, "main"),
+            of("InteractionHand", ParameterType.STRING, "main"),
             of("Block", ParameterType.BLOCK_TYPE, ""),
             of("PreferEntity", ParameterType.BOOLEAN, "true"),
             of("PreferBlock", ParameterType.BOOLEAN, "true"),
@@ -165,7 +165,7 @@ final class NodeParameterDefinitionRegistry {
             of("SneakWhileInteracting", ParameterType.BOOLEAN, "false"),
             of("RestoreSneakState", ParameterType.BOOLEAN, "true"));
         registerType(NodeType.PLACE_HAND,
-            of("Hand", ParameterType.STRING, "main"),
+            of("InteractionHand", ParameterType.STRING, "main"),
             of("SneakWhilePlacing", ParameterType.BOOLEAN, "false"),
             of("SwingOnPlace", ParameterType.BOOLEAN, "true"),
             of("RequireBlockHit", ParameterType.BOOLEAN, "true"),
@@ -260,7 +260,7 @@ final class NodeParameterDefinitionRegistry {
             of("boolean_mode", "Mode", ParameterType.STRING, BOOLEAN_MODE_LITERAL),
             of("boolean_toggle", "Toggle", ParameterType.BOOLEAN, "true"),
             of("boolean_variable", "Variable", ParameterType.STRING, ""));
-        registerType(NodeType.PARAM_HAND, of("Hand", ParameterType.STRING, "main"));
+        registerType(NodeType.PARAM_HAND, of("InteractionHand", ParameterType.STRING, "main"));
         registerType(NodeType.PARAM_GUI, of("GUI", ParameterType.STRING, "Any"));
         registerType(NodeType.PARAM_KEY, of("Key", ParameterType.STRING, "GLFW_KEY_SPACE"));
         registerType(NodeType.PARAM_MOUSE_BUTTON, of("MouseButton", ParameterType.STRING, "Left"));

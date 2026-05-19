@@ -85,7 +85,7 @@ final class NodeDimensionCalculator {
             Node sensor = node.getAttachedSensor();
             int sensorContentWidth = Node.SENSOR_SLOT_MIN_CONTENT_WIDTH;
             if (sensor != null) {
-                sensorContentWidth = Math.max(sensorContentWidth, sensor.getWidth());
+                sensorContentWidth = Math.max(sensorContentWidth, sensor.width());
             }
             int requiredWidth = sensorContentWidth + 2 * (Node.SENSOR_SLOT_INNER_PADDING + Node.SENSOR_SLOT_MARGIN_HORIZONTAL);
             computedWidth = Math.max(computedWidth, requiredWidth);
@@ -94,7 +94,7 @@ final class NodeDimensionCalculator {
             Node actionNode = node.getAttachedActionNode();
             int actionContentWidth = Node.ACTION_SLOT_MIN_CONTENT_WIDTH;
             if (actionNode != null) {
-                actionContentWidth = Math.max(actionContentWidth, actionNode.getWidth());
+                actionContentWidth = Math.max(actionContentWidth, actionNode.width());
             }
             int requiredWidth = actionContentWidth + 2 * (Node.ACTION_SLOT_INNER_PADDING + Node.ACTION_SLOT_MARGIN_HORIZONTAL);
             computedWidth = Math.max(computedWidth, requiredWidth);
@@ -161,7 +161,7 @@ final class NodeDimensionCalculator {
         int parameterContentWidth = Node.PARAMETER_SLOT_MIN_CONTENT_WIDTH;
         for (Node parameterNode : node.getAttachedParameterNodes()) {
             if (parameterNode != null) {
-                parameterContentWidth = Math.max(parameterContentWidth, parameterNode.getWidth());
+                parameterContentWidth = Math.max(parameterContentWidth, parameterNode.width());
             }
         }
         if (node.isComparisonOperator()) {

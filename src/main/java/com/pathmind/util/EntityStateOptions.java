@@ -1,13 +1,13 @@
 package com.pathmind.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.DyeColor;
-import net.minecraft.village.VillagerProfession;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.level.Level;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,14 +25,14 @@ public final class EntityStateOptions {
     public record StateOption(String value, String displayText) {
     }
 
-    public static List<StateOption> getOptions(EntityType<?> type, World world) {
+    public static List<StateOption> getOptions(EntityType<?> type, Level world) {
         if (type == null) {
             return List.of();
         }
 
         List<StateOption> options = new ArrayList<>();
 
-        Identifier typeId = Registries.ENTITY_TYPE.getId(type);
+        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(type);
         if (typeId != null) {
             String path = typeId.getPath();
             if ("axolotl".equals(path)) {
@@ -93,7 +93,7 @@ public final class EntityStateOptions {
             options.add(new StateOption("sheared=false", "Not Sheared"));
             if (hasMethod(entityClass, "getColor")) {
                 for (DyeColor color : DyeColor.values()) {
-                    String name = color.asString();
+                    String name = color.getName();
                     options.add(new StateOption("color=" + name, "Color: " + titleCase(name)));
                 }
             }
@@ -126,7 +126,7 @@ public final class EntityStateOptions {
             addProfessions = true;
         }
         if (addProfessions) {
-            for (Identifier id : Registries.VILLAGER_PROFESSION.getIds()) {
+            for (ResourceLocation id : BuiltInRegistries.VILLAGER_PROFESSION.keySet()) {
                 if (id == null) {
                     continue;
                 }
@@ -160,13 +160,13 @@ public final class EntityStateOptions {
         }
     }
 
-    private static Entity createEntityCompat(EntityType<?> type, World world) {
+    private static Entity createEntityCompat(EntityType<?> type, Level world) {
         if (type == null || world == null) {
             return null;
         }
         try {
-            java.lang.reflect.Method method = EntityType.class.getMethod("create", World.class, SpawnReason.class);
-            SpawnReason[] reasons = SpawnReason.values();
+            java.lang.reflect.Method method = EntityType.class.getMethod("create", Level.class, MobSpawnType.class);
+            MobSpawnType[] reasons = MobSpawnType.values();
             Object reason = reasons.length > 0 ? reasons[0] : null;
             if (reason == null) {
                 return null;
@@ -176,7 +176,7 @@ public final class EntityStateOptions {
         } catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException | IllegalAccessException ignored) {
         }
         try {
-            java.lang.reflect.Method method = EntityType.class.getMethod("create", World.class);
+            java.lang.reflect.Method method = EntityType.class.getMethod("create", Level.class);
             Object result = method.invoke(type, world);
             return result instanceof Entity entity ? entity : null;
         } catch (NoSuchMethodException | java.lang.reflect.InvocationTargetException | IllegalAccessException ignored) {
@@ -184,7 +184,7 @@ public final class EntityStateOptions {
         }
     }
 
-    public static boolean isStateSupported(EntityType<?> type, World world, String state) {
+    public static boolean isStateSupported(EntityType<?> type, Level world, String state) {
         if (state == null || state.trim().isEmpty()) {
             return true;
         }
@@ -364,7 +364,7 @@ public final class EntityStateOptions {
         }
         Object color = invokeObject(entity, "getColor");
         if (color instanceof DyeColor dyeColor) {
-            return dyeColor.asString().equalsIgnoreCase(value.trim());
+            return dyeColor.getName().equalsIgnoreCase(value.trim());
         }
         return false;
     }
@@ -409,7 +409,7 @@ public final class EntityStateOptions {
             return false;
         }
         if (profession instanceof VillagerProfession villagerProfession) {
-            Identifier id = Registries.VILLAGER_PROFESSION.getId(villagerProfession);
+            ResourceLocation id = BuiltInRegistries.VILLAGER_PROFESSION.getKey(villagerProfession);
             if (id != null && id.getPath().equalsIgnoreCase(desired)) {
                 return true;
             }

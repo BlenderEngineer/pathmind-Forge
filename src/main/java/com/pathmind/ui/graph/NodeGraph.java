@@ -20,23 +20,23 @@ import com.pathmind.ui.animation.HoverAnimator;
 import com.pathmind.ui.theme.UIStyleHelper;
 import com.pathmind.ui.theme.UITheme;
 import com.pathmind.util.BlockSelection;
-import com.pathmind.util.MatrixStackBridge;
+import com.pathmind.util.PoseStackBridge;
 import com.pathmind.util.DropdownLayoutHelper;
 import com.pathmind.util.GuiSelectionMode;
 import com.pathmind.util.TextRenderUtil;
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.registry.Registries;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -551,7 +551,7 @@ public class NodeGraph {
     private void setZoomScale(float newScale, int anchorScreenX, int anchorScreenY) {
         float minScale = ZoomLevel.DISTANT.getScale();
         float maxScale = ZoomLevel.FOCUSED.getScale();
-        float clampedScale = MathHelper.clamp(newScale, minScale, maxScale);
+        float clampedScale = Mth.clamp(newScale, minScale, maxScale);
         if (Math.abs(clampedScale - zoomScale) <= ZOOM_EPSILON) {
             return;
         }
@@ -721,7 +721,7 @@ public class NodeGraph {
             Node attached = node.getAttachedSensor();
             node.detachSensor();
             if (repositionDetachments && attached != null) {
-                attached.setPosition(node.getX() + node.getWidth() + 12, node.getY());
+                attached.setPosition(node.getX() + node.width() + 12, node.getY());
             }
         }
 
@@ -729,7 +729,7 @@ public class NodeGraph {
             Node attached = node.getAttachedActionNode();
             node.detachActionNode();
             if (repositionDetachments && attached != null) {
-                attached.setPosition(node.getX() + node.getWidth() + 12, node.getY());
+                attached.setPosition(node.getX() + node.width() + 12, node.getY());
             }
         }
 
@@ -1025,19 +1025,19 @@ public class NodeGraph {
     }
 
     private int getViewportWorldWidth() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return 0;
         }
-        return Math.round(client.getWindow().getScaledWidth() / Math.max(0.0001f, getZoomScale()));
+        return Math.round(client.getWindow().getGuiScaledWidth() / Math.max(0.0001f, getZoomScale()));
     }
 
     private int getViewportWorldHeight() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return 0;
         }
-        return Math.round(client.getWindow().getScaledHeight() / Math.max(0.0001f, getZoomScale()));
+        return Math.round(client.getWindow().getGuiScaledHeight() / Math.max(0.0001f, getZoomScale()));
     }
 
     private boolean intersectsViewport(SelectionBounds bounds) {
@@ -1066,7 +1066,7 @@ public class NodeGraph {
         return intersectsViewport(new SelectionBounds(
             node.getX(),
             node.getY(),
-            node.getX() + node.getWidth(),
+            node.getX() + node.width(),
             node.getY() + node.getHeight()
         ));
     }
@@ -1198,7 +1198,7 @@ public class NodeGraph {
                 continue;
             }
             int nodeLeft = node.getX();
-            int nodeRight = node.getX() + node.getWidth();
+            int nodeRight = node.getX() + node.width();
             int nodeTop = node.getY();
             int nodeBottom = node.getY() + node.getHeight();
             boolean intersecting = nodeRight >= worldLeft &&
@@ -1315,9 +1315,9 @@ public class NodeGraph {
         double bestDistance = Double.MAX_VALUE;
         int left = node.getX();
         int top = node.getY();
-        int right = left + node.getWidth();
+        int right = left + node.width();
         int bottom = top + node.getHeight();
-        double centerX = left + node.getWidth() / 2.0;
+        double centerX = left + node.width() / 2.0;
         double centerY = top + node.getHeight() / 2.0;
 
         for (NodeConnection connection : connections) {
@@ -1706,7 +1706,7 @@ public class NodeGraph {
         if (candidate == null) {
             return new int[]{worldMouseX, worldMouseY};
         }
-        int nodeX = worldMouseX - candidate.getWidth() / 2;
+        int nodeX = worldMouseX - candidate.width() / 2;
         int nodeY = worldMouseY - candidate.getHeight() / 2;
         if (InputCompatibilityBridge.hasShiftDown()) {
             nodeX = snapToGrid(nodeX);
@@ -2421,7 +2421,7 @@ public class NodeGraph {
     /**
      * Renders the context menu.
      */
-    public void renderContextMenu(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void renderContextMenu(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         if (contextMenu != null && contextMenu.isOpen()) {
             int anchorScreenX = worldToScreenX(contextMenuWorldX);
             int anchorScreenY = worldToScreenY(contextMenuWorldY);
@@ -2431,7 +2431,7 @@ public class NodeGraph {
         }
     }
 
-    public void renderNodeContextMenu(DrawContext context, TextRenderer textRenderer) {
+    public void renderNodeContextMenu(GuiGraphics context, Font textRenderer) {
         if (nodeContextMenu != null && nodeContextMenu.isOpen()) {
             int anchorScreenX = worldToScreenX(nodeContextMenuWorldX);
             int anchorScreenY = worldToScreenY(nodeContextMenuWorldY);
@@ -2463,7 +2463,7 @@ public class NodeGraph {
         if (node == null) {
             return;
         }
-        int nodeX = worldMouseX - node.getWidth() / 2;
+        int nodeX = worldMouseX - node.width() / 2;
         int nodeY = worldMouseY - node.getHeight() / 2;
         if (InputCompatibilityBridge.hasShiftDown()) {
             nodeX = snapToGrid(nodeX);
@@ -2581,7 +2581,7 @@ public class NodeGraph {
             scale = 1.0f;
         }
 
-        int desiredScreenX = workspaceLeft + workspaceWidth / 2 - Math.round(node.getWidth() * scale / 2f);
+        int desiredScreenX = workspaceLeft + workspaceWidth / 2 - Math.round(node.width() * scale / 2f);
         int desiredScreenY = workspaceTop + workspaceHeight / 2 - Math.round(node.getHeight() * scale / 2f);
         cameraX = node.getX() - Math.round((desiredScreenX - workspaceLeft) / scale);
         cameraY = node.getY() - Math.round((desiredScreenY - workspaceTop) / scale);
@@ -2738,7 +2738,7 @@ public class NodeGraph {
         // Use the same logic as the grey-out function - more than halfway over the sidebar
         // Calculate the node's screen position (same as in renderNode)
         int nodeScreenX = node.getX() - cameraX;
-        if (isNodeOverSidebar(node, sidebarWidth, nodeScreenX, node.getWidth())) {
+        if (isNodeOverSidebar(node, sidebarWidth, nodeScreenX, node.width())) {
             if (shouldCascadeDelete(node)) {
                 removeNodeCascade(node);
             } else {
@@ -2799,7 +2799,7 @@ public class NodeGraph {
             return false;
         }
         int screenX = worldToScreenX(node.getX());
-        double scaledCenter = screenX + (node.getWidth() * getZoomScale()) / 2.0;
+        double scaledCenter = screenX + (node.width() * getZoomScale()) / 2.0;
         return scaledCenter < sidebarWidth;
     }
     
@@ -2940,13 +2940,13 @@ public class NodeGraph {
         return connectionCutMoved;
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY, float delta, boolean onlyDragged) {
-        var matrices = context.getMatrices();
-        MatrixStackBridge.push(matrices);
-        MatrixStackBridge.scale(matrices, getZoomScale(), getZoomScale());
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY, float delta, boolean onlyDragged) {
+        var matrices = context.pose();
+        PoseStackBridge.push(matrices);
+        PoseStackBridge.scale(matrices, getZoomScale(), getZoomScale());
         if (onlyDragged) {
             // Keep active drags above border/line layers while they are in motion.
-            MatrixStackBridge.translateZ(matrices, 250.0f);
+            PoseStackBridge.translateZ(matrices, 250.0f);
         }
 
         if (!onlyDragged) {
@@ -2986,7 +2986,7 @@ public class NodeGraph {
             renderConnections(context, onlyDragged);
         }
 
-        MatrixStackBridge.pop(matrices);
+        PoseStackBridge.pop(matrices);
         denseViewportMode = false;
         visibleNodeCountForFrame = 0;
     }
@@ -2996,19 +2996,19 @@ public class NodeGraph {
         return settings != null && Boolean.TRUE.equals(settings.renderConnectionsOnTop);
     }
 
-    public void renderScreenCoordinateCaptureOverlay(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void renderScreenCoordinateCaptureOverlay(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         if (context == null) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.getWindow() == null) {
             return;
         }
 
-        int width = client.getWindow().getScaledWidth();
-        int height = client.getWindow().getScaledHeight();
-        int clampedX = MathHelper.clamp(mouseX, 0, Math.max(0, width - 1));
-        int clampedY = MathHelper.clamp(mouseY, 0, Math.max(0, height - 1));
+        int width = client.getWindow().getGuiScaledWidth();
+        int height = client.getWindow().getGuiScaledHeight();
+        int clampedX = Mth.clamp(mouseX, 0, Math.max(0, width - 1));
+        int clampedY = Mth.clamp(mouseY, 0, Math.max(0, height - 1));
 
         int lineColor = 0xE6FFFFFF;
         int glowColor = 0x33FFFFFF;
@@ -3019,8 +3019,8 @@ public class NodeGraph {
 
         context.fill(clampedX - 1, 0, clampedX + 1, height, glowColor);
         context.fill(0, clampedY - 1, width, clampedY + 1, glowColor);
-        context.drawVerticalLine(clampedX, 0, height - 1, lineColor);
-        context.drawHorizontalLine(0, width - 1, clampedY, lineColor);
+        context.vLine(clampedX, 0, height - 1, lineColor);
+        context.hLine(0, width - 1, clampedY, lineColor);
 
         int crossRadius = 6;
         context.fill(clampedX - crossRadius, clampedY - 1, clampedX + crossRadius + 1, clampedY + 1, accentFill);
@@ -3030,18 +3030,18 @@ public class NodeGraph {
 
         if (textRenderer != null) {
             String label = "Pick Mode  " + clampedX + ", " + clampedY;
-            int textWidth = textRenderer.getWidth(label);
+            int textWidth = textRenderer.width(label);
             int boxWidth = textWidth + 12;
             int boxHeight = 18;
-            int boxX = MathHelper.clamp(clampedX + 12, 4, Math.max(4, width - boxWidth - 4));
+            int boxX = Mth.clamp(clampedX + 12, 4, Math.max(4, width - boxWidth - 4));
             int boxY = clampedY > height - 28 ? clampedY - 24 : clampedY + 12;
             context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, panelFill);
             DrawContextBridge.drawBorderInLayer(context, boxX, boxY, boxWidth, boxHeight, panelBorder);
-            drawNodeText(context, textRenderer, Text.literal(label), boxX + 6, boxY + 5, textColor);
+            drawNodeText(context, textRenderer, Component.literal(label), boxX + 6, boxY + 5, textColor);
         }
     }
 
-    public void renderSelectionBox(DrawContext context) {
+    public void renderSelectionBox(GuiGraphics context) {
         if (!selectionBoxActive || !hasSelectionBoxDrag()) {
             return;
         }
@@ -3058,7 +3058,7 @@ public class NodeGraph {
         DrawContextBridge.drawBorderInLayer(context, left, top, right - left, bottom - top, borderColor);
     }
 
-    private void renderHierarchy(Node node, DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY, float delta, boolean onlyDragged, boolean ancestorActive, Set<Node> renderedNodes) {
+    private void renderHierarchy(Node node, GuiGraphics context, Font textRenderer, int mouseX, int mouseY, float delta, boolean onlyDragged, boolean ancestorActive, Set<Node> renderedNodes) {
         if (node == null || renderedNodes.contains(node)) {
             return;
         }
@@ -3192,10 +3192,10 @@ public class NodeGraph {
             || node == hoveredNode;
     }
 
-    private void renderNode(DrawContext context, TextRenderer textRenderer, Node node, int mouseX, int mouseY, float delta) {
+    private void renderNode(GuiGraphics context, Font textRenderer, Node node, int mouseX, int mouseY, float delta) {
         int x = node.getX() - cameraX;
         int y = node.getY() - cameraY;
-        int width = node.getWidth();
+        int width = node.width();
         int height = node.getHeight();
 
         // Check if node is being dragged over sidebar (grey-out effect)
@@ -3280,9 +3280,9 @@ public class NodeGraph {
                 int contentLeft = x + MINIMAL_NODE_TAB_WIDTH;
                 int contentWidth = Math.max(0, width - MINIMAL_NODE_TAB_WIDTH);
                 String displayLabel = trimTextToWidth(label, textRenderer, Math.max(0, contentWidth - 8));
-                int textWidth = textRenderer.getWidth(displayLabel);
+                int textWidth = textRenderer.width(displayLabel);
                 textX = contentLeft + Math.max(4, (contentWidth - textWidth) / 2);
-                textY = y + (height - textRenderer.fontHeight) / 2;
+                textY = y + (height - textRenderer.lineHeight) / 2;
                 label = displayLabel;
             } else {
                 textX = 0;
@@ -3376,7 +3376,7 @@ public class NodeGraph {
                 int lineY = centerY - triangleSize/2 + i;
                 
                 if (lineY >= y + 2 && lineY <= y + height - 3) {
-                    context.drawHorizontalLine(startX, startX + lineWidth, lineY, playColor);
+                    context.hLine(startX, startX + lineWidth, lineY, playColor);
                 }
             }
 
@@ -3390,7 +3390,7 @@ public class NodeGraph {
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal("Function"),
+                Component.literal("Function"),
                 x + 6,
                 y + 4,
                 titleColor
@@ -3435,7 +3435,7 @@ public class NodeGraph {
                 if (editingEventName) {
                     eventNameRenderData = candidate;
                     display = eventNameRenderData.displayText;
-                } else if (textRenderer.getWidth(candidate.displayText) <= boxRight - boxLeft - 8) {
+                } else if (textRenderer.width(candidate.displayText) <= boxRight - boxLeft - 8) {
                     eventNameRenderData = candidate;
                     display = eventNameRenderData.displayText;
                 } else if (isSingleKnownInlineVariableReference(value, eventNameVariableNames)) {
@@ -3443,7 +3443,7 @@ public class NodeGraph {
                     highlightPlainEventName = true;
                 }
             }
-            int textY = boxTop + (boxHeight - textRenderer.fontHeight) / 2 + 1;
+            int textY = boxTop + (boxHeight - textRenderer.lineHeight) / 2 + 1;
             int textColor = isOverSidebar ? toGrayscale(UITheme.NODE_EVENT_TEXT, 0.85f) : UITheme.NODE_EVENT_TEXT;
             if (showPlaceholder) {
                 textColor = UITheme.TEXT_TERTIARY;
@@ -3459,11 +3459,11 @@ public class NodeGraph {
                     start = eventNameRenderData.toDisplayIndex(start);
                     end = eventNameRenderData.toDisplayIndex(end);
                 }
-                start = MathHelper.clamp(start, 0, display.length());
-                end = MathHelper.clamp(end, 0, display.length());
+                start = Mth.clamp(start, 0, display.length());
+                end = Mth.clamp(end, 0, display.length());
                 if (start != end) {
-                    int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                    int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                    int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                    int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                     context.fill(selectionStartX, boxTop + 2, selectionEndX, boxBottom - 2, UITheme.TEXT_SELECTION_BG);
                 }
             }
@@ -3477,7 +3477,7 @@ public class NodeGraph {
                 if (eventNameRenderData != null && shouldRenderNodeText()) {
                     eventNameRenderData.draw(context, textRenderer, textX, textY);
                 } else {
-                    drawNodeText(context, textRenderer, Text.literal(display), textX, textY, textColor);
+                    drawNodeText(context, textRenderer, Component.literal(display), textX, textY, textColor);
                 }
             }
 
@@ -3486,10 +3486,10 @@ public class NodeGraph {
                 if (eventNameRenderData != null) {
                     caretIndex = eventNameRenderData.toDisplayIndex(caretIndex);
                 }
-                caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-                int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+                caretIndex = Mth.clamp(caretIndex, 0, display.length());
+                int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
                 caretX = Math.min(caretX, boxRight - 2);
-                int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, boxBottom - 2);
+                int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, boxBottom - 2);
                 UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, boxRight - 2, UITheme.CARET_COLOR);
             }
             renderPopupEditButton(context, textRenderer, node, isOverSidebar, mouseX, mouseY);
@@ -3501,7 +3501,7 @@ public class NodeGraph {
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal("Variable"),
+                Component.literal("Variable"),
                 x + 6,
                 y + 4,
                 titleColor
@@ -3542,32 +3542,32 @@ public class NodeGraph {
             display = editingThis
                 ? display
                 : trimTextToWidth(display, textRenderer, boxRight - boxLeft - 8);
-            int textY = boxTop + (boxHeight - textRenderer.fontHeight) / 2 + 1;
+            int textY = boxTop + (boxHeight - textRenderer.lineHeight) / 2 + 1;
             int textColor = editingThis
                 ? UITheme.TEXT_EDITING
                 : (isOverSidebar ? toGrayscale(UITheme.NODE_VARIABLE_TEXT, 0.85f) : UITheme.NODE_VARIABLE_TEXT);
             if (editingThis && hasParameterSelection()) {
-                int start = MathHelper.clamp(parameterSelectionStart, 0, display.length());
-                int end = MathHelper.clamp(parameterSelectionEnd, 0, display.length());
+                int start = Mth.clamp(parameterSelectionStart, 0, display.length());
+                int end = Mth.clamp(parameterSelectionEnd, 0, display.length());
                 if (start != end) {
-                    int selectionStartX = boxLeft + 4 + textRenderer.getWidth(display.substring(0, start));
-                    int selectionEndX = boxLeft + 4 + textRenderer.getWidth(display.substring(0, end));
+                    int selectionStartX = boxLeft + 4 + textRenderer.width(display.substring(0, start));
+                    int selectionEndX = boxLeft + 4 + textRenderer.width(display.substring(0, end));
                     context.fill(selectionStartX, boxTop + 2, selectionEndX, boxBottom - 2, UITheme.TEXT_SELECTION_BG);
                 }
             }
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal(display),
+                Component.literal(display),
                 boxLeft + 4,
                 textY,
                 textColor
             );
             if (editingThis && parameterCaretVisible) {
-                int caretIndex = MathHelper.clamp(parameterCaretPosition, 0, display.length());
-                int caretX = boxLeft + 4 + textRenderer.getWidth(display.substring(0, caretIndex));
+                int caretIndex = Mth.clamp(parameterCaretPosition, 0, display.length());
+                int caretX = boxLeft + 4 + textRenderer.width(display.substring(0, caretIndex));
                 caretX = Math.min(caretX, boxRight - 2);
-                int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, boxBottom - 2);
+                int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, boxBottom - 2);
                 UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, boxRight - 2, UITheme.CARET_COLOR);
             }
         } else if (!simpleStyle && isComparisonOperator(node)) {
@@ -3590,21 +3590,21 @@ public class NodeGraph {
             int rightSlotHeight = node.getParameterSlotHeight(1);
             int gapCenterX = leftSlotX + leftSlotWidth + (rightSlotX - (leftSlotX + leftSlotWidth)) / 2;
             String operatorText = getOperatorSymbol(node, false);
-            int operatorWidth = textRenderer.getWidth(operatorText);
+            int operatorWidth = textRenderer.width(operatorText);
             int operatorX = gapCenterX - operatorWidth / 2;
             int leftSlotTop = node.getParameterSlotTop(0) - cameraY;
             int rightSlotTop = node.getParameterSlotTop(1) - cameraY;
             int leftCenterY = leftSlotTop + leftSlotHeight / 2;
             int rightCenterY = rightSlotTop + rightSlotHeight / 2;
             int operatorCenterY = (leftCenterY + rightCenterY) / 2;
-            int operatorY = operatorCenterY - textRenderer.fontHeight / 2;
+            int operatorY = operatorCenterY - textRenderer.lineHeight / 2;
             int operatorColor = isOverSidebar ? toGrayscale(UITheme.NODE_OPERATOR_SYMBOL, 0.85f) : UITheme.NODE_OPERATOR_SYMBOL;
             if (node.getType() == NodeType.OPERATOR_GREATER || node.getType() == NodeType.OPERATOR_LESS) {
                 int buttonPaddingX = 3;
                 int buttonPaddingY = 4;
-                int maxSymbolWidth = textRenderer.getWidth(">=");
+                int maxSymbolWidth = textRenderer.width(">=");
                 int buttonWidth = maxSymbolWidth + buttonPaddingX * 2;
-                int buttonHeight = textRenderer.fontHeight + buttonPaddingY * 2;
+                int buttonHeight = textRenderer.lineHeight + buttonPaddingY * 2;
                 int buttonLeft = gapCenterX - buttonWidth / 2;
                 int buttonTop = operatorY - buttonPaddingY;
                 int buttonFill = isOverSidebar ? UITheme.BACKGROUND_SECONDARY : UITheme.BACKGROUND_TERTIARY;
@@ -3616,7 +3616,7 @@ public class NodeGraph {
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal(operatorText),
+                Component.literal(operatorText),
                 operatorX,
                 operatorY,
                 operatorColor
@@ -3629,7 +3629,7 @@ public class NodeGraph {
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal("Call Function"),
+                Component.literal("Call Function"),
                 x + 6,
                 y + 4,
                 titleColor
@@ -3665,32 +3665,32 @@ public class NodeGraph {
             } else {
                 display = value;
             }
-            int textY = boxTop + (boxHeight - textRenderer.fontHeight) / 2 + 1;
+            int textY = boxTop + (boxHeight - textRenderer.lineHeight) / 2 + 1;
             int textColor = isOverSidebar ? toGrayscale(UITheme.NODE_EVENT_TEXT, 0.85f) : UITheme.NODE_EVENT_TEXT;
             if (showPlaceholder) {
                 textColor = UITheme.TEXT_TERTIARY;
             }
             int textX = boxLeft + 4;
             if (editingEventName && hasEventNameSelection()) {
-                int start = MathHelper.clamp(eventNameSelectionStart, 0, display.length());
-                int end = MathHelper.clamp(eventNameSelectionEnd, 0, display.length());
+                int start = Mth.clamp(eventNameSelectionStart, 0, display.length());
+                int end = Mth.clamp(eventNameSelectionEnd, 0, display.length());
                 if (start != end) {
-                    int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                    int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                    int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                    int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                     context.fill(selectionStartX, boxTop + 2, selectionEndX, boxBottom - 2, UITheme.TEXT_SELECTION_BG);
                 }
             }
             if (!editingEventName) {
                 renderEventNamePreview(context, textRenderer, display, textX, textY, textColor, boxRight - boxLeft - 8);
             } else {
-                drawNodeText(context, textRenderer, Text.literal(display), textX, textY, textColor);
+                drawNodeText(context, textRenderer, Component.literal(display), textX, textY, textColor);
             }
 
             if (editingEventName && eventNameCaretVisible) {
-                int caretIndex = MathHelper.clamp(eventNameCaretPosition, 0, display.length());
-                int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+                int caretIndex = Mth.clamp(eventNameCaretPosition, 0, display.length());
+                int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
                 caretX = Math.min(caretX, boxRight - 2);
-                int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, boxBottom - 2);
+                int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, boxBottom - 2);
                 UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, boxRight - 2, UITheme.CARET_COLOR);
             }
             renderPopupEditButton(context, textRenderer, node, isOverSidebar, mouseX, mouseY);
@@ -3747,15 +3747,15 @@ public class NodeGraph {
                             : AnimationHelper.lerpColor(UITheme.TEXT_PRIMARY, UITheme.TEXT_HEADER, progress);
                         String labelText = "Mode:";
                         int labelX = fieldLeft + 4;
-                        int labelY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
-                        drawNodeText(context, textRenderer, Text.literal(labelText), labelX, labelY, labelColor);
+                        int labelY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
+                        drawNodeText(context, textRenderer, Component.literal(labelText), labelX, labelY, labelColor);
 
                         String modeValue = node.getMode() != null ? node.getMode().getDisplayName() : "Select Mode";
-                        int valueStartX = labelX + textRenderer.getWidth(labelText) + 6;
+                        int valueStartX = labelX + textRenderer.width(labelText) + 6;
                         int maxValueWidth = Math.max(0, fieldRight - valueStartX - 4);
                         String displayValue = trimTextToWidth(modeValue, textRenderer, maxValueWidth);
-                        int valueY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
-                        drawNodeText(context, textRenderer, Text.literal(displayValue), valueStartX, valueY, valueColor);
+                        int valueY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
+                        drawNodeText(context, textRenderer, Component.literal(displayValue), valueStartX, valueY, valueColor);
 
                         paramY += PARAMETER_INPUT_HEIGHT + PARAMETER_INPUT_GAP;
                     }
@@ -3802,7 +3802,7 @@ public class NodeGraph {
                         int maxLabelWidth = Math.max(0, fieldWidth - 40);
                         String labelText = getParameterLabelText(node, param, textRenderer, maxLabelWidth);
                         int labelX = fieldLeft + 4;
-                        int labelY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
+                        int labelY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
 
                         int valueStartX = getParameterValueStartX(node, param, textRenderer) - cameraX;
                         int maxValueWidth = Math.max(0, fieldRight - valueStartX - 4);
@@ -3929,7 +3929,7 @@ public class NodeGraph {
                             } else if (showMouseButtonPlaceholder) {
                                 value = "Left";
                             } else if (showHandPlaceholder) {
-                                value = "Main Hand";
+                                value = "Main InteractionHand";
                             } else if (showTradePlaceholder) {
                                 value = "1";
                             } else if (showAmountPlaceholder) {
@@ -3976,11 +3976,11 @@ public class NodeGraph {
                         valueColor = isOverSidebar ? valueColor
                             : AnimationHelper.lerpColor(valueColor, UITheme.TEXT_HEADER, progress);
                         if (!labelText.isEmpty()) {
-                            drawNodeText(context, textRenderer, Text.literal(labelText), labelX, labelY, labelColor);
+                            drawNodeText(context, textRenderer, Component.literal(labelText), labelX, labelY, labelColor);
                         }
 
                         String arrow = inlineDropdown ? (inlineDropdownOpen ? "v" : "^") : "";
-                        int arrowWidth = inlineDropdown ? textRenderer.getWidth(arrow) : 0;
+                        int arrowWidth = inlineDropdown ? textRenderer.width(arrow) : 0;
                         if (inlineDropdown) {
                             maxValueWidth = Math.max(0, maxValueWidth - arrowWidth - 8);
                         }
@@ -3995,7 +3995,7 @@ public class NodeGraph {
                             if (editingThis) {
                                 paramRenderData = candidate;
                                 displayValue = paramRenderData.displayText;
-                            } else if (textRenderer.getWidth(candidate.displayText) <= maxValueWidth) {
+                            } else if (textRenderer.width(candidate.displayText) <= maxValueWidth) {
                                 paramRenderData = candidate;
                                 displayValue = paramRenderData.displayText;
                             } else if (isSingleKnownInlineVariableReference(value, paramVariableNames)) {
@@ -4003,7 +4003,7 @@ public class NodeGraph {
                                 valueColor = paramVariableHighlightColor;
                             }
                         }
-                        int valueY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
+                        int valueY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
 
                         if (editingThis && hasParameterSelection()) {
                             int start = parameterSelectionStart;
@@ -4012,11 +4012,11 @@ public class NodeGraph {
                                 start = paramRenderData.toDisplayIndex(start);
                                 end = paramRenderData.toDisplayIndex(end);
                             }
-                            start = MathHelper.clamp(start, 0, displayValue.length());
-                            end = MathHelper.clamp(end, 0, displayValue.length());
+                            start = Mth.clamp(start, 0, displayValue.length());
+                            end = Mth.clamp(end, 0, displayValue.length());
                             if (start != end) {
-                                int selectionStartX = valueStartX + textRenderer.getWidth(displayValue.substring(0, start));
-                                int selectionEndX = valueStartX + textRenderer.getWidth(displayValue.substring(0, end));
+                                int selectionStartX = valueStartX + textRenderer.width(displayValue.substring(0, start));
+                                int selectionEndX = valueStartX + textRenderer.width(displayValue.substring(0, end));
                                 context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldTop + fieldHeight - 2, UITheme.TEXT_SELECTION_BG);
                             }
                         }
@@ -4024,12 +4024,12 @@ public class NodeGraph {
                         if (paramRenderData != null && shouldRenderNodeText()) {
                             paramRenderData.draw(context, textRenderer, valueStartX, valueY);
                         } else {
-                            drawNodeText(context, textRenderer, Text.literal(displayValue), valueStartX, valueY, valueColor);
+                            drawNodeText(context, textRenderer, Component.literal(displayValue), valueStartX, valueY, valueColor);
                         }
 
                         if (inlineDropdown) {
                             int arrowX = fieldRight - arrowWidth - 4;
-                            drawNodeText(context, textRenderer, Text.literal(arrow), arrowX, valueY, valueColor);
+                            drawNodeText(context, textRenderer, Component.literal(arrow), arrowX, valueY, valueColor);
                         }
 
                         if (editingThis && parameterCaretVisible) {
@@ -4037,10 +4037,10 @@ public class NodeGraph {
                             if (paramRenderData != null) {
                                 caretIndex = paramRenderData.toDisplayIndex(caretIndex);
                             }
-                            caretIndex = MathHelper.clamp(caretIndex, 0, displayValue.length());
-                            int caretX = valueStartX + textRenderer.getWidth(displayValue.substring(0, caretIndex));
+                            caretIndex = Mth.clamp(caretIndex, 0, displayValue.length());
+                            int caretX = valueStartX + textRenderer.width(displayValue.substring(0, caretIndex));
                             caretX = Math.min(caretX, fieldRight - 2);
-                            int caretBaseline = Math.min(valueY + textRenderer.fontHeight - 1, fieldTop + fieldHeight - 2);
+                            int caretBaseline = Math.min(valueY + textRenderer.lineHeight - 1, fieldTop + fieldHeight - 2);
                             UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, fieldRight - 2, UITheme.CARET_COLOR);
                         }
 
@@ -4173,14 +4173,14 @@ public class NodeGraph {
     }
 
     private int getParameterFieldWidth(Node node) {
-        return Math.max(20, node.getWidth() - 10);
+        return Math.max(20, node.width() - 10);
     }
 
     private int getParameterFieldHeight() {
         return PARAMETER_INPUT_HEIGHT;
     }
 
-    private void renderStickyNote(DrawContext context, TextRenderer textRenderer, Node node, int x, int y, int width, int height,
+    private void renderStickyNote(GuiGraphics context, Font textRenderer, Node node, int x, int y, int width, int height,
                                   boolean isOverSidebar) {
         int paperColor = isOverSidebar ? UITheme.NODE_DIMMED_BG : 0xFFF3E28A;
         int headerColor = isOverSidebar ? UITheme.NODE_HEADER_DIMMED : 0xFFE2C65A;
@@ -4193,11 +4193,11 @@ public class NodeGraph {
 
         int bodyLeft = node.getStickyNoteBodyLeft() - cameraX;
         int bodyTop = node.getStickyNoteBodyTop() - cameraY;
-        int maxLines = Math.max(1, node.getStickyNoteBodyHeight() / Math.max(1, textRenderer.fontHeight + 1));
+        int maxLines = Math.max(1, node.getStickyNoteBodyHeight() / Math.max(1, textRenderer.lineHeight + 1));
         List<String> lines = getStickyNoteDisplayLines(node, textRenderer, maxLines);
         for (int i = 0; i < lines.size(); i++) {
-            int lineY = bodyTop + i * (textRenderer.fontHeight + 1);
-            if (lineY + textRenderer.fontHeight > y + height - 4) {
+            int lineY = bodyTop + i * (textRenderer.lineHeight + 1);
+            if (lineY + textRenderer.lineHeight > y + height - 4) {
                 break;
             }
             drawNodeText(context, textRenderer, lines.get(i), bodyLeft, lineY, textColor);
@@ -4207,7 +4207,7 @@ public class NodeGraph {
             updateStickyNoteCaretBlink();
             int caretLine = 0;
             int caretColumn = 0;
-            int remaining = MathHelper.clamp(stickyNoteCaretPosition, 0, stickyNoteEditBuffer.length());
+            int remaining = Mth.clamp(stickyNoteCaretPosition, 0, stickyNoteEditBuffer.length());
             String[] rawLines = stickyNoteEditBuffer.split("\\n", -1);
             for (int i = 0; i < rawLines.length; i++) {
                 String rawLine = rawLines[i] == null ? "" : rawLines[i];
@@ -4220,9 +4220,9 @@ public class NodeGraph {
                 caretLine = i;
                 caretColumn = rawLine.length();
             }
-            int caretY = bodyTop + caretLine * (textRenderer.fontHeight + 1);
-            int caretX = bodyLeft + textRenderer.getWidth(rawLines[Math.min(caretLine, rawLines.length - 1)].substring(0, Math.min(caretColumn, rawLines[Math.min(caretLine, rawLines.length - 1)].length())));
-            UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretY + textRenderer.fontHeight - 1, x + width - 6, 0xFF000000);
+            int caretY = bodyTop + caretLine * (textRenderer.lineHeight + 1);
+            int caretX = bodyLeft + textRenderer.width(rawLines[Math.min(caretLine, rawLines.length - 1)].substring(0, Math.min(caretColumn, rawLines[Math.min(caretLine, rawLines.length - 1)].length())));
+            UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretY + textRenderer.lineHeight - 1, x + width - 6, 0xFF000000);
         }
 
         if (node.isSelected()) {
@@ -4233,7 +4233,7 @@ public class NodeGraph {
         }
     }
 
-    private List<String> getStickyNoteDisplayLines(Node node, TextRenderer textRenderer, int maxLines) {
+    private List<String> getStickyNoteDisplayLines(Node node, Font textRenderer, int maxLines) {
         String source = stickyNoteEditingNode == node ? stickyNoteEditBuffer : node.getStickyNoteText();
         List<String> lines = new ArrayList<>();
         int maxWidth = Math.max(1, node.getStickyNoteBodyWidth());
@@ -4251,11 +4251,11 @@ public class NodeGraph {
         return lines;
     }
 
-    private void renderStickyNoteResizeHandle(DrawContext context, Node node, StickyNoteResizeCorner corner, int color) {
+    private void renderStickyNoteResizeHandle(GuiGraphics context, Node node, StickyNoteResizeCorner corner, int color) {
         int size = node.getStickyNoteResizeHandleSize();
         int left = switch (corner) {
             case TOP_LEFT, BOTTOM_LEFT -> node.getX() - cameraX - size / 2;
-            case TOP_RIGHT, BOTTOM_RIGHT -> node.getX() + node.getWidth() - cameraX - size / 2;
+            case TOP_RIGHT, BOTTOM_RIGHT -> node.getX() + node.width() - cameraX - size / 2;
         };
         int top = switch (corner) {
             case TOP_LEFT, TOP_RIGHT -> node.getY() - cameraY - size / 2;
@@ -4265,7 +4265,7 @@ public class NodeGraph {
         DrawContextBridge.drawBorderInLayer(context, left, top, size, size, color);
     }
 
-    private void renderModeField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderModeField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                  int mouseX, int mouseY) {
         if (node == null || !node.showsModeFieldAboveParameterSlot()) {
             return;
@@ -4283,7 +4283,7 @@ public class NodeGraph {
         );
     }
 
-    private void renderDropdownSelectorField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderDropdownSelectorField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                              int mouseX, int mouseY, int fieldLeft, int fieldTop, int fieldWidth,
                                              int fieldHeight, String label, boolean includeValue, String value) {
         int worldMouseX = screenToWorldX(mouseX);
@@ -4320,21 +4320,21 @@ public class NodeGraph {
             )
         );
 
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
         int textX = fieldLeft + 4;
         int chevronCenterX = fieldLeft + fieldWidth - 8;
         int chevronCenterY = fieldTop + fieldHeight / 2;
 
         if (includeValue) {
-            drawNodeText(context, textRenderer, Text.literal(label), textX, textY, labelColor);
-            int valueStartX = textX + textRenderer.getWidth(label) + 6;
+            drawNodeText(context, textRenderer, Component.literal(label), textX, textY, labelColor);
+            int valueStartX = textX + textRenderer.width(label) + 6;
             int maxValueWidth = Math.max(0, chevronCenterX - 5 - valueStartX);
             String displayValue = trimTextToWidth(value != null ? value : "", textRenderer, maxValueWidth);
-            drawNodeText(context, textRenderer, Text.literal(displayValue), valueStartX, textY, textColor);
+            drawNodeText(context, textRenderer, Component.literal(displayValue), valueStartX, textY, textColor);
         } else {
             int maxLabelWidth = Math.max(0, fieldWidth - 20);
             String displayLabel = trimTextToWidth(label != null ? label : "", textRenderer, maxLabelWidth);
-            drawNodeText(context, textRenderer, Text.literal(displayLabel), textX, textY, textColor);
+            drawNodeText(context, textRenderer, Component.literal(displayLabel), textX, textY, textColor);
         }
 
         UIStyleHelper.drawChevron(context, chevronCenterX, chevronCenterY, open, textColor);
@@ -4362,7 +4362,7 @@ public class NodeGraph {
         );
     }
 
-    private void renderDirectionModeTabs(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderDirectionModeTabs(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                          int fieldTop, int mouseX, int mouseY) {
         if (!isCombinedDirectionNode(node)) {
             return;
@@ -4416,14 +4416,14 @@ public class NodeGraph {
         context.fill(cardinalLeft, fieldTop, cardinalLeft + cardinalWidth, fieldTop + fieldHeight, cardinalBackground);
         DrawContextBridge.drawBorderInLayer(context, cardinalLeft, fieldTop, cardinalWidth, fieldHeight, cardinalBorder);
 
-        int exactLabelX = exactLeft + Math.max(0, (exactWidth - textRenderer.getWidth("Exact")) / 2);
-        int cardinalLabelX = cardinalLeft + Math.max(0, (cardinalWidth - textRenderer.getWidth("Cardinal")) / 2);
-        int labelY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
-        drawNodeText(context, textRenderer, Text.literal("Exact"), exactLabelX, labelY, exactMode ? activeText : inactiveText);
-        drawNodeText(context, textRenderer, Text.literal("Cardinal"), cardinalLabelX, labelY, exactMode ? inactiveText : activeText);
+        int exactLabelX = exactLeft + Math.max(0, (exactWidth - textRenderer.width("Exact")) / 2);
+        int cardinalLabelX = cardinalLeft + Math.max(0, (cardinalWidth - textRenderer.width("Cardinal")) / 2);
+        int labelY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
+        drawNodeText(context, textRenderer, Component.literal("Exact"), exactLabelX, labelY, exactMode ? activeText : inactiveText);
+        drawNodeText(context, textRenderer, Component.literal("Cardinal"), cardinalLabelX, labelY, exactMode ? inactiveText : activeText);
     }
 
-    private void renderBooleanModeTabs(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderBooleanModeTabs(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                        int fieldTop, int mouseX, int mouseY) {
         if (!isCombinedBooleanNode(node)) {
             return;
@@ -4477,14 +4477,14 @@ public class NodeGraph {
         context.fill(variableLeft, fieldTop, variableLeft + variableWidth, fieldTop + fieldHeight, variableBackground);
         DrawContextBridge.drawBorderInLayer(context, variableLeft, fieldTop, variableWidth, fieldHeight, variableBorder);
 
-        int literalLabelX = literalLeft + Math.max(0, (literalWidth - textRenderer.getWidth("Literal")) / 2);
-        int variableLabelX = variableLeft + Math.max(0, (variableWidth - textRenderer.getWidth("Variable")) / 2);
-        int labelY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
-        drawNodeText(context, textRenderer, Text.literal("Literal"), literalLabelX, labelY, literalMode ? activeText : inactiveText);
-        drawNodeText(context, textRenderer, Text.literal("Variable"), variableLabelX, labelY, literalMode ? inactiveText : activeText);
+        int literalLabelX = literalLeft + Math.max(0, (literalWidth - textRenderer.width("Literal")) / 2);
+        int variableLabelX = variableLeft + Math.max(0, (variableWidth - textRenderer.width("Variable")) / 2);
+        int labelY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
+        drawNodeText(context, textRenderer, Component.literal("Literal"), literalLabelX, labelY, literalMode ? activeText : inactiveText);
+        drawNodeText(context, textRenderer, Component.literal("Variable"), variableLabelX, labelY, literalMode ? inactiveText : activeText);
     }
 
-    private String getParameterLabelText(Node node, NodeParameter parameter, TextRenderer textRenderer, int maxWidth) {
+    private String getParameterLabelText(Node node, NodeParameter parameter, Font textRenderer, int maxWidth) {
         String displayName = node.getParameterDisplayName(parameter);
         if (displayName == null || displayName.isEmpty()) {
             return "";
@@ -4507,7 +4507,7 @@ public class NodeGraph {
         return false;
     }
 
-    private int getParameterValueStartX(Node node, NodeParameter parameter, TextRenderer textRenderer) {
+    private int getParameterValueStartX(Node node, NodeParameter parameter, Font textRenderer) {
         int fieldLeft = getParameterFieldLeft(node);
         if (shouldLeftAlignParameterValue(node)) {
             return fieldLeft + 4;
@@ -4515,7 +4515,7 @@ public class NodeGraph {
         int fieldWidth = getParameterFieldWidth(node);
         int maxLabelWidth = Math.max(0, fieldWidth - 40);
         String label = getParameterLabelText(node, parameter, textRenderer, maxLabelWidth);
-        int labelWidth = textRenderer != null ? textRenderer.getWidth(label) : 0;
+        int labelWidth = textRenderer != null ? textRenderer.width(label) : 0;
         return fieldLeft + 4 + labelWidth + 4;
     }
 
@@ -4569,12 +4569,12 @@ public class NodeGraph {
         } catch (NumberFormatException ignored) {
             count = 1;
         }
-        Identifier identifier = Identifier.tryParse(itemId);
-        if (identifier == null || !Registries.ITEM.containsId(identifier)) {
+        ResourceLocation identifier = ResourceLocation.tryParse(itemId);
+        if (identifier == null || !BuiltInRegistries.ITEM.containsKey(identifier)) {
             return TradeKeyPart.empty();
         }
-        Item item = Registries.ITEM.get(identifier);
-        return new TradeKeyPart(item.getName().getString(), count);
+        Item item = BuiltInRegistries.ITEM.get(identifier);
+        return new TradeKeyPart(item.getDescription().getString(), count);
     }
 
     private static final class TradeKeyPart {
@@ -4603,7 +4603,7 @@ public class NodeGraph {
         }
     }
 
-    private void renderStartNodeNumber(DrawContext context, TextRenderer textRenderer, Node node, int x, int y, boolean isOverSidebar) {
+    private void renderStartNodeNumber(GuiGraphics context, Font textRenderer, Node node, int x, int y, boolean isOverSidebar) {
         int number = node.getStartNodeNumber();
         if (number <= 0) {
             return;
@@ -4614,7 +4614,7 @@ public class NodeGraph {
         drawNodeText(context, textRenderer, label, x + 4, y + 4, textColor);
     }
 
-    private void renderBooleanToggleButton(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderBooleanToggleButton(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         if (node == null || node.getType() == NodeType.PARAM_BOOLEAN) {
             return;
         }
@@ -4649,13 +4649,13 @@ public class NodeGraph {
         DrawContextBridge.drawBorderInLayer(context, buttonLeft, buttonTop, buttonWidth, buttonHeight, borderColor);
 
         String label = node.getBooleanToggleValue() ? "TRUE" : "FALSE";
-        int textWidth = textRenderer.getWidth(label);
+        int textWidth = textRenderer.width(label);
         int textX = buttonLeft + Math.max(2, (buttonWidth - textWidth) / 2);
-        int textY = buttonTop + (buttonHeight - textRenderer.fontHeight) / 2 + 1;
-        drawNodeText(context, textRenderer, Text.literal(label), textX, textY, textColor);
+        int textY = buttonTop + (buttonHeight - textRenderer.lineHeight) / 2 + 1;
+        drawNodeText(context, textRenderer, Component.literal(label), textX, textY, textColor);
     }
 
-    private void renderSensorSlot(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar) {
+    private void renderSensorSlot(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar) {
         int slotX = node.getSensorSlotLeft() - cameraX;
         int slotY = node.getSensorSlotTop() - cameraY;
         int slotWidth = node.getSensorSlotWidth();
@@ -4678,9 +4678,9 @@ public class NodeGraph {
 
         if (useLogicSlotTitle) {
             String titleDisplay = trimTextToWidth(getLogicSensorSlotTitle(node), textRenderer, slotWidth - 4);
-            int titleY = slotY - textRenderer.fontHeight - 2;
+            int titleY = slotY - textRenderer.lineHeight - 2;
             int titleColor = sensorDropTarget == node ? getSelectedNodeAccentColor() : (isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_SECONDARY);
-            drawNodeText(context, textRenderer, Text.literal(titleDisplay), slotX + 2, titleY, titleColor);
+            drawNodeText(context, textRenderer, Component.literal(titleDisplay), slotX + 2, titleY, titleColor);
         }
 
         if (!node.hasAttachedSensor()) {
@@ -4689,15 +4689,15 @@ public class NodeGraph {
             }
             String placeholder = "Drag a sensor here";
             String display = trimTextToWidth(placeholder, textRenderer, slotWidth - 8);
-            int textWidth = textRenderer.getWidth(display);
+            int textWidth = textRenderer.width(display);
             int textX = slotX + Math.max(4, (slotWidth - textWidth) / 2);
-            int textY = slotY + (slotHeight - textRenderer.fontHeight) / 2;
+            int textY = slotY + (slotHeight - textRenderer.lineHeight) / 2;
             int textColor = sensorDropTarget == node ? getSelectedNodeAccentColor() : UITheme.TEXT_TERTIARY;
-            drawNodeText(context, textRenderer, Text.literal(display), textX, textY, textColor);
+            drawNodeText(context, textRenderer, Component.literal(display), textX, textY, textColor);
         }
     }
 
-    private void renderActionSlot(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar) {
+    private void renderActionSlot(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar) {
         int slotX = node.getActionSlotLeft() - cameraX;
         int slotY = node.getActionSlotTop() - cameraY;
         int slotWidth = node.getActionSlotWidth();
@@ -4721,9 +4721,9 @@ public class NodeGraph {
         if (useLogicSlotTitle) {
             String title = getLogicActionSlotTitle(node);
             int titleColor = actionDropTarget == node ? UITheme.DROP_ACCENT_GREEN : (isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_SECONDARY);
-            int titleY = slotY - textRenderer.fontHeight - 2;
+            int titleY = slotY - textRenderer.lineHeight - 2;
             String titleDisplay = trimTextToWidth(title, textRenderer, slotWidth - 4);
-            drawNodeText(context, textRenderer, Text.literal(titleDisplay), slotX + 2, titleY, titleColor);
+            drawNodeText(context, textRenderer, Component.literal(titleDisplay), slotX + 2, titleY, titleColor);
         }
 
         if (!node.hasAttachedActionNode()) {
@@ -4732,11 +4732,11 @@ public class NodeGraph {
             }
             String placeholder = "Drag a node here";
             String display = trimTextToWidth(placeholder, textRenderer, slotWidth - 8);
-            int textWidth = textRenderer.getWidth(display);
+            int textWidth = textRenderer.width(display);
             int textX = slotX + Math.max(4, (slotWidth - textWidth) / 2);
-            int textY = slotY + (slotHeight - textRenderer.fontHeight) / 2;
+            int textY = slotY + (slotHeight - textRenderer.lineHeight) / 2;
             int textColor = actionDropTarget == node ? UITheme.DROP_ACCENT_GREEN : UITheme.TEXT_TERTIARY;
-            drawNodeText(context, textRenderer, Text.literal(display), textX, textY, textColor);
+            drawNodeText(context, textRenderer, Component.literal(display), textX, textY, textColor);
         }
     }
 
@@ -4907,7 +4907,7 @@ public class NodeGraph {
         return AnimationHelper.easeInOutCubic(animation.getValue());
     }
 
-    private void renderNodeSliderToggle(DrawContext context, int toggleLeft, int toggleTop, int toggleWidth, int toggleHeight,
+    private void renderNodeSliderToggle(GuiGraphics context, int toggleLeft, int toggleTop, int toggleWidth, int toggleHeight,
                                         float progress, boolean hovered, boolean isOverSidebar) {
         int accentColor = isOverSidebar ? toGrayscale(getSelectedNodeAccentColor(), 0.8f) : getSelectedNodeAccentColor();
         UIStyleHelper.TogglePalette palette = UIStyleHelper.getTogglePalette(accentColor, progress, hovered, false);
@@ -4922,9 +4922,9 @@ public class NodeGraph {
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
-        r = MathHelper.clamp((int) (r * factor), 0, 255);
-        g = MathHelper.clamp((int) (g * factor), 0, 255);
-        b = MathHelper.clamp((int) (b * factor), 0, 255);
+        r = Mth.clamp((int) (r * factor), 0, 255);
+        g = Mth.clamp((int) (g * factor), 0, 255);
+        b = Mth.clamp((int) (b * factor), 0, 255);
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
@@ -4950,11 +4950,11 @@ public class NodeGraph {
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
-        int gray = MathHelper.clamp((int) ((0.299f * r + 0.587f * g + 0.114f * b) * brightnessFactor), 0, 255);
+        int gray = Mth.clamp((int) ((0.299f * r + 0.587f * g + 0.114f * b) * brightnessFactor), 0, 255);
         return (a << 24) | (gray << 16) | (gray << 8) | gray;
     }
 
-    private void renderParameterSlot(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int slotIndex) {
+    private void renderParameterSlot(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int slotIndex) {
         int slotX = node.getParameterSlotLeft(slotIndex) - cameraX;
         int slotY = node.getParameterSlotTop(slotIndex) - cameraY;
         int slotWidth = node.getParameterSlotWidth(slotIndex);
@@ -4980,9 +4980,9 @@ public class NodeGraph {
 
         String headerText = node.getParameterSlotLabel(slotIndex);
         int headerColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_SECONDARY;
-        int headerY = slotY - textRenderer.fontHeight - 2;
+        int headerY = slotY - textRenderer.lineHeight - 2;
         if (headerY > node.getY() - cameraY + 14) {
-            drawNodeText(context, textRenderer, Text.literal(headerText), slotX + 2, headerY, headerColor);
+            drawNodeText(context, textRenderer, Component.literal(headerText), slotX + 2, headerY, headerColor);
         }
 
         if (!occupied && isDropTarget) {
@@ -5000,21 +5000,21 @@ public class NodeGraph {
             int rightSlotHeight = node.getParameterSlotHeight(1);
             int gapCenterX = leftSlotX + leftSlotWidth + (rightSlotX - (leftSlotX + leftSlotWidth)) / 2;
             String operatorText = getOperatorSymbol(node, true);
-            int operatorWidth = textRenderer.getWidth(operatorText);
+            int operatorWidth = textRenderer.width(operatorText);
             int operatorX = gapCenterX - operatorWidth / 2;
             int leftSlotTop = node.getParameterSlotTop(0) - cameraY;
             int rightSlotTop = node.getParameterSlotTop(1) - cameraY;
             int leftCenterY = leftSlotTop + leftSlotHeight / 2;
             int rightCenterY = rightSlotTop + rightSlotHeight / 2;
             int operatorCenterY = (leftCenterY + rightCenterY) / 2;
-            int operatorY = operatorCenterY - textRenderer.fontHeight / 2;
+            int operatorY = operatorCenterY - textRenderer.lineHeight / 2;
             int operatorColor = isOverSidebar ? toGrayscale(UITheme.NODE_OPERATOR_SYMBOL, 0.85f) : UITheme.NODE_OPERATOR_SYMBOL;
             if (node.getType() == NodeType.OPERATOR_GREATER || node.getType() == NodeType.OPERATOR_LESS) {
                 int buttonPaddingX = 3;
                 int buttonPaddingY = 4;
-                int maxSymbolWidth = textRenderer.getWidth(">=");
+                int maxSymbolWidth = textRenderer.width(">=");
                 int buttonWidth = maxSymbolWidth + buttonPaddingX * 2;
-                int buttonHeight = textRenderer.fontHeight + buttonPaddingY * 2;
+                int buttonHeight = textRenderer.lineHeight + buttonPaddingY * 2;
                 int buttonLeft = gapCenterX - buttonWidth / 2;
                 int buttonTop = operatorY - buttonPaddingY;
                 int buttonFill = isOverSidebar ? UITheme.BACKGROUND_SECONDARY : UITheme.BACKGROUND_TERTIARY;
@@ -5026,7 +5026,7 @@ public class NodeGraph {
             drawNodeText(
                 context,
                 textRenderer,
-                Text.literal(operatorText),
+                Component.literal(operatorText),
                 operatorX,
                 operatorY,
                 operatorColor
@@ -5091,7 +5091,7 @@ public class NodeGraph {
         }
     }
 
-    private boolean isOperatorToggleHit(Node node, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private boolean isOperatorToggleHit(Node node, Font textRenderer, int mouseX, int mouseY) {
         if (!isComparisonOperator(node)) {
             return false;
         }
@@ -5111,8 +5111,8 @@ public class NodeGraph {
         int operatorCenterY = (leftCenterY + rightCenterY) / 2;
 
         String operatorText = getOperatorSymbol(node, node.usesMinimalNodePresentation());
-        int textWidth = textRenderer.getWidth(operatorText);
-        int textHeight = textRenderer.fontHeight;
+        int textWidth = textRenderer.width(operatorText);
+        int textHeight = textRenderer.lineHeight;
         int padding = 4;
         int hitLeft = gapCenterX - textWidth / 2 - padding;
         int hitRight = gapCenterX + textWidth / 2 + padding;
@@ -5122,7 +5122,7 @@ public class NodeGraph {
         return worldMouseX >= hitLeft && worldMouseX <= hitRight && worldMouseY >= hitTop && worldMouseY <= hitBottom;
     }
 
-    public boolean handleOperatorToggleClick(TextRenderer textRenderer, int mouseX, int mouseY) {
+    public boolean handleOperatorToggleClick(Font textRenderer, int mouseX, int mouseY) {
         if (textRenderer == null) {
             return false;
         }
@@ -5153,7 +5153,7 @@ public class NodeGraph {
         return node.getCoordinateFieldAxes();
     }
 
-    private void renderScreenCoordinatePickerButton(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderScreenCoordinatePickerButton(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                                     int mouseX, int mouseY) {
         if (node == null || !node.hasScreenCoordinatePickerButton()) {
             return;
@@ -5186,12 +5186,12 @@ public class NodeGraph {
 
         String buttonLabel = isScreenCoordinateCaptureActiveFor(node) ? "Click To Set" : "Pick";
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
-        int textX = buttonLeft + Math.max(0, (buttonWidth - textRenderer.getWidth(buttonLabel)) / 2);
-        int textY = buttonTop + (buttonHeight - textRenderer.fontHeight) / 2;
-        drawNodeText(context, textRenderer, Text.literal(buttonLabel), textX, textY, textColor);
+        int textX = buttonLeft + Math.max(0, (buttonWidth - textRenderer.width(buttonLabel)) / 2);
+        int textY = buttonTop + (buttonHeight - textRenderer.lineHeight) / 2;
+        drawNodeText(context, textRenderer, Component.literal(buttonLabel), textX, textY, textColor);
     }
 
-    private void renderCoordinateInputFields(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderCoordinateInputFields(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                              int mouseX, int mouseY) {
         String[] axes = getCoordinateAxes(node);
         int baseLabelColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_SECONDARY;
@@ -5221,11 +5221,11 @@ public class NodeGraph {
                 && coordinateEditingAxis == i;
 
             String axisLabel = axes[i];
-            int labelWidth = textRenderer.getWidth(axisLabel);
+            int labelWidth = textRenderer.width(axisLabel);
             int labelX = fieldX + Math.max(0, (fieldWidth - labelWidth) / 2);
-            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.fontHeight) / 2);
+            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.lineHeight) / 2);
             int labelColor = editingAxis ? UITheme.TEXT_EDITING_LABEL : baseLabelColor;
-            drawNodeText(context, textRenderer, Text.literal(axisLabel), labelX, labelY, labelColor);
+            drawNodeText(context, textRenderer, Component.literal(axisLabel), labelX, labelY, labelColor);
 
             int inputBottom = inputTop + fieldHeight;
             boolean hovered = !isOverSidebar
@@ -5282,7 +5282,7 @@ public class NodeGraph {
                 if (editingAxis) {
                     coordRenderData = candidate;
                     display = coordRenderData.displayText;
-                } else if (textRenderer.getWidth(candidate.displayText) <= fieldWidth - 6) {
+                } else if (textRenderer.width(candidate.displayText) <= fieldWidth - 6) {
                     coordRenderData = candidate;
                     display = coordRenderData.displayText;
                 } else if (isSingleKnownInlineVariableReference(value, coordVariableNames)) {
@@ -5292,7 +5292,7 @@ public class NodeGraph {
             }
 
             int textX = fieldX + 3;
-            int textY = inputTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+            int textY = inputTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
             if (editingAxis && hasCoordinateSelection()) {
                 int start = coordinateSelectionStart;
                 int end = coordinateSelectionEnd;
@@ -5301,15 +5301,15 @@ public class NodeGraph {
                     end = coordRenderData.toDisplayIndex(end);
                 }
                 if (start >= 0 && end >= 0 && start <= display.length() && end <= display.length()) {
-                    int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                    int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                    int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                    int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                     context.fill(selectionStartX, inputTop + 2, selectionEndX, inputBottom - 2, UITheme.TEXT_SELECTION_BG);
                 }
             }
             if (coordRenderData != null && shouldRenderNodeText()) {
                 coordRenderData.draw(context, textRenderer, textX, textY);
             } else {
-                drawNodeText(context, textRenderer, Text.literal(display), textX, textY, valueColor);
+                drawNodeText(context, textRenderer, Component.literal(display), textX, textY, valueColor);
             }
 
             if (editingAxis && coordinateCaretVisible) {
@@ -5317,10 +5317,10 @@ public class NodeGraph {
                 if (coordRenderData != null) {
                     caretIndex = coordRenderData.toDisplayIndex(caretIndex);
                 }
-                caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-                int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+                caretIndex = Mth.clamp(caretIndex, 0, display.length());
+                int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
                 caretX = Math.min(caretX, fieldX + fieldWidth - 2);
-                int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, inputBottom - 2);
+                int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, inputBottom - 2);
                 UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, fieldX + fieldWidth - 2, UITheme.CARET_COLOR);
             }
         }
@@ -5330,7 +5330,7 @@ public class NodeGraph {
         }
     }
 
-    private void renderAmountInputField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderAmountInputField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                         int mouseX, int mouseY) {
         int baseLabelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
@@ -5363,8 +5363,8 @@ public class NodeGraph {
                 unitLabel, false, null
             );
         } else {
-            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.fontHeight) / 2);
-            drawNodeText(context, textRenderer, Text.literal(node.getAmountFieldLabel()), fieldLeft + 2, labelY, baseLabelColor);
+            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.lineHeight) / 2);
+            drawNodeText(context, textRenderer, Component.literal(node.getAmountFieldLabel()), fieldLeft + 2, labelY, baseLabelColor);
         }
 
         int fieldBottom = fieldTop + fieldHeight;
@@ -5436,7 +5436,7 @@ public class NodeGraph {
             if (editing && amountEnabled) {
                 amountRenderData = candidate;
                 display = amountRenderData.displayText;
-            } else if (textRenderer.getWidth(candidate.displayText) <= fieldWidth - 6) {
+            } else if (textRenderer.width(candidate.displayText) <= fieldWidth - 6) {
                 amountRenderData = candidate;
                 display = amountRenderData.displayText;
             } else if (isSingleKnownInlineVariableReference(value, amountVariableNames)) {
@@ -5446,7 +5446,7 @@ public class NodeGraph {
         }
 
         int textX = fieldLeft + 3;
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
         if (editing && amountEnabled && hasAmountSelection()) {
             int start = amountSelectionStart;
             int end = amountSelectionEnd;
@@ -5455,15 +5455,15 @@ public class NodeGraph {
                 end = amountRenderData.toDisplayIndex(end);
             }
             if (start >= 0 && end >= 0 && start <= display.length() && end <= display.length()) {
-                int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                 context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldBottom - 2, UITheme.TEXT_SELECTION_BG);
             }
         }
         if (amountRenderData != null && shouldRenderNodeText()) {
             amountRenderData.draw(context, textRenderer, textX, textY);
         } else {
-            drawNodeText(context, textRenderer, Text.literal(display), textX, textY, valueColor);
+            drawNodeText(context, textRenderer, Component.literal(display), textX, textY, valueColor);
         }
 
         if (editing && amountEnabled && amountCaretVisible) {
@@ -5471,10 +5471,10 @@ public class NodeGraph {
             if (amountRenderData != null) {
                 caretIndex = amountRenderData.toDisplayIndex(caretIndex);
             }
-            caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-            int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+            caretIndex = Mth.clamp(caretIndex, 0, display.length());
+            int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
             caretX = Math.min(caretX, fieldLeft + fieldWidth - 2);
-            int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, fieldBottom - 2);
+            int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, fieldBottom - 2);
             UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, fieldLeft + fieldWidth - 2, UITheme.CARET_COLOR);
         }
 
@@ -5515,13 +5515,13 @@ public class NodeGraph {
             String label = operation == null || operation.isEmpty() ? "+" : operation;
             int signTextX = toggleLeft + 3;
             int arrowCenterX = toggleLeft + toggleWidth - 7;
-            int signTextY = toggleTop + (toggleHeight - textRenderer.fontHeight) / 2 + 1;
-            drawNodeText(context, textRenderer, Text.literal(label), signTextX, signTextY, signTextColor);
+            int signTextY = toggleTop + (toggleHeight - textRenderer.lineHeight) / 2 + 1;
+            drawNodeText(context, textRenderer, Component.literal(label), signTextX, signTextY, signTextColor);
             UIStyleHelper.drawChevron(context, arrowCenterX, toggleTop + toggleHeight / 2, open, signTextColor);
         }
     }
 
-    private void renderRandomRoundingField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar) {
+    private void renderRandomRoundingField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar) {
         int baseLabelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
 
@@ -5536,8 +5536,8 @@ public class NodeGraph {
         int fieldWidth = node.getRandomRoundingFieldWidth();
         int fieldRight = fieldLeft + fieldWidth;
 
-        int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.fontHeight) / 2);
-        drawNodeText(context, textRenderer, Text.literal("Rounding"), fieldLeft + 2, labelY, baseLabelColor);
+        int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.lineHeight) / 2);
+        drawNodeText(context, textRenderer, Component.literal("Rounding"), fieldLeft + 2, labelY, baseLabelColor);
 
         int fieldBottom = fieldTop + fieldHeight;
         int disabledBg = isOverSidebar ? UITheme.BACKGROUND_TERTIARY : UITheme.BUTTON_DEFAULT_BG;
@@ -5566,8 +5566,8 @@ public class NodeGraph {
         int valueStartX = fieldLeft + 4;
         int maxValueWidth = Math.max(0, arrowCenterX - 5 - valueStartX);
         String display = trimTextToWidth(value, textRenderer, maxValueWidth);
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
-        drawNodeText(context, textRenderer, Text.literal(display), valueStartX, textY, valueColor);
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
+        drawNodeText(context, textRenderer, Component.literal(display), valueStartX, textY, valueColor);
         UIStyleHelper.drawChevron(context, arrowCenterX, fieldTop + fieldHeight / 2, open, valueColor);
 
         if (node.hasRandomRoundingToggle()) {
@@ -5580,7 +5580,7 @@ public class NodeGraph {
         }
     }
 
-    private void renderRandomRoundingDropdownList(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderRandomRoundingDropdownList(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(randomRoundingDropdownAnimation, randomRoundingDropdownOpen);
         if (randomRoundingDropdownNode == null) {
             return;
@@ -5601,7 +5601,7 @@ public class NodeGraph {
         int listTop = node.getRandomRoundingFieldInputTop() + node.getRandomRoundingFieldHeight() + 2 - cameraY;
         int listLeft = node.getRandomRoundingFieldLeft() - cameraX;
         int listRight = listLeft + dropdownWidth;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             rowHeight,
@@ -5618,7 +5618,7 @@ public class NodeGraph {
         enableDropdownScissor(context, listLeft, listTop, dropdownWidth, animatedHeight);
         UIStyleHelper.drawScrollContainer(context, listLeft, listTop, dropdownWidth, listHeight, containerPalette);
 
-        randomRoundingDropdownScrollOffset = MathHelper.clamp(randomRoundingDropdownScrollOffset, 0, layout.maxScrollOffset);
+        randomRoundingDropdownScrollOffset = Mth.clamp(randomRoundingDropdownScrollOffset, 0, layout.maxScrollOffset);
         randomRoundingDropdownHoverIndex = -1;
         if (animProgress >= 1f
             && transformedMouseX >= listLeft && transformedMouseX <= listRight
@@ -5644,7 +5644,7 @@ public class NodeGraph {
             int maxTextWidth = dropdownWidth - (textPadding * 2) - DROPDOWN_SCROLLBAR_ALLOWANCE;
             String rowText = trimTextToWidth(optionLabel, textRenderer, Math.max(0, maxTextWidth));
             int textOffsetY = 4;
-            drawNodeText(context, textRenderer, Text.literal(rowText), listLeft + textPadding, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
+            drawNodeText(context, textRenderer, Component.literal(rowText), listLeft + textPadding, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -5671,7 +5671,7 @@ public class NodeGraph {
         context.disableScissor();
     }
 
-    private void renderMessageInputFields(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderMessageInputFields(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                           int mouseX, int mouseY) {
         int baseLabelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
@@ -5696,9 +5696,9 @@ public class NodeGraph {
             int worldMouseY = screenToWorldY(mouseY);
 
             boolean editingThis = editing && messageEditingIndex == i;
-            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.fontHeight) / 2);
+            int labelY = labelTop + Math.max(0, (labelHeight - textRenderer.lineHeight) / 2);
             String label = fieldCount > 1 ? "Message " + (i + 1) : "Message";
-            drawNodeText(context, textRenderer, Text.literal(label), fieldLeft + 2, labelY, baseLabelColor);
+            drawNodeText(context, textRenderer, Component.literal(label), fieldLeft + 2, labelY, baseLabelColor);
 
             int fieldBottom = fieldTop + fieldHeight;
             boolean hovered = !isOverSidebar
@@ -5726,7 +5726,7 @@ public class NodeGraph {
                 if (editingThis) {
                     renderData = candidate;
                     display = renderData.displayText;
-                } else if (textRenderer.getWidth(candidate.displayText) <= fieldWidth - 6) {
+                } else if (textRenderer.width(candidate.displayText) <= fieldWidth - 6) {
                     renderData = candidate;
                     display = renderData.displayText;
                 } else if (isSingleKnownInlineVariableReference(rawValue, runtimeVariableNames)) {
@@ -5736,7 +5736,7 @@ public class NodeGraph {
             }
 
             int textX = fieldLeft + 3;
-            int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+            int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
             if (editingThis && hasMessageSelection()) {
                 int start = messageSelectionStart;
                 int end = messageSelectionEnd;
@@ -5745,8 +5745,8 @@ public class NodeGraph {
                     end = renderData.toDisplayIndex(end);
                 }
                 if (start >= 0 && end >= 0 && start <= display.length() && end <= display.length()) {
-                    int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                    int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                    int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                    int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                     context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldBottom - 2, UITheme.TEXT_SELECTION_BG);
                 }
             }
@@ -5755,7 +5755,7 @@ public class NodeGraph {
                     renderData.draw(context, textRenderer, textX, textY);
                 }
             } else {
-                drawNodeText(context, textRenderer, Text.literal(display), textX, textY, valueColor);
+                drawNodeText(context, textRenderer, Component.literal(display), textX, textY, valueColor);
             }
 
             if (editingThis && messageCaretVisible) {
@@ -5763,45 +5763,45 @@ public class NodeGraph {
                 if (renderData != null) {
                     caretIndex = renderData.toDisplayIndex(caretIndex);
                 }
-                caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-                int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+                caretIndex = Mth.clamp(caretIndex, 0, display.length());
+                int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
                 caretX = Math.min(caretX, fieldLeft + fieldWidth - 2);
-                int caretBaseline = Math.min(textY + textRenderer.fontHeight - 1, fieldBottom - 2);
+                int caretBaseline = Math.min(textY + textRenderer.lineHeight - 1, fieldBottom - 2);
                 UIStyleHelper.drawTextCaretAtBaseline(context, textRenderer, caretX, caretBaseline, fieldLeft + fieldWidth - 2, UITheme.CARET_COLOR);
             }
         }
     }
 
-    private void renderEventNamePreview(DrawContext context, TextRenderer textRenderer, String value, int x, int y,
+    private void renderEventNamePreview(GuiGraphics context, Font textRenderer, String value, int x, int y,
                                         int baseColor, int maxWidth) {
         if (value == null || value.isEmpty()) {
-            drawNodeText(context, textRenderer, Text.literal("enter name"), x, y, baseColor);
+            drawNodeText(context, textRenderer, Component.literal("enter name"), x, y, baseColor);
             return;
         }
-        if (textRenderer.getWidth(value) <= maxWidth) {
-            drawNodeText(context, textRenderer, Text.literal(value), x, y, baseColor);
+        if (textRenderer.width(value) <= maxWidth) {
+            drawNodeText(context, textRenderer, Component.literal(value), x, y, baseColor);
             return;
         }
 
         String trimmed = trimTextToWidth(value, textRenderer, maxWidth);
-        drawNodeText(context, textRenderer, Text.literal(trimmed), x, y, baseColor);
-        int trimmedWidth = textRenderer.getWidth(trimmed);
+        drawNodeText(context, textRenderer, Component.literal(trimmed), x, y, baseColor);
+        int trimmedWidth = textRenderer.width(trimmed);
 
         String tail = "..";
-        int tailWidth = textRenderer.getWidth(tail);
+        int tailWidth = textRenderer.width(tail);
         if (trimmedWidth + tailWidth + 4 >= maxWidth) {
             return;
         }
 
         String suffix = value.substring(Math.max(0, value.length() - 4));
         String tailText = tail + suffix;
-        int tailTextWidth = textRenderer.getWidth(tailText);
+        int tailTextWidth = textRenderer.width(tailText);
         if (trimmedWidth + tailTextWidth + 4 > maxWidth) {
             return;
         }
         int tailX = x + maxWidth - tailTextWidth;
         int hintColor = toGrayscale(baseColor, 0.85f);
-        drawNodeText(context, textRenderer, Text.literal(tailText), tailX, y, hintColor);
+        drawNodeText(context, textRenderer, Component.literal(tailText), tailX, y, hintColor);
     }
 
     private InlineVariableRender buildInlineVariableRender(String rawText, Set<String> variableNames, int baseColor, int highlightColor) {
@@ -6018,14 +6018,14 @@ public class NodeGraph {
             return rawIndex - removed;
         }
 
-        private void draw(DrawContext context, TextRenderer renderer, int x, int y) {
+        private void draw(GuiGraphics context, Font renderer, int x, int y) {
             int cursorX = x;
             for (InlineTextSegment segment : segments) {
                 if (segment == null || segment.text == null || segment.text.isEmpty()) {
                     continue;
                 }
-                context.drawText(renderer, Text.literal(segment.text), cursorX, y, segment.color, false);
-                cursorX += renderer.getWidth(segment.text);
+                context.drawString(renderer, Component.literal(segment.text), cursorX, y, segment.color, false);
+                cursorX += renderer.width(segment.text);
             }
         }
     }
@@ -6239,7 +6239,7 @@ public class NodeGraph {
         }
     }
 
-    private void updateMessageFieldContentWidth(TextRenderer textRenderer) {
+    private void updateMessageFieldContentWidth(Font textRenderer) {
         if (!isEditingMessageField() || messageEditingNode == null || textRenderer == null) {
             return;
         }
@@ -6250,13 +6250,13 @@ public class NodeGraph {
             if (line == null) {
                 line = "";
             }
-            maxWidth = Math.max(maxWidth, textRenderer.getWidth(line));
+            maxWidth = Math.max(maxWidth, textRenderer.width(line));
         }
         messageEditingNode.setMessageFieldTextWidth(maxWidth);
         messageEditingNode.recalculateDimensions();
     }
 
-    private void updateCoordinateFieldContentWidth(TextRenderer textRenderer) {
+    private void updateCoordinateFieldContentWidth(Font textRenderer) {
         if (!isEditingCoordinateField() || coordinateEditingNode == null || textRenderer == null) {
             return;
         }
@@ -6268,40 +6268,40 @@ public class NodeGraph {
             if (value == null) {
                 value = "";
             }
-            maxWidth = Math.max(maxWidth, textRenderer.getWidth(value));
+            maxWidth = Math.max(maxWidth, textRenderer.width(value));
         }
         coordinateEditingNode.setCoordinateFieldTextWidth(maxWidth);
         coordinateEditingNode.recalculateDimensions();
     }
 
-    private void updateAmountFieldContentWidth(TextRenderer textRenderer) {
+    private void updateAmountFieldContentWidth(Font textRenderer) {
         if (!isEditingAmountField() || amountEditingNode == null || textRenderer == null) {
             return;
         }
         String value = amountEditBuffer == null ? "" : amountEditBuffer;
-        amountEditingNode.setAmountFieldTextWidth(textRenderer.getWidth(value));
+        amountEditingNode.setAmountFieldTextWidth(textRenderer.width(value));
         amountEditingNode.recalculateDimensions();
     }
 
-    private void updateStopTargetFieldContentWidth(TextRenderer textRenderer) {
+    private void updateStopTargetFieldContentWidth(Font textRenderer) {
         if (!isEditingStopTargetField() || stopTargetEditingNode == null || textRenderer == null) {
             return;
         }
         String value = stopTargetEditBuffer == null ? "" : stopTargetEditBuffer;
-        stopTargetEditingNode.setStopTargetFieldTextWidth(textRenderer.getWidth(value));
+        stopTargetEditingNode.setStopTargetFieldTextWidth(textRenderer.width(value));
         stopTargetEditingNode.recalculateDimensions();
     }
 
-    private void updateVariableFieldContentWidth(TextRenderer textRenderer) {
+    private void updateVariableFieldContentWidth(Font textRenderer) {
         if (!isEditingVariableField() || variableEditingNode == null || textRenderer == null) {
             return;
         }
         String value = variableEditBuffer == null ? "" : variableEditBuffer;
-        variableEditingNode.setVariableFieldTextWidth(textRenderer.getWidth(value));
+        variableEditingNode.setVariableFieldTextWidth(textRenderer.width(value));
         variableEditingNode.recalculateDimensions();
     }
 
-    private void updateParameterFieldContentWidth(Node node, TextRenderer textRenderer, int editingIndex, String editingValue) {
+    private void updateParameterFieldContentWidth(Node node, Font textRenderer, int editingIndex, String editingValue) {
         if (node == null || !rendersInlineParameters(node) || textRenderer == null) {
             return;
         }
@@ -6309,7 +6309,7 @@ public class NodeGraph {
         if (node.supportsModeSelection()) {
             String modeLabel = node.getModeDisplayLabel();
             if (modeLabel != null && !modeLabel.isEmpty()) {
-                requiredFieldWidth = Math.max(requiredFieldWidth, textRenderer.getWidth(modeLabel));
+                requiredFieldWidth = Math.max(requiredFieldWidth, textRenderer.width(modeLabel));
             }
         }
         List<NodeParameter> parameters = node.getParameters();
@@ -6331,8 +6331,8 @@ public class NodeGraph {
                 && ("Item".equalsIgnoreCase(param.getName()) || "Trade".equalsIgnoreCase(param.getName()))) {
                 value = formatVillagerTradeValue(value);
             }
-            int labelWidth = textRenderer.getWidth(label);
-            int valueWidth = textRenderer.getWidth(value);
+            int labelWidth = textRenderer.width(label);
+            int valueWidth = textRenderer.width(value);
             int fieldWidth = labelWidth + valueWidth + 12;
             requiredFieldWidth = Math.max(requiredFieldWidth, fieldWidth);
         }
@@ -6340,7 +6340,7 @@ public class NodeGraph {
         node.recalculateDimensions();
     }
 
-    private void renderMessageButtons(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderMessageButtons(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         int size = node.getMessageButtonSize();
         int worldMouseX = screenToWorldX(mouseX);
         int worldMouseY = screenToWorldY(mouseY);
@@ -6365,9 +6365,9 @@ public class NodeGraph {
         int addBorder = addHovered ? getSelectedNodeAccentColor() : baseBorder;
         context.fill(addLeft, top, addLeft + size, top + size, addFill);
         DrawContextBridge.drawBorderInLayer(context, addLeft, top, size, size, addBorder);
-        int addTextX = addLeft + (size - textRenderer.getWidth("+")) / 2;
-        int addTextY = top + (size - textRenderer.fontHeight) / 2 + 1;
-        drawNodeText(context, textRenderer, Text.literal("+"), addTextX, addTextY, UITheme.TEXT_PRIMARY);
+        int addTextX = addLeft + (size - textRenderer.width("+")) / 2;
+        int addTextY = top + (size - textRenderer.lineHeight) / 2 + 1;
+        drawNodeText(context, textRenderer, Component.literal("+"), addTextX, addTextY, UITheme.TEXT_PRIMARY);
 
         // Remove button
         int removeFill = canRemove
@@ -6378,13 +6378,13 @@ public class NodeGraph {
             : UITheme.BORDER_DEFAULT;
         context.fill(removeLeft, top, removeLeft + size, top + size, removeFill);
         DrawContextBridge.drawBorderInLayer(context, removeLeft, top, size, size, removeBorder);
-        int removeTextX = removeLeft + (size - textRenderer.getWidth("-")) / 2;
-        int removeTextY = top + (size - textRenderer.fontHeight) / 2 + 1;
+        int removeTextX = removeLeft + (size - textRenderer.width("-")) / 2;
+        int removeTextY = top + (size - textRenderer.lineHeight) / 2 + 1;
         int removeTextColor = canRemove ? UITheme.TEXT_PRIMARY : UITheme.NODE_LABEL_DIMMED;
-        drawNodeText(context, textRenderer, Text.literal("-"), removeTextX, removeTextY, removeTextColor);
+        drawNodeText(context, textRenderer, Component.literal("-"), removeTextX, removeTextY, removeTextColor);
     }
 
-    private void renderMessageScopeToggle(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderMessageScopeToggle(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         int labelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int fieldBackground = isOverSidebar ? UITheme.BACKGROUND_SECONDARY : UITheme.BACKGROUND_SIDEBAR;
         int borderColor = isOverSidebar ? UITheme.BORDER_SUBTLE : UITheme.BORDER_DEFAULT;
@@ -6397,8 +6397,8 @@ public class NodeGraph {
 
         int labelLeft = node.getMessageScopeToggleLeft() - cameraX;
         int labelTop = node.getMessageScopeLabelTop() - cameraY;
-        int labelY = labelTop + Math.max(0, (node.getMessageScopeLabelHeight() - textRenderer.fontHeight) / 2);
-        drawNodeText(context, textRenderer, Text.literal("Visibility"), labelLeft + 2, labelY, labelColor);
+        int labelY = labelTop + Math.max(0, (node.getMessageScopeLabelHeight() - textRenderer.lineHeight) / 2);
+        drawNodeText(context, textRenderer, Component.literal("Visibility"), labelLeft + 2, labelY, labelColor);
 
         int left = node.getMessageScopeToggleLeft() - cameraX;
         int top = node.getMessageScopeToggleTop() - cameraY;
@@ -6449,17 +6449,17 @@ public class NodeGraph {
 
         String globalLabel = "Global";
         String clientLabel = "Client Side";
-        int globalX = globalLeft + Math.max(0, (segmentWidth - textRenderer.getWidth(globalLabel)) / 2);
-        int clientX = clientLeft + Math.max(0, (segmentWidth - textRenderer.getWidth(clientLabel)) / 2);
-        int textY = top + (height - textRenderer.fontHeight) / 2 + 1;
+        int globalX = globalLeft + Math.max(0, (segmentWidth - textRenderer.width(globalLabel)) / 2);
+        int clientX = clientLeft + Math.max(0, (segmentWidth - textRenderer.width(clientLabel)) / 2);
+        int textY = top + (height - textRenderer.lineHeight) / 2 + 1;
         int globalTextColor = AnimationHelper.lerpColor(activeTextColor, inactiveTextColor, progress);
         int clientTextColor = AnimationHelper.lerpColor(inactiveTextColor, activeTextColor, progress);
 
-        drawNodeText(context, textRenderer, Text.literal(globalLabel), globalX, textY, globalTextColor);
-        drawNodeText(context, textRenderer, Text.literal(clientLabel), clientX, textY, clientTextColor);
+        drawNodeText(context, textRenderer, Component.literal(globalLabel), globalX, textY, globalTextColor);
+        drawNodeText(context, textRenderer, Component.literal(clientLabel), clientX, textY, clientTextColor);
     }
 
-    private void renderBookTextInput(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderBookTextInput(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         // Render "Edit Text" button
         int buttonLeft = node.getBookTextButtonLeft() - cameraX;
         int buttonTop = node.getBookTextButtonTop() - cameraY;
@@ -6484,14 +6484,14 @@ public class NodeGraph {
 
         String buttonLabel = "Edit Text";
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
-        int textX = buttonLeft + (buttonWidth - textRenderer.getWidth(buttonLabel)) / 2;
-        int textY = buttonTop + (buttonHeight - textRenderer.fontHeight) / 2;
-        drawNodeText(context, textRenderer, Text.literal(buttonLabel), textX, textY, textColor);
+        int textX = buttonLeft + (buttonWidth - textRenderer.width(buttonLabel)) / 2;
+        int textY = buttonTop + (buttonHeight - textRenderer.lineHeight) / 2;
+        drawNodeText(context, textRenderer, Component.literal(buttonLabel), textX, textY, textColor);
 
         if (node.hasBookTextPageInput()) {
             int labelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.TEXT_SECONDARY;
             int labelTop = node.getBookTextPageLabelTop() - cameraY;
-            drawNodeText(context, textRenderer, Text.literal("Page #:"), buttonLeft, labelTop, labelColor);
+            drawNodeText(context, textRenderer, Component.literal("Page #:"), buttonLeft, labelTop, labelColor);
 
             int fieldTop = node.getBookTextPageFieldTop() - cameraY;
             int fieldHeight = node.getBookTextPageFieldHeight();
@@ -6502,11 +6502,11 @@ public class NodeGraph {
                 pageValue = "";
             }
             int pageTextColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
-            drawNodeText(context, textRenderer, Text.literal(pageValue), buttonLeft + 4, fieldTop + (fieldHeight - textRenderer.fontHeight) / 2, pageTextColor);
+            drawNodeText(context, textRenderer, Component.literal(pageValue), buttonLeft + 4, fieldTop + (fieldHeight - textRenderer.lineHeight) / 2, pageTextColor);
         }
     }
 
-    private void renderPopupEditButton(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderPopupEditButton(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         if (node == null || !node.hasPopupEditButton()) {
             return;
         }
@@ -6533,15 +6533,15 @@ public class NodeGraph {
 
         String buttonLabel = "Edit";
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
-        int textX = buttonLeft + (buttonWidth - textRenderer.getWidth(buttonLabel)) / 2;
-        int textY = buttonTop + (buttonHeight - textRenderer.fontHeight) / 2;
-        drawNodeText(context, textRenderer, Text.literal(buttonLabel), textX, textY, textColor);
+        int textX = buttonLeft + (buttonWidth - textRenderer.width(buttonLabel)) / 2;
+        int textY = buttonTop + (buttonHeight - textRenderer.lineHeight) / 2;
+        drawNodeText(context, textRenderer, Component.literal(buttonLabel), textX, textY, textColor);
     }
 
-    private void renderTemplateNodeContent(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderTemplateNodeContent(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         int x = node.getX() - cameraX;
         int y = node.getY() - cameraY;
-        int width = node.getWidth();
+        int width = node.width();
 
         int headerColor = node.getType().getColor() & UITheme.NODE_HEADER_ALPHA_MASK;
         if (isOverSidebar) {
@@ -6561,7 +6561,7 @@ public class NodeGraph {
             : "";
         boolean lockedCustomNode = node.isCustomNodeInstance();
         String badge = lockedCustomNode ? "LOCKED" : "LINK";
-        int badgeWidth = textRenderer.getWidth(badge) + 8;
+        int badgeWidth = textRenderer.width(badge) + 8;
         int badgeLeft = x + width - badgeWidth - 6;
         int badgeTop = y + 2;
         int badgeFill = isOverSidebar ? UITheme.BACKGROUND_SECONDARY : adjustColorBrightness(node.getType().getColor(), 0.78f);
@@ -6594,10 +6594,10 @@ public class NodeGraph {
         }
     }
 
-    private void renderCustomNodeContent(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar) {
+    private void renderCustomNodeContent(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar) {
         int x = node.getX() - cameraX;
         int y = node.getY() - cameraY;
-        int width = node.getWidth();
+        int width = node.width();
         int height = node.getHeight();
         int accent = node.getType().getColor();
 
@@ -6621,7 +6621,7 @@ public class NodeGraph {
             : "";
         drawNodeText(context, textRenderer, trimTextToWidth(title, textRenderer, width - 48), x + 6, y + 4, primaryText);
         if (!version.isEmpty()) {
-            int versionWidth = textRenderer.getWidth(version) + 8;
+            int versionWidth = textRenderer.width(version) + 8;
             int versionLeft = x + width - versionWidth - 6;
             context.fill(versionLeft, y + 3, versionLeft + versionWidth, y + 14, chipFill);
             DrawContextBridge.drawBorderInLayer(context, versionLeft, y + 3, versionWidth, 11, chipBorder);
@@ -6648,16 +6648,16 @@ public class NodeGraph {
         renderTemplatePreviewGraph(context, textRenderer, node, previewLeft, previewTop, previewWidth, previewHeight, isOverSidebar);
     }
 
-    private void renderLockedCustomNodeBinding(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar) {
+    private void renderLockedCustomNodeBinding(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar) {
         int fieldTop = node.getStopTargetFieldInputTop() - cameraY;
         int fieldLeft = node.getStopTargetFieldLeft() - cameraX;
         int fieldWidth = node.getStopTargetFieldWidth();
         int fieldHeight = node.getStopTargetFieldHeight();
         int fieldBottom = fieldTop + fieldHeight;
 
-        int labelY = fieldTop - textRenderer.fontHeight - 2;
+        int labelY = fieldTop - textRenderer.lineHeight - 2;
         if (labelY >= node.getY() - cameraY + 14) {
-            drawNodeText(context, textRenderer, Text.literal("Custom Node"), fieldLeft, labelY,
+            drawNodeText(context, textRenderer, Component.literal("Custom Node"), fieldLeft, labelY,
                 isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR);
         }
 
@@ -6667,16 +6667,16 @@ public class NodeGraph {
         DrawContextBridge.drawBorderInLayer(context, fieldLeft, fieldTop, fieldWidth, fieldHeight, border);
 
         String presetLine = trimTextToWidth(getSelectedPresetName(node), textRenderer, Math.max(0, fieldWidth - 34));
-        drawNodeText(context, textRenderer, Text.literal(presetLine), fieldLeft + 4, fieldTop + 4,
+        drawNodeText(context, textRenderer, Component.literal(presetLine), fieldLeft + 4, fieldTop + 4,
             isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY);
 
         String lockGlyph = "[]";
-        int lockX = fieldLeft + fieldWidth - textRenderer.getWidth(lockGlyph) - 5;
-        drawNodeText(context, textRenderer, Text.literal(lockGlyph), lockX, fieldTop + 4,
+        int lockX = fieldLeft + fieldWidth - textRenderer.width(lockGlyph) - 5;
+        drawNodeText(context, textRenderer, Component.literal(lockGlyph), lockX, fieldTop + 4,
             isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY);
     }
 
-    private void renderTemplatePreviewGraph(DrawContext context, TextRenderer textRenderer, Node node,
+    private void renderTemplatePreviewGraph(GuiGraphics context, Font textRenderer, Node node,
                                             int previewLeft, int previewTop, int previewWidth, int previewHeight,
                                             boolean isOverSidebar) {
         NodeGraphData templateData = getPresetPreviewGraphData(node);
@@ -6746,9 +6746,9 @@ public class NodeGraph {
                 int x2 = Math.round(b[0]);
                 int y2 = Math.round(b[1]);
                 int mx = (x1 + x2) / 2;
-                context.drawHorizontalLine(Math.min(x1, mx), Math.max(x1, mx), y1, lineColor);
-                context.drawVerticalLine(mx, Math.min(y1, y2), Math.max(y1, y2), lineColor);
-                context.drawHorizontalLine(Math.min(mx, x2), Math.max(mx, x2), y2, lineColor);
+                context.hLine(Math.min(x1, mx), Math.max(x1, mx), y1, lineColor);
+                context.vLine(mx, Math.min(y1, y2), Math.max(y1, y2), lineColor);
+                context.hLine(Math.min(mx, x2), Math.max(mx, x2), y2, lineColor);
             }
         }
 
@@ -6775,7 +6775,7 @@ public class NodeGraph {
         }
     }
 
-    private void renderTemplateDefinitionSummary(DrawContext context, TextRenderer textRenderer, Node node,
+    private void renderTemplateDefinitionSummary(GuiGraphics context, Font textRenderer, Node node,
                                                  NodeGraphData.CustomNodeDefinition definition, int previewLeft,
                                                  int previewTop, int previewWidth, int previewHeight, boolean isOverSidebar) {
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
@@ -6783,9 +6783,9 @@ public class NodeGraph {
         int warningColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.ACCENT_AMBER;
         int textX = previewLeft + 5;
         int lineY = previewTop + 4;
-        int lineStep = textRenderer.fontHeight + 2;
+        int lineStep = textRenderer.lineHeight + 2;
 
-        String presetLine = "Preset: " + trimTextToWidth(getSelectedPresetName(node), textRenderer, Math.max(0, previewWidth - 10 - textRenderer.getWidth("Preset: ")));
+        String presetLine = "Preset: " + trimTextToWidth(getSelectedPresetName(node), textRenderer, Math.max(0, previewWidth - 10 - textRenderer.width("Preset: ")));
         drawNodeText(context, textRenderer, presetLine, textX, lineY, mutedColor);
         lineY += lineStep;
 
@@ -6810,19 +6810,19 @@ public class NodeGraph {
         }
     }
 
-    private int renderPortList(DrawContext context, TextRenderer textRenderer, List<NodeGraphData.CustomNodePort> ports,
+    private int renderPortList(GuiGraphics context, Font textRenderer, List<NodeGraphData.CustomNodePort> ports,
                                int textX, int lineY, int previewWidth, int previewBottom, int textColor, int mutedColor) {
         if (ports == null || ports.isEmpty()) {
             drawNodeText(context, textRenderer, "none", textX, lineY, mutedColor);
-            return lineY + textRenderer.fontHeight + 2;
+            return lineY + textRenderer.lineHeight + 2;
         }
         for (NodeGraphData.CustomNodePort port : ports) {
-            if (lineY + textRenderer.fontHeight > previewBottom - 2) {
+            if (lineY + textRenderer.lineHeight > previewBottom - 2) {
                 break;
             }
             String label = buildPortSummary(port);
             drawNodeText(context, textRenderer, trimTextToWidth(label, textRenderer, previewWidth - 10), textX, lineY, textColor);
-            lineY += textRenderer.fontHeight + 2;
+            lineY += textRenderer.lineHeight + 2;
         }
         return lineY;
     }
@@ -6888,7 +6888,7 @@ public class NodeGraph {
     }
 
     private int getTemplatePreviewWidth(Node node) {
-        return Math.max(20, node.getWidth() - TEMPLATE_PREVIEW_MARGIN * 2);
+        return Math.max(20, node.width() - TEMPLATE_PREVIEW_MARGIN * 2);
     }
 
     private int getTemplatePreviewHeight(Node node) {
@@ -6929,7 +6929,7 @@ public class NodeGraph {
         return false;
     }
 
-    private void renderStopTargetInputField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderStopTargetInputField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                             int mouseX, int mouseY) {
         boolean isRunPresetNode = isPresetSelectorNode(node);
         if (isRunPresetNode) {
@@ -6978,9 +6978,9 @@ public class NodeGraph {
         }
 
         if (isRunPresetNode) {
-            int labelY = fieldTop - textRenderer.fontHeight - 2;
+            int labelY = fieldTop - textRenderer.lineHeight - 2;
             if (labelY >= node.getY() - cameraY + 14) {
-                drawNodeText(context, textRenderer, Text.literal("Preset"), fieldLeft, labelY, baseLabelColor);
+                drawNodeText(context, textRenderer, Component.literal("Preset"), fieldLeft, labelY, baseLabelColor);
             }
         }
 
@@ -7030,7 +7030,7 @@ public class NodeGraph {
             if (editing) {
                 stopTargetRenderData = candidate;
                 display = stopTargetRenderData.displayText;
-            } else if (textRenderer.getWidth(candidate.displayText) <= fieldWidth - 6) {
+            } else if (textRenderer.width(candidate.displayText) <= fieldWidth - 6) {
                 stopTargetRenderData = candidate;
                 display = stopTargetRenderData.displayText;
             } else if (isSingleKnownInlineVariableReference(value, stopTargetVariableNames)) {
@@ -7040,7 +7040,7 @@ public class NodeGraph {
         }
 
         int textX = fieldLeft + 3;
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
         if (editing && hasStopTargetSelection()) {
             int start = stopTargetSelectionStart;
             int end = stopTargetSelectionEnd;
@@ -7049,8 +7049,8 @@ public class NodeGraph {
                 end = stopTargetRenderData.toDisplayIndex(end);
             }
             if (start >= 0 && end >= 0 && start <= display.length() && end <= display.length()) {
-                int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                 int selectionColor = isRunPresetNode ? UITheme.TEXT_SELECTION_BG : UITheme.TEXT_SELECTION_DANGER_BG;
                 context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldBottom - 2, selectionColor);
             }
@@ -7058,7 +7058,7 @@ public class NodeGraph {
         if (stopTargetRenderData != null && shouldRenderNodeText()) {
             stopTargetRenderData.draw(context, textRenderer, textX, textY);
         } else {
-            drawNodeText(context, textRenderer, Text.literal(display), textX, textY, valueColor);
+            drawNodeText(context, textRenderer, Component.literal(display), textX, textY, valueColor);
         }
 
         if (editing && stopTargetCaretVisible) {
@@ -7066,22 +7066,22 @@ public class NodeGraph {
             if (stopTargetRenderData != null) {
                 caretIndex = stopTargetRenderData.toDisplayIndex(caretIndex);
             }
-            caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-            int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+            caretIndex = Mth.clamp(caretIndex, 0, display.length());
+            int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
             caretX = Math.min(caretX, fieldLeft + fieldWidth - 2);
             UIStyleHelper.drawTextCaret(context, caretX, fieldTop + 2, fieldBottom - 2, caretColor);
         }
 
         if (isRunPresetNode) {
             int arrowX = fieldLeft + fieldWidth - 10;
-            int arrowY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+            int arrowY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
             String arrow = presetDropdownOpenForNode ? ">" : "v";
             int arrowColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
-            drawNodeText(context, textRenderer, Text.literal(arrow), arrowX, arrowY, arrowColor);
+            drawNodeText(context, textRenderer, Component.literal(arrow), arrowX, arrowY, arrowColor);
         }
     }
 
-    private void renderPresetSelectorField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderPresetSelectorField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                            int mouseX, int mouseY) {
         int labelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
@@ -7127,9 +7127,9 @@ public class NodeGraph {
 
         String inlineLabel = "Preset:";
         int labelX = fieldLeft + 4;
-        int labelY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2;
-        drawNodeText(context, textRenderer, Text.literal(inlineLabel), labelX, labelY, labelColor);
-        int valueTextX = labelX + textRenderer.getWidth(inlineLabel) + 6;
+        int labelY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2;
+        drawNodeText(context, textRenderer, Component.literal(inlineLabel), labelX, labelY, labelColor);
+        int valueTextX = labelX + textRenderer.width(inlineLabel) + 6;
         int maxValueWidth = Math.max(0, fieldLeft + fieldWidth - valueTextX - 4);
 
         String value;
@@ -7151,21 +7151,21 @@ public class NodeGraph {
         }
         display = editing ? display : trimTextToWidth(display, textRenderer, maxValueWidth);
 
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
         if (editing && hasStopTargetSelection()) {
-            int start = MathHelper.clamp(stopTargetSelectionStart, 0, display.length());
-            int end = MathHelper.clamp(stopTargetSelectionEnd, 0, display.length());
+            int start = Mth.clamp(stopTargetSelectionStart, 0, display.length());
+            int end = Mth.clamp(stopTargetSelectionEnd, 0, display.length());
             if (start != end) {
-                int selectionStartX = valueTextX + textRenderer.getWidth(display.substring(0, start));
-                int selectionEndX = valueTextX + textRenderer.getWidth(display.substring(0, end));
+                int selectionStartX = valueTextX + textRenderer.width(display.substring(0, start));
+                int selectionEndX = valueTextX + textRenderer.width(display.substring(0, end));
                 context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldBottom - 2, UITheme.TEXT_SELECTION_BG);
             }
         }
-        drawNodeText(context, textRenderer, Text.literal(display), valueTextX, textY, valueDrawColor);
+        drawNodeText(context, textRenderer, Component.literal(display), valueTextX, textY, valueDrawColor);
 
         if (editing && stopTargetCaretVisible) {
-            int caretIndex = MathHelper.clamp(stopTargetCaretPosition, 0, display.length());
-            int caretX = valueTextX + textRenderer.getWidth(display.substring(0, caretIndex));
+            int caretIndex = Mth.clamp(stopTargetCaretPosition, 0, display.length());
+            int caretX = valueTextX + textRenderer.width(display.substring(0, caretIndex));
             caretX = Math.min(caretX, fieldLeft + fieldWidth - 2);
             UIStyleHelper.drawTextCaret(context, caretX, fieldTop + 2, fieldBottom - 2, caretColor);
         }
@@ -7174,7 +7174,7 @@ public class NodeGraph {
         UIStyleHelper.drawChevron(context, chevronCenterX, chevronCenterY, open, animatedTextColor);
     }
 
-    private void renderVariableInputField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderVariableInputField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                           int mouseX, int mouseY) {
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_LABEL;
         int activeTextColor = UITheme.TEXT_LABEL;
@@ -7237,7 +7237,7 @@ public class NodeGraph {
             if (editing) {
                 variableFieldRenderData = candidate;
                 display = variableFieldRenderData.displayText;
-            } else if (textRenderer.getWidth(candidate.displayText) <= fieldWidth - 6) {
+            } else if (textRenderer.width(candidate.displayText) <= fieldWidth - 6) {
                 variableFieldRenderData = candidate;
                 display = variableFieldRenderData.displayText;
             } else if (isSingleKnownInlineVariableReference(value, variableFieldVariableNames)) {
@@ -7247,7 +7247,7 @@ public class NodeGraph {
         }
 
         int textX = fieldLeft + 3;
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
         if (editing && hasVariableSelection()) {
             int start = variableSelectionStart;
             int end = variableSelectionEnd;
@@ -7256,15 +7256,15 @@ public class NodeGraph {
                 end = variableFieldRenderData.toDisplayIndex(end);
             }
             if (start >= 0 && end >= 0 && start <= display.length() && end <= display.length()) {
-                int selectionStartX = textX + textRenderer.getWidth(display.substring(0, start));
-                int selectionEndX = textX + textRenderer.getWidth(display.substring(0, end));
+                int selectionStartX = textX + textRenderer.width(display.substring(0, start));
+                int selectionEndX = textX + textRenderer.width(display.substring(0, end));
                 context.fill(selectionStartX, fieldTop + 2, selectionEndX, fieldBottom - 2, UITheme.TEXT_SELECTION_BG);
             }
         }
         if (variableFieldRenderData != null && shouldRenderNodeText()) {
             variableFieldRenderData.draw(context, textRenderer, textX, textY);
         } else {
-            drawNodeText(context, textRenderer, Text.literal(display), textX, textY, valueColor);
+            drawNodeText(context, textRenderer, Component.literal(display), textX, textY, valueColor);
         }
 
         if (editing && variableCaretVisible) {
@@ -7272,14 +7272,14 @@ public class NodeGraph {
             if (variableFieldRenderData != null) {
                 caretIndex = variableFieldRenderData.toDisplayIndex(caretIndex);
             }
-            caretIndex = MathHelper.clamp(caretIndex, 0, display.length());
-            int caretX = textX + textRenderer.getWidth(display.substring(0, caretIndex));
+            caretIndex = Mth.clamp(caretIndex, 0, display.length());
+            int caretX = textX + textRenderer.width(display.substring(0, caretIndex));
             caretX = Math.min(caretX, fieldLeft + fieldWidth - 2);
             UIStyleHelper.drawTextCaret(context, caretX, fieldTop + 2, fieldBottom - 2, caretColor);
         }
     }
 
-    private void renderSchematicDropdownField(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar,
+    private void renderSchematicDropdownField(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar,
                                               int mouseX, int mouseY) {
         int labelColor = isOverSidebar ? UITheme.NODE_LABEL_DIMMED : UITheme.NODE_LABEL_COLOR;
         int textColor = isOverSidebar ? UITheme.TEXT_TERTIARY : UITheme.TEXT_PRIMARY;
@@ -7303,7 +7303,7 @@ public class NodeGraph {
         int accentColor = isOverSidebar ? toGrayscale(UITheme.SCHEMATIC_ACTIVE_BORDER, 0.8f) : UITheme.SCHEMATIC_ACTIVE_BORDER;
         UIStyleHelper.FieldPalette palette = UIStyleHelper.getDropdownFieldPalette(accentColor, hoverProgress, open, false);
 
-        drawNodeText(context, textRenderer, Text.literal("Schematic"), fieldLeft, labelTop + (labelHeight - textRenderer.fontHeight) / 2, labelColor);
+        drawNodeText(context, textRenderer, Component.literal("Schematic"), fieldLeft, labelTop + (labelHeight - textRenderer.lineHeight) / 2, labelColor);
 
         int fieldBottom = fieldTop + fieldHeight;
         UIStyleHelper.drawFieldFrame(
@@ -7333,16 +7333,16 @@ public class NodeGraph {
 
         String display = trimTextToWidth(value, textRenderer, fieldWidth - 16);
         int textX = fieldLeft + 3;
-        int textY = fieldTop + (fieldHeight - textRenderer.fontHeight) / 2 + 1;
+        int textY = fieldTop + (fieldHeight - textRenderer.lineHeight) / 2 + 1;
         int animatedTextColor = isOverSidebar ? textColor : palette.textColor();
-        drawNodeText(context, textRenderer, Text.literal(display), textX, textY, (value.equals("schematic") ? textColor : animatedTextColor));
+        drawNodeText(context, textRenderer, Component.literal(display), textX, textY, (value.equals("schematic") ? textColor : animatedTextColor));
 
         int chevronCenterX = fieldLeft + fieldWidth - 8;
         int chevronCenterY = fieldTop + fieldHeight / 2;
         UIStyleHelper.drawChevron(context, chevronCenterX, chevronCenterY, open, animatedTextColor);
     }
 
-    private void renderSchematicDropdownList(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderSchematicDropdownList(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(schematicDropdownAnimation, schematicDropdownOpen);
         if (schematicDropdownNode != node) {
             return;
@@ -7357,7 +7357,7 @@ public class NodeGraph {
         List<String> options = schematicDropdownOptions;
         int optionCount = options.isEmpty() ? 1 : options.size();
         int listTop = node.getSchematicFieldInputTop() + node.getSchematicFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -7366,7 +7366,7 @@ public class NodeGraph {
             screenHeight
         );
         int visibleCount = layout.visibleCount;
-        schematicDropdownScrollOffset = MathHelper.clamp(schematicDropdownScrollOffset, 0, layout.maxScrollOffset);
+        schematicDropdownScrollOffset = Mth.clamp(schematicDropdownScrollOffset, 0, layout.maxScrollOffset);
 
         int listHeight = layout.height;
         int listBottom = listTop + listHeight;
@@ -7418,7 +7418,7 @@ public class NodeGraph {
                 UIStyleHelper.drawDropdownRow(context, listLeft + 1, rowTop + 1, dropdownWidth - 2, SCHEMATIC_DROPDOWN_ROW_HEIGHT - 1, rowPalette);
             }
             String rowText = trimTextToWidth(optionLabel, textRenderer, dropdownWidth - 6 - DROPDOWN_SCROLLBAR_ALLOWANCE);
-            drawNodeText(context, textRenderer, Text.literal(rowText), listLeft + 3, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
+            drawNodeText(context, textRenderer, Component.literal(rowText), listLeft + 3, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -7445,7 +7445,7 @@ public class NodeGraph {
         context.disableScissor();
     }
 
-    private void renderRunPresetDropdownList(DrawContext context, TextRenderer textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
+    private void renderRunPresetDropdownList(GuiGraphics context, Font textRenderer, Node node, boolean isOverSidebar, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(runPresetDropdownAnimation, runPresetDropdownOpen);
         if (runPresetDropdownNode != node) {
             return;
@@ -7460,7 +7460,7 @@ public class NodeGraph {
         List<String> options = runPresetDropdownOptions;
         int optionCount = options.isEmpty() ? 1 : options.size();
         int listTop = node.getStopTargetFieldInputTop() + node.getStopTargetFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -7469,7 +7469,7 @@ public class NodeGraph {
             screenHeight
         );
         int visibleCount = layout.visibleCount;
-        runPresetDropdownScrollOffset = MathHelper.clamp(runPresetDropdownScrollOffset, 0, layout.maxScrollOffset);
+        runPresetDropdownScrollOffset = Mth.clamp(runPresetDropdownScrollOffset, 0, layout.maxScrollOffset);
 
         int listHeight = layout.height;
         int listBottom = listTop + listHeight;
@@ -7521,7 +7521,7 @@ public class NodeGraph {
                 UIStyleHelper.drawDropdownRow(context, listLeft + 1, rowTop + 1, dropdownWidth - 2, SCHEMATIC_DROPDOWN_ROW_HEIGHT - 1, rowPalette);
             }
             String rowText = trimTextToWidth(optionLabel, textRenderer, dropdownWidth - 6 - DROPDOWN_SCROLLBAR_ALLOWANCE);
-            drawNodeText(context, textRenderer, Text.literal(rowText), listLeft + 3, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
+            drawNodeText(context, textRenderer, Component.literal(rowText), listLeft + 3, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -7548,7 +7548,7 @@ public class NodeGraph {
         context.disableScissor();
     }
 
-    private void renderAmountSignDropdownList(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderAmountSignDropdownList(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(amountSignDropdownAnimation, amountSignDropdownOpen);
         if (amountSignDropdownNode == null) {
             return;
@@ -7567,7 +7567,7 @@ public class NodeGraph {
         int listTop = getAmountSignDropdownListTop(node);
         DropdownLayoutHelper.Layout layout = getAmountSignDropdownLayout(node);
         int visibleCount = layout.visibleCount;
-        amountSignDropdownScrollOffset = MathHelper.clamp(amountSignDropdownScrollOffset, 0, layout.maxScrollOffset);
+        amountSignDropdownScrollOffset = Mth.clamp(amountSignDropdownScrollOffset, 0, layout.maxScrollOffset);
 
         int listHeight = layout.height;
         int listBottom = listTop + listHeight;
@@ -7619,8 +7619,8 @@ public class NodeGraph {
             if (hovered) {
                 UIStyleHelper.drawDropdownRow(context, listLeft + 1, rowTop + 1, dropdownWidth - 2, SCHEMATIC_DROPDOWN_ROW_HEIGHT - 1, rowPalette);
             }
-            int textX = listLeft + Math.max(DROPDOWN_SIDE_PADDING, (dropdownWidth - textRenderer.getWidth(optionLabel)) / 2);
-            drawNodeText(context, textRenderer, Text.literal(optionLabel), textX, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
+            int textX = listLeft + Math.max(DROPDOWN_SIDE_PADDING, (dropdownWidth - textRenderer.width(optionLabel)) / 2);
+            drawNodeText(context, textRenderer, Component.literal(optionLabel), textX, rowTop + 4, hovered ? rowPalette.textColor() : textColor);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -7821,7 +7821,7 @@ public class NodeGraph {
         coordinateSelectionAnchor = -1;
         coordinateSelectionStart = -1;
         coordinateSelectionEnd = -1;
-        updateCoordinateFieldContentWidth(getClientTextRenderer());
+        updateCoordinateFieldContentWidth(getClientFont());
     }
 
     public void stopCoordinateEditing(boolean commit) {
@@ -7907,12 +7907,12 @@ public class NodeGraph {
                     coordinateEditBuffer = coordinateEditBuffer.substring(0, deleteToPos)
                         + coordinateEditBuffer.substring(coordinateCaretPosition);
                     setCoordinateCaretPosition(deleteToPos);
-                    updateCoordinateFieldContentWidth(getClientTextRenderer());
+                    updateCoordinateFieldContentWidth(getClientFont());
                 } else if (coordinateCaretPosition > 0 && !coordinateEditBuffer.isEmpty()) {
                     coordinateEditBuffer = coordinateEditBuffer.substring(0, coordinateCaretPosition - 1)
                         + coordinateEditBuffer.substring(coordinateCaretPosition);
                     setCoordinateCaretPosition(coordinateCaretPosition - 1);
-                    updateCoordinateFieldContentWidth(getClientTextRenderer());
+                    updateCoordinateFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_DELETE:
@@ -7923,7 +7923,7 @@ public class NodeGraph {
                     coordinateEditBuffer = coordinateEditBuffer.substring(0, coordinateCaretPosition)
                         + coordinateEditBuffer.substring(coordinateCaretPosition + 1);
                     setCoordinateCaretPosition(coordinateCaretPosition);
-                    updateCoordinateFieldContentWidth(getClientTextRenderer());
+                    updateCoordinateFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_LEFT:
@@ -7972,7 +7972,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         smartPasteCoordinates(getClipboardText(), textRenderer);
                     }
@@ -7990,7 +7990,7 @@ public class NodeGraph {
             || (modifiers & (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SUPER)) != 0;
     }
 
-    public boolean handleCoordinateCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleCoordinateCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingCoordinateField()) {
             return false;
         }
@@ -8056,7 +8056,7 @@ public class NodeGraph {
         amountSelectionAnchor = -1;
         amountSelectionStart = -1;
         amountSelectionEnd = -1;
-        updateAmountFieldContentWidth(getClientTextRenderer());
+        updateAmountFieldContentWidth(getClientFont());
     }
 
     public void stopAmountEditing(boolean commit) {
@@ -8162,12 +8162,12 @@ public class NodeGraph {
                     amountEditBuffer = amountEditBuffer.substring(0, deleteToPos)
                         + amountEditBuffer.substring(amountCaretPosition);
                     setAmountCaretPosition(deleteToPos);
-                    updateAmountFieldContentWidth(getClientTextRenderer());
+                    updateAmountFieldContentWidth(getClientFont());
                 } else if (amountCaretPosition > 0 && !amountEditBuffer.isEmpty()) {
                     amountEditBuffer = amountEditBuffer.substring(0, amountCaretPosition - 1)
                         + amountEditBuffer.substring(amountCaretPosition);
                     setAmountCaretPosition(amountCaretPosition - 1);
-                    updateAmountFieldContentWidth(getClientTextRenderer());
+                    updateAmountFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_DELETE:
@@ -8178,7 +8178,7 @@ public class NodeGraph {
                     amountEditBuffer = amountEditBuffer.substring(0, amountCaretPosition)
                         + amountEditBuffer.substring(amountCaretPosition + 1);
                     setAmountCaretPosition(amountCaretPosition);
-                    updateAmountFieldContentWidth(getClientTextRenderer());
+                    updateAmountFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_LEFT:
@@ -8220,7 +8220,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertAmountText(getClipboardText(), textRenderer);
                     }
@@ -8233,7 +8233,7 @@ public class NodeGraph {
         return false;
     }
 
-    public boolean handleAmountCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleAmountCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingAmountField()) {
             return false;
         }
@@ -8295,7 +8295,7 @@ public class NodeGraph {
         stopTargetSelectionAnchor = -1;
         stopTargetSelectionStart = -1;
         stopTargetSelectionEnd = -1;
-        updateStopTargetFieldContentWidth(getClientTextRenderer());
+        updateStopTargetFieldContentWidth(getClientFont());
     }
 
     public void stopStopTargetEditing(boolean commit) {
@@ -8377,7 +8377,7 @@ public class NodeGraph {
         variableSelectionAnchor = -1;
         variableSelectionStart = -1;
         variableSelectionEnd = -1;
-        updateVariableFieldContentWidth(getClientTextRenderer());
+        updateVariableFieldContentWidth(getClientFont());
     }
 
     public void stopVariableEditing(boolean commit) {
@@ -8447,12 +8447,12 @@ public class NodeGraph {
                     variableEditBuffer = variableEditBuffer.substring(0, deleteToPos)
                         + variableEditBuffer.substring(variableCaretPosition);
                     setVariableCaretPosition(deleteToPos);
-                    updateVariableFieldContentWidth(getClientTextRenderer());
+                    updateVariableFieldContentWidth(getClientFont());
                 } else if (variableCaretPosition > 0 && !variableEditBuffer.isEmpty()) {
                     variableEditBuffer = variableEditBuffer.substring(0, variableCaretPosition - 1)
                         + variableEditBuffer.substring(variableCaretPosition);
                     setVariableCaretPosition(variableCaretPosition - 1);
-                    updateVariableFieldContentWidth(getClientTextRenderer());
+                    updateVariableFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_DELETE:
@@ -8463,7 +8463,7 @@ public class NodeGraph {
                     variableEditBuffer = variableEditBuffer.substring(0, variableCaretPosition)
                         + variableEditBuffer.substring(variableCaretPosition + 1);
                     setVariableCaretPosition(variableCaretPosition);
-                    updateVariableFieldContentWidth(getClientTextRenderer());
+                    updateVariableFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_LEFT:
@@ -8505,7 +8505,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertVariableText(getClipboardText(), textRenderer);
                     }
@@ -8518,7 +8518,7 @@ public class NodeGraph {
         return false;
     }
 
-    public boolean handleVariableCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleVariableCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingVariableField()) {
             return false;
         }
@@ -8578,12 +8578,12 @@ public class NodeGraph {
                     stopTargetEditBuffer = stopTargetEditBuffer.substring(0, deleteToPos)
                         + stopTargetEditBuffer.substring(stopTargetCaretPosition);
                     setStopTargetCaretPosition(deleteToPos);
-                    updateStopTargetFieldContentWidth(getClientTextRenderer());
+                    updateStopTargetFieldContentWidth(getClientFont());
                 } else if (stopTargetCaretPosition > 0 && !stopTargetEditBuffer.isEmpty()) {
                     stopTargetEditBuffer = stopTargetEditBuffer.substring(0, stopTargetCaretPosition - 1)
                         + stopTargetEditBuffer.substring(stopTargetCaretPosition);
                     setStopTargetCaretPosition(stopTargetCaretPosition - 1);
-                    updateStopTargetFieldContentWidth(getClientTextRenderer());
+                    updateStopTargetFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_DELETE:
@@ -8594,7 +8594,7 @@ public class NodeGraph {
                     stopTargetEditBuffer = stopTargetEditBuffer.substring(0, stopTargetCaretPosition)
                         + stopTargetEditBuffer.substring(stopTargetCaretPosition + 1);
                     setStopTargetCaretPosition(stopTargetCaretPosition);
-                    updateStopTargetFieldContentWidth(getClientTextRenderer());
+                    updateStopTargetFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_LEFT:
@@ -8636,7 +8636,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertStopTargetText(getClipboardText(), textRenderer);
                     }
@@ -8649,7 +8649,7 @@ public class NodeGraph {
         return false;
     }
 
-    public boolean handleStopTargetCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleStopTargetCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingStopTargetField()) {
             return false;
         }
@@ -8751,7 +8751,7 @@ public class NodeGraph {
         stickyNoteResizeCorner = corner;
         stickyNoteResizeStartX = node.getX();
         stickyNoteResizeStartY = node.getY();
-        stickyNoteResizeStartWidth = node.getWidth();
+        stickyNoteResizeStartWidth = node.width();
         stickyNoteResizeStartHeight = node.getHeight();
         return true;
     }
@@ -8767,13 +8767,13 @@ public class NodeGraph {
         if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() - half, node.getY() - half, size, size)) {
             return StickyNoteResizeCorner.TOP_LEFT;
         }
-        if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() + node.getWidth() - half, node.getY() - half, size, size)) {
+        if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() + node.width() - half, node.getY() - half, size, size)) {
             return StickyNoteResizeCorner.TOP_RIGHT;
         }
         if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() - half, node.getY() + node.getHeight() - half, size, size)) {
             return StickyNoteResizeCorner.BOTTOM_LEFT;
         }
-        if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() + node.getWidth() - half, node.getY() + node.getHeight() - half, size, size)) {
+        if (ContextMenuRenderer.isPointInRect(worldX, worldY, node.getX() + node.width() - half, node.getY() + node.getHeight() - half, size, size)) {
             return StickyNoteResizeCorner.BOTTOM_RIGHT;
         }
         return null;
@@ -8810,7 +8810,7 @@ public class NodeGraph {
         int newWidth = right - left;
         int newHeight = bottom - top;
         if (left != resizingStickyNote.getX() || top != resizingStickyNote.getY()
-            || newWidth != resizingStickyNote.getWidth() || newHeight != resizingStickyNote.getHeight()) {
+            || newWidth != resizingStickyNote.width() || newHeight != resizingStickyNote.getHeight()) {
             dragOperationChanged = true;
         }
         resizingStickyNote.setPosition(left, top);
@@ -8970,7 +8970,7 @@ public class NodeGraph {
         messageSelectionAnchor = -1;
         messageSelectionStart = -1;
         messageSelectionEnd = -1;
-        updateMessageFieldContentWidth(getClientTextRenderer());
+        updateMessageFieldContentWidth(getClientFont());
     }
 
     public void stopMessageEditing(boolean commit) {
@@ -9174,7 +9174,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertEventNameText(getClipboardText());
                     }
@@ -9302,7 +9302,7 @@ public class NodeGraph {
         parameterSelectionStart = -1;
         parameterSelectionEnd = -1;
         clearParameterDropdownSuppression();
-        updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+        updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
     }
 
     public void stopParameterEditing(boolean commit) {
@@ -9321,7 +9321,7 @@ public class NodeGraph {
             notifyNodeParametersChanged(parameterEditingNode);
         }
 
-        updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), -1, null);
+        updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), -1, null);
         parameterEditingNode = null;
         parameterEditingIndex = -1;
         parameterEditBuffer = "";
@@ -9644,9 +9644,9 @@ public class NodeGraph {
             return false;
         }
         if (parameter != null) {
-            return "Hand".equalsIgnoreCase(parameter.getName());
+            return "InteractionHand".equalsIgnoreCase(parameter.getName());
         }
-        NodeParameter handParam = node.getParameter("Hand");
+        NodeParameter handParam = node.getParameter("InteractionHand");
         return handParam != null;
     }
 
@@ -9685,10 +9685,10 @@ public class NodeGraph {
 
     private String formatHandValue(String value) {
         if (isDefaultHandValue(value)) {
-            return "Main Hand";
+            return "Main InteractionHand";
         }
         if (value == null || value.isEmpty()) {
-            return "Main Hand";
+            return "Main InteractionHand";
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
         if ("off".equals(normalized)
@@ -9813,14 +9813,14 @@ public class NodeGraph {
                     parameterEditBuffer = parameterEditBuffer.substring(0, deleteToPos)
                         + parameterEditBuffer.substring(parameterCaretPosition);
                     setParameterCaretPosition(deleteToPos);
-                    updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+                    updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
                     refreshStateParameterPreview();
                     clearParameterDropdownSuppression();
                 } else if (parameterCaretPosition > 0 && !parameterEditBuffer.isEmpty()) {
                     parameterEditBuffer = parameterEditBuffer.substring(0, parameterCaretPosition - 1)
                         + parameterEditBuffer.substring(parameterCaretPosition);
                     setParameterCaretPosition(parameterCaretPosition - 1);
-                    updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+                    updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
                     refreshStateParameterPreview();
                     clearParameterDropdownSuppression();
                 }
@@ -9833,7 +9833,7 @@ public class NodeGraph {
                     parameterEditBuffer = parameterEditBuffer.substring(0, parameterCaretPosition)
                         + parameterEditBuffer.substring(parameterCaretPosition + 1);
                     setParameterCaretPosition(parameterCaretPosition);
-                    updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+                    updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
                     refreshStateParameterPreview();
                     clearParameterDropdownSuppression();
                 }
@@ -9877,7 +9877,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertParameterText(getClipboardText(), textRenderer);
                     }
@@ -9890,7 +9890,7 @@ public class NodeGraph {
         return false;
     }
 
-    public boolean handleParameterCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleParameterCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingParameterField()) {
             return false;
         }
@@ -9919,12 +9919,12 @@ public class NodeGraph {
                     messageEditBuffer = messageEditBuffer.substring(0, deleteToPos)
                         + messageEditBuffer.substring(messageCaretPosition);
                     setMessageCaretPosition(deleteToPos);
-                    updateMessageFieldContentWidth(getClientTextRenderer());
+                    updateMessageFieldContentWidth(getClientFont());
                 } else if (messageCaretPosition > 0 && !messageEditBuffer.isEmpty()) {
                     messageEditBuffer = messageEditBuffer.substring(0, messageCaretPosition - 1)
                         + messageEditBuffer.substring(messageCaretPosition);
                     setMessageCaretPosition(messageCaretPosition - 1);
-                    updateMessageFieldContentWidth(getClientTextRenderer());
+                    updateMessageFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_DELETE:
@@ -9935,7 +9935,7 @@ public class NodeGraph {
                     messageEditBuffer = messageEditBuffer.substring(0, messageCaretPosition)
                         + messageEditBuffer.substring(messageCaretPosition + 1);
                     setMessageCaretPosition(messageCaretPosition);
-                    updateMessageFieldContentWidth(getClientTextRenderer());
+                    updateMessageFieldContentWidth(getClientFont());
                 }
                 return true;
             case GLFW.GLFW_KEY_LEFT:
@@ -9977,7 +9977,7 @@ public class NodeGraph {
                 break;
             case GLFW.GLFW_KEY_V:
                 if (controlHeld) {
-                    TextRenderer textRenderer = getClientTextRenderer();
+                    Font textRenderer = getClientFont();
                     if (textRenderer != null) {
                         insertMessageText(getClipboardText(), textRenderer);
                     }
@@ -9990,7 +9990,7 @@ public class NodeGraph {
         return false;
     }
 
-    public boolean handleMessageCharTyped(char chr, int modifiers, TextRenderer textRenderer) {
+    public boolean handleMessageCharTyped(char chr, int modifiers, Font textRenderer) {
         if (!isEditingMessageField()) {
             return false;
         }
@@ -10078,14 +10078,14 @@ public class NodeGraph {
     }
 
     private void setCoordinateCaretPosition(int position) {
-        coordinateCaretPosition = MathHelper.clamp(position, 0, coordinateEditBuffer.length());
+        coordinateCaretPosition = Mth.clamp(position, 0, coordinateEditBuffer.length());
         coordinateSelectionAnchor = -1;
         resetCoordinateSelectionRange();
         resetCoordinateCaretBlink();
     }
 
     private void moveCoordinateCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, coordinateEditBuffer.length());
+        position = Mth.clamp(position, 0, coordinateEditBuffer.length());
         if (extendSelection) {
             if (coordinateSelectionAnchor == -1) {
                 coordinateSelectionAnchor = coordinateCaretPosition;
@@ -10107,14 +10107,14 @@ public class NodeGraph {
     }
 
     private void setParameterCaretPosition(int position) {
-        parameterCaretPosition = MathHelper.clamp(position, 0, parameterEditBuffer.length());
+        parameterCaretPosition = Mth.clamp(position, 0, parameterEditBuffer.length());
         parameterSelectionAnchor = -1;
         resetParameterSelectionRange();
         resetParameterCaretBlink();
     }
 
     private void moveParameterCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, parameterEditBuffer.length());
+        position = Mth.clamp(position, 0, parameterEditBuffer.length());
         if (extendSelection) {
             if (parameterSelectionAnchor == -1) {
                 parameterSelectionAnchor = parameterCaretPosition;
@@ -10143,7 +10143,7 @@ public class NodeGraph {
         coordinateEditBuffer = coordinateEditBuffer.substring(0, coordinateSelectionStart)
             + coordinateEditBuffer.substring(coordinateSelectionEnd);
         setCoordinateCaretPosition(coordinateSelectionStart);
-        updateCoordinateFieldContentWidth(getClientTextRenderer());
+        updateCoordinateFieldContentWidth(getClientFont());
         return true;
     }
 
@@ -10177,7 +10177,7 @@ public class NodeGraph {
         deleteCoordinateSelection();
     }
 
-    private void smartPasteCoordinates(String clipboardText, TextRenderer textRenderer) {
+    private void smartPasteCoordinates(String clipboardText, Font textRenderer) {
         if (!isEditingCoordinateField() || textRenderer == null || clipboardText == null || clipboardText.isEmpty()) {
             return;
         }
@@ -10232,7 +10232,7 @@ public class NodeGraph {
         insertCoordinateText(clipboardText, textRenderer);
     }
 
-    private boolean insertCoordinateText(String text, TextRenderer textRenderer) {
+    private boolean insertCoordinateText(String text, Font textRenderer) {
         if (!isEditingCoordinateField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -10308,14 +10308,14 @@ public class NodeGraph {
     }
 
     private void setAmountCaretPosition(int position) {
-        amountCaretPosition = MathHelper.clamp(position, 0, amountEditBuffer.length());
+        amountCaretPosition = Mth.clamp(position, 0, amountEditBuffer.length());
         amountSelectionAnchor = -1;
         resetAmountSelectionRange();
         resetAmountCaretBlink();
     }
 
     private void moveAmountCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, amountEditBuffer.length());
+        position = Mth.clamp(position, 0, amountEditBuffer.length());
         if (extendSelection) {
             if (amountSelectionAnchor == -1) {
                 amountSelectionAnchor = amountCaretPosition;
@@ -10337,14 +10337,14 @@ public class NodeGraph {
     }
 
     private void setStopTargetCaretPosition(int position) {
-        stopTargetCaretPosition = MathHelper.clamp(position, 0, stopTargetEditBuffer.length());
+        stopTargetCaretPosition = Mth.clamp(position, 0, stopTargetEditBuffer.length());
         stopTargetSelectionAnchor = -1;
         resetStopTargetSelectionRange();
         resetStopTargetCaretBlink();
     }
 
     private void moveStopTargetCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, stopTargetEditBuffer.length());
+        position = Mth.clamp(position, 0, stopTargetEditBuffer.length());
         if (extendSelection) {
             if (stopTargetSelectionAnchor == -1) {
                 stopTargetSelectionAnchor = stopTargetCaretPosition;
@@ -10366,14 +10366,14 @@ public class NodeGraph {
     }
 
     private void setVariableCaretPosition(int position) {
-        variableCaretPosition = MathHelper.clamp(position, 0, variableEditBuffer.length());
+        variableCaretPosition = Mth.clamp(position, 0, variableEditBuffer.length());
         variableSelectionAnchor = -1;
         resetVariableSelectionRange();
         resetVariableCaretBlink();
     }
 
     private void moveVariableCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, variableEditBuffer.length());
+        position = Mth.clamp(position, 0, variableEditBuffer.length());
         if (extendSelection) {
             if (variableSelectionAnchor == -1) {
                 variableSelectionAnchor = variableCaretPosition;
@@ -10395,21 +10395,21 @@ public class NodeGraph {
     }
 
     private void setMessageCaretPosition(int position) {
-        messageCaretPosition = MathHelper.clamp(position, 0, messageEditBuffer.length());
+        messageCaretPosition = Mth.clamp(position, 0, messageEditBuffer.length());
         messageSelectionAnchor = -1;
         resetMessageSelectionRange();
         resetMessageCaretBlink();
     }
 
     private void setEventNameCaretPosition(int position) {
-        eventNameCaretPosition = MathHelper.clamp(position, 0, eventNameEditBuffer.length());
+        eventNameCaretPosition = Mth.clamp(position, 0, eventNameEditBuffer.length());
         eventNameSelectionAnchor = -1;
         resetEventNameSelectionRange();
         resetEventNameCaretBlink();
     }
 
     private void moveMessageCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, messageEditBuffer.length());
+        position = Mth.clamp(position, 0, messageEditBuffer.length());
         if (extendSelection) {
             if (messageSelectionAnchor == -1) {
                 messageSelectionAnchor = messageCaretPosition;
@@ -10431,7 +10431,7 @@ public class NodeGraph {
     }
 
     private void moveEventNameCaretTo(int position, boolean extendSelection) {
-        position = MathHelper.clamp(position, 0, eventNameEditBuffer.length());
+        position = Mth.clamp(position, 0, eventNameEditBuffer.length());
         if (extendSelection) {
             if (eventNameSelectionAnchor == -1) {
                 eventNameSelectionAnchor = eventNameCaretPosition;
@@ -10459,7 +10459,7 @@ public class NodeGraph {
         amountEditBuffer = amountEditBuffer.substring(0, amountSelectionStart)
             + amountEditBuffer.substring(amountSelectionEnd);
         setAmountCaretPosition(amountSelectionStart);
-        updateAmountFieldContentWidth(getClientTextRenderer());
+        updateAmountFieldContentWidth(getClientFont());
         return true;
     }
 
@@ -10470,7 +10470,7 @@ public class NodeGraph {
         stopTargetEditBuffer = stopTargetEditBuffer.substring(0, stopTargetSelectionStart)
             + stopTargetEditBuffer.substring(stopTargetSelectionEnd);
         setStopTargetCaretPosition(stopTargetSelectionStart);
-        updateStopTargetFieldContentWidth(getClientTextRenderer());
+        updateStopTargetFieldContentWidth(getClientFont());
         return true;
     }
 
@@ -10481,7 +10481,7 @@ public class NodeGraph {
         variableEditBuffer = variableEditBuffer.substring(0, variableSelectionStart)
             + variableEditBuffer.substring(variableSelectionEnd);
         setVariableCaretPosition(variableSelectionStart);
-        updateVariableFieldContentWidth(getClientTextRenderer());
+        updateVariableFieldContentWidth(getClientFont());
         return true;
     }
 
@@ -10582,7 +10582,7 @@ public class NodeGraph {
         messageEditBuffer = messageEditBuffer.substring(0, messageSelectionStart)
             + messageEditBuffer.substring(messageSelectionEnd);
         setMessageCaretPosition(messageSelectionStart);
-        updateMessageFieldContentWidth(getClientTextRenderer());
+        updateMessageFieldContentWidth(getClientFont());
         return true;
     }
 
@@ -10603,7 +10603,7 @@ public class NodeGraph {
         parameterEditBuffer = parameterEditBuffer.substring(0, parameterSelectionStart)
             + parameterEditBuffer.substring(parameterSelectionEnd);
         setParameterCaretPosition(parameterSelectionStart);
-        updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+        updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
         refreshStateParameterPreview();
         clearParameterDropdownSuppression();
         return true;
@@ -10699,7 +10699,7 @@ public class NodeGraph {
         deleteParameterSelection();
     }
 
-    private boolean insertAmountText(String text, TextRenderer textRenderer) {
+    private boolean insertAmountText(String text, Font textRenderer) {
         if (!isEditingAmountField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -10763,7 +10763,7 @@ public class NodeGraph {
             || "any".equalsIgnoreCase(trimmed);
     }
 
-    private boolean insertStopTargetText(String text, TextRenderer textRenderer) {
+    private boolean insertStopTargetText(String text, Font textRenderer) {
         if (!isEditingStopTargetField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -10787,7 +10787,7 @@ public class NodeGraph {
         return true;
     }
 
-    private boolean insertVariableText(String text, TextRenderer textRenderer) {
+    private boolean insertVariableText(String text, Font textRenderer) {
         if (!isEditingVariableField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -10884,7 +10884,7 @@ public class NodeGraph {
         return false;
     }
 
-    private boolean insertMessageText(String text, TextRenderer textRenderer) {
+    private boolean insertMessageText(String text, Font textRenderer) {
         if (!isEditingMessageField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -10934,7 +10934,7 @@ public class NodeGraph {
         return false;
     }
 
-    private boolean insertParameterText(String text, TextRenderer textRenderer) {
+    private boolean insertParameterText(String text, Font textRenderer) {
         if (!isEditingParameterField() || textRenderer == null || text == null || text.isEmpty()) {
             return false;
         }
@@ -11074,7 +11074,7 @@ public class NodeGraph {
             return "";
         }
         String fullId = stripped.contains(":") ? stripped : "minecraft:" + stripped;
-        Identifier id = Identifier.tryParse(fullId);
+        ResourceLocation id = ResourceLocation.tryParse(fullId);
         if (id == null) {
             return "";
         }
@@ -11106,7 +11106,7 @@ public class NodeGraph {
             return "";
         }
         String fullId = sanitized.contains(":") ? sanitized : "minecraft:" + sanitized;
-        Identifier id = Identifier.tryParse(fullId);
+        ResourceLocation id = ResourceLocation.tryParse(fullId);
         if (id == null) {
             return "";
         }
@@ -11194,7 +11194,7 @@ public class NodeGraph {
 
     private ParameterSegment getParameterSegment(String value, int caret) {
         String working = value != null ? value : "";
-        int clamped = MathHelper.clamp(caret, 0, working.length());
+        int clamped = Mth.clamp(caret, 0, working.length());
         int start = findSegmentStart(working, clamped);
         int end = findSegmentEnd(working, clamped);
         String segment = working.substring(start, end);
@@ -11285,7 +11285,7 @@ public class NodeGraph {
         }
         if (isHandParameter(node, null)) {
             List<ParameterDropdownOption> result = new ArrayList<>();
-            result.add(new ParameterDropdownOption("Main Hand", "main"));
+            result.add(new ParameterDropdownOption("Main InteractionHand", "main"));
             result.add(new ParameterDropdownOption("Offhand", "offhand"));
             return filterDropdownOptions(result, lowered);
         }
@@ -11449,13 +11449,13 @@ public class NodeGraph {
         if (entityId.isEmpty()) {
             return Collections.emptyList();
         }
-        Identifier id = Identifier.tryParse(entityId);
-        if (id == null || !Registries.ENTITY_TYPE.containsId(id)) {
+        ResourceLocation id = ResourceLocation.tryParse(entityId);
+        if (id == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             return Collections.emptyList();
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        net.minecraft.world.World world = client != null ? client.world : null;
-        List<EntityStateOptions.StateOption> options = EntityStateOptions.getOptions(Registries.ENTITY_TYPE.get(id), world);
+        Minecraft client = Minecraft.getInstance();
+        net.minecraft.world.level.Level world = client != null ? client.level : null;
+        List<EntityStateOptions.StateOption> options = EntityStateOptions.getOptions(BuiltInRegistries.ENTITY_TYPE.get(id), world);
         if (options.isEmpty()) {
             return Collections.emptyList();
         }
@@ -11483,7 +11483,7 @@ public class NodeGraph {
         return results;
     }
 
-    private void updateParameterDropdown(Node node, int index, TextRenderer textRenderer, int fieldX, int fieldY, int fieldWidth, int fieldHeight) {
+    private void updateParameterDropdown(Node node, int index, Font textRenderer, int fieldX, int fieldY, int fieldWidth, int fieldHeight) {
         if (!isEditingParameterField() || parameterEditingNode != node || parameterEditingIndex != index) {
             return;
         }
@@ -11607,7 +11607,7 @@ public class NodeGraph {
             : segment.leadingWhitespace + option.value();
         parameterEditBuffer = prefix + replacement + suffix;
         setParameterCaretPosition(prefix.length() + replacement.length());
-        updateParameterFieldContentWidth(parameterEditingNode, getClientTextRenderer(), parameterEditingIndex, parameterEditBuffer);
+        updateParameterFieldContentWidth(parameterEditingNode, getClientFont(), parameterEditingIndex, parameterEditBuffer);
         refreshStateParameterPreview();
         boolean changed = applyParameterEdit();
         if (changed) {
@@ -11649,14 +11649,14 @@ public class NodeGraph {
     }
 
     private int getDropdownWidth() {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null) {
             return parameterDropdownFieldWidth;
         }
-        int longestLabelWidth = textRenderer.getWidth("No matches");
+        int longestLabelWidth = textRenderer.width("No matches");
         for (ParameterDropdownOption option : parameterDropdownOptions) {
             if (option != null && option.label() != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option.label()));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option.label()));
             }
         }
         return longestLabelWidth + PARAMETER_DROPDOWN_ICON_ALLOWANCE + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
@@ -11671,7 +11671,7 @@ public class NodeGraph {
         int listTop = getParameterDropdownListTop();
         // Convert screen height to transformed space since dropdown is rendered in transformed coordinates
         float zoom = Math.max(0.01f, getZoomScale());
-        int transformedScreenHeight = Math.round(MinecraftClient.getInstance().getWindow().getScaledHeight() / zoom);
+        int transformedScreenHeight = Math.round(Minecraft.getInstance().getWindow().getGuiScaledHeight() / zoom);
         int rowHeight = getDropdownRowHeight();
         return DropdownLayoutHelper.calculate(
             optionCount,
@@ -11771,11 +11771,11 @@ public class NodeGraph {
         if (delta == 0) {
             return false;
         }
-        parameterDropdownScrollOffset = MathHelper.clamp(parameterDropdownScrollOffset - delta, 0, layout.maxScrollOffset);
+        parameterDropdownScrollOffset = Mth.clamp(parameterDropdownScrollOffset - delta, 0, layout.maxScrollOffset);
         return true;
     }
 
-    private void renderParameterDropdownList(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderParameterDropdownList(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(parameterDropdownAnimation, parameterDropdownOpen);
         if (parameterDropdownNode == null) {
             return;
@@ -11806,7 +11806,7 @@ public class NodeGraph {
         enableDropdownScissor(context, listLeft, listTop, dropdownWidth, animatedHeight);
         UIStyleHelper.drawScrollContainer(context, listLeft, listTop, dropdownWidth, listHeight, containerPalette);
 
-        parameterDropdownScrollOffset = MathHelper.clamp(parameterDropdownScrollOffset, 0, layout.maxScrollOffset);
+        parameterDropdownScrollOffset = Mth.clamp(parameterDropdownScrollOffset, 0, layout.maxScrollOffset);
         parameterDropdownHoverIndex = -1;
         if (animProgress >= 1f
             && transformedMouseX >= listLeft && transformedMouseX <= listRight
@@ -11836,7 +11836,7 @@ public class NodeGraph {
             String optionValue = options.isEmpty() ? "" : options.get(optionIndex).value();
             ItemStack icon = resolveParameterDropdownIcon(parameterDropdownNode, parameterDropdownIndex, optionValue);
             if (!icon.isEmpty()) {
-                context.drawItem(icon, iconX, iconY);
+                context.renderItem(icon, iconX, iconY);
             }
             int textPadding = 3;
             int textX = listLeft + textPadding;
@@ -11846,7 +11846,7 @@ public class NodeGraph {
             int maxTextWidth = dropdownWidth - (textX - listLeft) - textPadding - DROPDOWN_SCROLLBAR_ALLOWANCE;
             String rowText = trimTextToWidth(optionLabel, textRenderer, Math.max(0, maxTextWidth));
             int textOffsetY = 4;
-            drawNodeText(context, textRenderer, Text.literal(rowText), textX, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
+            drawNodeText(context, textRenderer, Component.literal(rowText), textX, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -11916,7 +11916,7 @@ public class NodeGraph {
         if (delta == 0) {
             return false;
         }
-        modeDropdownScrollOffset = MathHelper.clamp(modeDropdownScrollOffset - delta, 0, layout.maxScrollOffset);
+        modeDropdownScrollOffset = Mth.clamp(modeDropdownScrollOffset - delta, 0, layout.maxScrollOffset);
         return true;
     }
 
@@ -11929,7 +11929,7 @@ public class NodeGraph {
         }
         int listTop = randomRoundingDropdownNode.getRandomRoundingFieldInputTop()
             + randomRoundingDropdownNode.getRandomRoundingFieldHeight() + 2;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             getRandomRoundingDropdownOptions().size(),
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -11944,7 +11944,7 @@ public class NodeGraph {
         if (delta == 0) {
             return false;
         }
-        randomRoundingDropdownScrollOffset = MathHelper.clamp(
+        randomRoundingDropdownScrollOffset = Mth.clamp(
             randomRoundingDropdownScrollOffset - delta,
             0,
             layout.maxScrollOffset
@@ -12000,7 +12000,7 @@ public class NodeGraph {
         }
     }
 
-    private void renderModeDropdownList(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderModeDropdownList(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         float animProgress = getDropdownAnimationProgress(modeDropdownAnimation, modeDropdownOpen);
         if (modeDropdownNode == null) {
             return;
@@ -12031,7 +12031,7 @@ public class NodeGraph {
         enableDropdownScissor(context, listLeft, listTop, dropdownWidth, animatedHeight);
         UIStyleHelper.drawScrollContainer(context, listLeft, listTop, dropdownWidth, listHeight, containerPalette);
 
-        modeDropdownScrollOffset = MathHelper.clamp(modeDropdownScrollOffset, 0, layout.maxScrollOffset);
+        modeDropdownScrollOffset = Mth.clamp(modeDropdownScrollOffset, 0, layout.maxScrollOffset);
         modeDropdownHoverIndex = -1;
         if (animProgress >= 1f
             && transformedMouseX >= listLeft && transformedMouseX <= listRight
@@ -12057,7 +12057,7 @@ public class NodeGraph {
             int maxTextWidth = dropdownWidth - (textPadding * 2) - DROPDOWN_SCROLLBAR_ALLOWANCE;
             String rowText = trimTextToWidth(optionLabel, textRenderer, Math.max(0, maxTextWidth));
             int textOffsetY = 4;
-            drawNodeText(context, textRenderer, Text.literal(rowText), listLeft + textPadding, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
+            drawNodeText(context, textRenderer, Component.literal(rowText), listLeft + textPadding, rowTop + textOffsetY, hovered ? rowPalette.textColor() : UITheme.TEXT_PRIMARY);
         }
 
         DropdownLayoutHelper.drawScrollBar(
@@ -12089,70 +12089,70 @@ public class NodeGraph {
     }
 
     private int getModeDropdownWidth() {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null) {
             return modeDropdownFieldWidth;
         }
-        int longestLabelWidth = textRenderer.getWidth("No modes");
+        int longestLabelWidth = textRenderer.width("No modes");
         for (ModeDropdownOption option : modeDropdownOptions) {
             if (option != null && option.label() != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option.label()));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option.label()));
             }
         }
         return longestLabelWidth + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
     }
 
     private int getRandomRoundingDropdownWidth(Node node) {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null || node == null) {
             return node != null ? node.getRandomRoundingFieldWidth() : 0;
         }
-        int longestLabelWidth = textRenderer.getWidth("No options");
+        int longestLabelWidth = textRenderer.width("No options");
         for (ParameterDropdownOption option : getRandomRoundingDropdownOptions()) {
             if (option != null && option.label() != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option.label()));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option.label()));
             }
         }
         return longestLabelWidth + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
     }
 
     private int getSchematicDropdownWidth(Node node) {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null || node == null) {
             return node != null ? node.getSchematicFieldWidth() : 0;
         }
-        int longestLabelWidth = textRenderer.getWidth("No schematics found");
+        int longestLabelWidth = textRenderer.width("No schematics found");
         for (String option : schematicDropdownOptions) {
             if (option != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option));
             }
         }
         return longestLabelWidth + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
     }
 
     private int getRunPresetDropdownWidth(Node node) {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null || node == null) {
             return node != null ? node.getStopTargetFieldWidth() : 0;
         }
-        int longestLabelWidth = textRenderer.getWidth("No presets found");
+        int longestLabelWidth = textRenderer.width("No presets found");
         for (String option : runPresetDropdownOptions) {
             if (option != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option));
             }
         }
         return longestLabelWidth + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
     }
 
     private int getAmountSignDropdownWidth(Node node) {
-        TextRenderer textRenderer = getClientTextRenderer();
+        Font textRenderer = getClientFont();
         if (textRenderer == null || node == null) {
             return node != null ? node.getAmountSignToggleWidth() : 0;
         }
         int longestLabelWidth = 0;
         for (String option : getAmountSignDropdownOptions()) {
             if (option != null) {
-                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.getWidth(option));
+                longestLabelWidth = Math.max(longestLabelWidth, textRenderer.width(option));
             }
         }
         return longestLabelWidth + DROPDOWN_SIDE_PADDING * 2 + DROPDOWN_SCROLLBAR_ALLOWANCE;
@@ -12162,7 +12162,7 @@ public class NodeGraph {
         int optionCount = Math.max(1, modeDropdownOptions.size());
         int listTop = getModeDropdownListTop();
         float zoom = Math.max(0.01f, getZoomScale());
-        int transformedScreenHeight = Math.round(MinecraftClient.getInstance().getWindow().getScaledHeight() / zoom);
+        int transformedScreenHeight = Math.round(Minecraft.getInstance().getWindow().getGuiScaledHeight() / zoom);
         int rowHeight = getDropdownRowHeight();
         return DropdownLayoutHelper.calculate(
             optionCount,
@@ -12317,12 +12317,12 @@ public class NodeGraph {
             return ItemStack.EMPTY;
         }
         String fullId = optionValue.contains(":") ? optionValue : "minecraft:" + optionValue;
-        Identifier id = Identifier.tryParse(fullId);
+        ResourceLocation id = ResourceLocation.tryParse(fullId);
         if (id == null) {
             return ItemStack.EMPTY;
         }
         if (isBlockParameter(node, index)) {
-            var block = Registries.BLOCK.get(id);
+            var block = BuiltInRegistries.BLOCK.get(id);
             if (block == null) {
                 return ItemStack.EMPTY;
             }
@@ -12333,18 +12333,18 @@ public class NodeGraph {
             return new ItemStack(item);
         }
         if (isItemParameter(node, index)) {
-            Item item = Registries.ITEM.get(id);
+            Item item = BuiltInRegistries.ITEM.get(id);
             if (item == null || item == Items.AIR) {
                 return ItemStack.EMPTY;
             }
             return new ItemStack(item);
         }
         if (isEntityParameter(node, index)) {
-            var entityType = Registries.ENTITY_TYPE.get(id);
+            var entityType = BuiltInRegistries.ENTITY_TYPE.get(id);
             if (entityType == null) {
                 return ItemStack.EMPTY;
             }
-            Item spawnEgg = SpawnEggItem.forEntity(entityType);
+            SpawnEggItem spawnEgg = SpawnEggItem.byId(entityType);
             if (spawnEgg == null || spawnEgg == Items.AIR) {
                 return ItemStack.EMPTY;
             }
@@ -12360,7 +12360,7 @@ public class NodeGraph {
 
         private static List<String> buildBlockIds() {
             List<String> options = new ArrayList<>();
-            for (Identifier id : Registries.BLOCK.getIds()) {
+            for (ResourceLocation id : BuiltInRegistries.BLOCK.keySet()) {
                 if (id == null) {
                     continue;
                 }
@@ -12372,7 +12372,7 @@ public class NodeGraph {
 
         private static List<String> buildItemIds() {
             List<String> options = new ArrayList<>();
-            for (Identifier id : Registries.ITEM.getIds()) {
+            for (ResourceLocation id : BuiltInRegistries.ITEM.keySet()) {
                 if (id == null) {
                     continue;
                 }
@@ -12384,7 +12384,7 @@ public class NodeGraph {
 
         private static List<String> buildEntityIds() {
             List<String> options = new ArrayList<>();
-            for (Identifier id : Registries.ENTITY_TYPE.getIds()) {
+            for (ResourceLocation id : BuiltInRegistries.ENTITY_TYPE.keySet()) {
                 if (id == null) {
                     continue;
                 }
@@ -12395,23 +12395,23 @@ public class NodeGraph {
         }
     }
 
-    private TextRenderer getClientTextRenderer() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return client != null ? client.textRenderer : null;
+    private Font getClientFont() {
+        Minecraft client = Minecraft.getInstance();
+        return client != null ? client.font : null;
     }
 
     private String getClipboardText() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            return client.keyboard.getClipboard();
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            return client.keyboardHandler.getClipboard();
         }
         return "";
     }
 
     private void setClipboardText(String text) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(text == null ? "" : text);
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            client.keyboardHandler.setClipboard(text == null ? "" : text);
         }
     }
 
@@ -12536,7 +12536,7 @@ public class NodeGraph {
         int optionCount = Math.max(1, getAmountSignDropdownOptions().size());
         int listTop = getAmountSignDropdownListTop(node);
         float zoom = Math.max(0.01f, getZoomScale());
-        int transformedScreenHeight = Math.round(MinecraftClient.getInstance().getWindow().getScaledHeight() / zoom);
+        int transformedScreenHeight = Math.round(Minecraft.getInstance().getWindow().getGuiScaledHeight() / zoom);
         return DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -12554,7 +12554,7 @@ public class NodeGraph {
         int worldX = screenToWorldX(screenX);
         int worldY = screenToWorldY(screenY);
         int listTopScreen = node.getRandomRoundingFieldInputTop() + node.getRandomRoundingFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             getRandomRoundingDropdownOptions().size(),
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -12581,7 +12581,7 @@ public class NodeGraph {
         int worldY = screenToWorldY(screenY);
         int worldListTop = node.getRandomRoundingFieldInputTop() + node.getRandomRoundingFieldHeight() + 2;
         int listTopScreen = node.getRandomRoundingFieldInputTop() + node.getRandomRoundingFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             options.size(),
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -12872,7 +12872,7 @@ public class NodeGraph {
         if (node.getType() == NodeType.VARIABLE) {
             int boxHeight = 16;
             int boxLeft = node.getX() + 6;
-            int boxRight = node.getX() + node.getWidth() - 6;
+            int boxRight = node.getX() + node.width() - 6;
             int boxTop = node.getY() + node.getHeight() / 2 - boxHeight / 2 + 4;
             int boxBottom = boxTop + boxHeight;
             if (worldX >= boxLeft && worldX <= boxRight
@@ -13067,7 +13067,7 @@ public class NodeGraph {
             return false;
         }
         int listTop = schematicDropdownNode.getSchematicFieldInputTop() + schematicDropdownNode.getSchematicFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             schematicDropdownOptions.size(),
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13079,7 +13079,7 @@ public class NodeGraph {
             return true;
         }
         int delta = amount > 0 ? -1 : 1;
-        schematicDropdownScrollOffset = MathHelper.clamp(schematicDropdownScrollOffset + delta, 0, layout.maxScrollOffset);
+        schematicDropdownScrollOffset = Mth.clamp(schematicDropdownScrollOffset + delta, 0, layout.maxScrollOffset);
         return true;
     }
 
@@ -13091,7 +13091,7 @@ public class NodeGraph {
             return false;
         }
         int listTop = runPresetDropdownNode.getStopTargetFieldInputTop() + runPresetDropdownNode.getStopTargetFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             runPresetDropdownOptions.size(),
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13103,7 +13103,7 @@ public class NodeGraph {
             return true;
         }
         int delta = amount > 0 ? -1 : 1;
-        runPresetDropdownScrollOffset = MathHelper.clamp(runPresetDropdownScrollOffset + delta, 0, layout.maxScrollOffset);
+        runPresetDropdownScrollOffset = Mth.clamp(runPresetDropdownScrollOffset + delta, 0, layout.maxScrollOffset);
         return true;
     }
 
@@ -13160,7 +13160,7 @@ public class NodeGraph {
         }
         int optionCount = Math.max(1, schematicDropdownOptions.size());
         int listTop = node.getSchematicFieldInputTop() + node.getSchematicFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13186,7 +13186,7 @@ public class NodeGraph {
         }
         int optionCount = Math.max(1, runPresetDropdownOptions.size());
         int listTop = node.getStopTargetFieldInputTop() + node.getStopTargetFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13218,7 +13218,7 @@ public class NodeGraph {
         }
         int optionCount = schematicDropdownOptions.size();
         int listTop = node.getSchematicFieldInputTop() + node.getSchematicFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13245,7 +13245,7 @@ public class NodeGraph {
         }
         int optionCount = runPresetDropdownOptions.size();
         int listTop = node.getStopTargetFieldInputTop() + node.getStopTargetFieldHeight() + 2 - cameraY;
-        int screenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         DropdownLayoutHelper.Layout layout = DropdownLayoutHelper.calculate(
             optionCount,
             SCHEMATIC_DROPDOWN_ROW_HEIGHT,
@@ -13339,7 +13339,7 @@ public class NodeGraph {
         return AnimationHelper.easeOutQuad(animation.getValue());
     }
 
-    private void enableDropdownScissor(DrawContext context, int x, int y, int width, int height) {
+    private void enableDropdownScissor(GuiGraphics context, int x, int y, int width, int height) {
         context.enableScissor(x, y, x + Math.max(1, width), y + Math.max(1, height));
     }
 
@@ -13425,7 +13425,7 @@ public class NodeGraph {
             stopTargetSelectionStart = -1;
             stopTargetSelectionEnd = -1;
             resetStopTargetCaretBlink();
-            updateStopTargetFieldContentWidth(getClientTextRenderer());
+            updateStopTargetFieldContentWidth(getClientFont());
         }
         if (node.getType() == NodeType.TEMPLATE || node.getType() == NodeType.CUSTOM_NODE) {
             NodeGraphData loaded = NodeGraphPersistence.loadNodeGraphForPreset(value);
@@ -13444,12 +13444,12 @@ public class NodeGraph {
     }
 
     private List<String> loadSchematicOptions() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.runDirectory == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.gameDirectory == null) {
             return List.of();
         }
 
-        Path runDir = client.runDirectory.toPath();
+        Path runDir = client.gameDirectory.toPath();
         List<Path> roots = new ArrayList<>();
         roots.add(runDir.resolve("schematics"));
         roots.add(runDir.resolve("baritone").resolve("schematics"));
@@ -13519,11 +13519,11 @@ public class NodeGraph {
         if (value == null || value.isEmpty()) {
             return false;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.runDirectory == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.gameDirectory == null) {
             return false;
         }
-        Path runDir = client.runDirectory.toPath();
+        Path runDir = client.gameDirectory.toPath();
         List<Path> roots = new ArrayList<>();
         roots.add(runDir.resolve("schematics"));
         roots.add(runDir.resolve("baritone").resolve("schematics"));
@@ -13537,26 +13537,26 @@ public class NodeGraph {
         return false;
     }
 
-    private void drawNodeText(DrawContext context, TextRenderer renderer, Text text, int x, int y, int color) {
+    private void drawNodeText(GuiGraphics context, Font renderer, Component text, int x, int y, int color) {
         if (!shouldRenderNodeText()) {
             return;
         }
-        context.drawText(renderer, text, x, y, color, false);
+        context.drawString(renderer, text, x, y, color, false);
     }
 
-    private void drawNodeText(DrawContext context, TextRenderer renderer, String text, int x, int y, int color) {
-        drawNodeText(context, renderer, Text.literal(text), x, y, color);
+    private void drawNodeText(GuiGraphics context, Font renderer, String text, int x, int y, int color) {
+        drawNodeText(context, renderer, Component.literal(text), x, y, color);
     }
 
-    private String trimTextToWidth(String text, TextRenderer renderer, int maxWidth) {
-        if (renderer.getWidth(text) <= maxWidth) {
+    private String trimTextToWidth(String text, Font renderer, int maxWidth) {
+        if (renderer.width(text) <= maxWidth) {
             return text;
         }
         int safeMaxWidth = Math.max(0, maxWidth);
         return TextRenderUtil.trimWithEllipsis(renderer, text, safeMaxWidth);
     }
 
-    private void renderSocket(DrawContext context, int x, int y, boolean isInput, int color) {
+    private void renderSocket(GuiGraphics context, int x, int y, boolean isInput, int color) {
         // Socket circle
         context.fill(x - 3, y - 3, x + 3, y + 3, color);
         DrawContextBridge.drawBorderInLayer(context, x - 3, y - 3, 6, 6, UITheme.BORDER_SOCKET);
@@ -13597,7 +13597,7 @@ public class NodeGraph {
         return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
 
-    private void renderConnections(DrawContext context, boolean onlyDragged) {
+    private void renderConnections(GuiGraphics context, boolean onlyDragged) {
         ExecutionManager manager = ExecutionManager.getInstance();
         boolean animateConnections = manager.isExecuting() && !denseViewportMode;
         long animationTimestamp = System.currentTimeMillis();
@@ -13668,7 +13668,7 @@ public class NodeGraph {
                 // Render the dragging connection below sockets in the main layer.
                 int color = connectionSourceNode.getOutputSocketColor(connectionSourceSocket);
                 int sourceScreenX = connectionSourceNode.getX() - cameraX;
-                if (isNodeOverSidebarForRender(connectionSourceNode, sourceScreenX, connectionSourceNode.getWidth())) {
+                if (isNodeOverSidebarForRender(connectionSourceNode, sourceScreenX, connectionSourceNode.width())) {
                     color = toGrayscale(color, 0.65f);
                 }
 
@@ -13716,8 +13716,8 @@ public class NodeGraph {
         }
         int outputScreenX = outputNode.getX() - cameraX;
         int inputScreenX = inputNode.getX() - cameraX;
-        return isNodeOverSidebarForRender(outputNode, outputScreenX, outputNode.getWidth())
-            || isNodeOverSidebarForRender(inputNode, inputScreenX, inputNode.getWidth());
+        return isNodeOverSidebarForRender(outputNode, outputScreenX, outputNode.width())
+            || isNodeOverSidebarForRender(inputNode, inputScreenX, inputNode.width());
     }
 
     private boolean isNodeInDraggedHierarchy(Node node) {
@@ -13737,7 +13737,7 @@ public class NodeGraph {
         return false;
     }
 
-    private void renderAnimatedConnectionCurve(DrawContext context, int x1, int y1, int x2, int y2, int color, long timestamp) {
+    private void renderAnimatedConnectionCurve(GuiGraphics context, int x1, int y1, int x2, int y2, int color, long timestamp) {
         int midX = x1 + (x2 - x1) / 2;
 
         int firstSegmentLength = Math.abs(midX - x1);
@@ -13751,7 +13751,7 @@ public class NodeGraph {
                 firstSegmentLength + secondSegmentLength);
     }
 
-    private void drawAnimatedSegment(DrawContext context, int x1, int y1, int x2, int y2, boolean horizontal,
+    private void drawAnimatedSegment(GuiGraphics context, int x1, int y1, int x2, int y2, boolean horizontal,
                                      int color, int animationOffset, int distanceOffset) {
         int length = horizontal ? Math.abs(x2 - x1) : Math.abs(y2 - y1);
         if (length == 0) {
@@ -13787,11 +13787,11 @@ public class NodeGraph {
             if (horizontal) {
                 int minX = Math.min(startPos, endPos);
                 int maxX = Math.max(startPos, endPos);
-                context.drawHorizontalLine(minX, maxX, staticCoord, color);
+                context.hLine(minX, maxX, staticCoord, color);
             } else {
                 int minY = Math.min(startPos, endPos);
                 int maxY = Math.max(startPos, endPos);
-                context.drawVerticalLine(staticCoord, minY, maxY, color);
+                context.vLine(staticCoord, minY, maxY, color);
             }
         }
 
@@ -13805,11 +13805,11 @@ public class NodeGraph {
             if (horizontal) {
                 int minX = Math.min(startPos, endPos);
                 int maxX = Math.max(startPos, endPos);
-                context.drawHorizontalLine(minX, maxX, staticCoord, color);
+                context.hLine(minX, maxX, staticCoord, color);
             } else {
                 int minY = Math.min(startPos, endPos);
                 int maxY = Math.max(startPos, endPos);
-                context.drawVerticalLine(staticCoord, minY, maxY, color);
+                context.vLine(staticCoord, minY, maxY, color);
             }
         }
     }
@@ -13819,21 +13819,21 @@ public class NodeGraph {
         return result < 0 ? result + mod : result;
     }
 
-    private void renderConnectionCurve(DrawContext context, int x1, int y1, int x2, int y2, int color) {
+    private void renderConnectionCurve(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
         // Draw a simple L-shaped connection line
         int midX = x1 + (x2 - x1) / 2;
         
         // Horizontal line from source to middle
-        context.drawHorizontalLine(Math.min(x1, midX), Math.max(x1, midX), y1, color);
+        context.hLine(Math.min(x1, midX), Math.max(x1, midX), y1, color);
         
         // Vertical line from middle to target
-        context.drawVerticalLine(midX, Math.min(y1, y2), Math.max(y1, y2), color);
+        context.vLine(midX, Math.min(y1, y2), Math.max(y1, y2), color);
         
         // Horizontal line from middle to target
-        context.drawHorizontalLine(Math.min(midX, x2), Math.max(midX, x2), y2, color);
+        context.hLine(Math.min(midX, x2), Math.max(midX, x2), y2, color);
     }
 
-    private void renderConnectionCutPreview(DrawContext context) {
+    private void renderConnectionCutPreview(GuiGraphics context) {
         if (connectionCutPath.size() < 2) {
             int x = connectionCutCurrentWorldX - cameraX;
             int y = connectionCutCurrentWorldY - cameraY;
@@ -14045,7 +14045,7 @@ public class NodeGraph {
         return (int) Math.round(distX * distX + distY * distY);
     }
 
-    private void drawSegmentWithThickness(DrawContext context, int x1, int y1, int x2, int y2, int color, int thickness) {
+    private void drawSegmentWithThickness(GuiGraphics context, int x1, int y1, int x2, int y2, int color, int thickness) {
         if (x1 == x2 && y1 == y2) {
             context.fill(x1 - thickness, y1 - thickness, x1 + thickness + 1, y1 + thickness + 1, color);
             return;
@@ -14060,9 +14060,9 @@ public class NodeGraph {
         }
     }
 
-    private void renderDenseConnectionCurve(DrawContext context, int x1, int y1, int x2, int y2, int color) {
-        context.drawHorizontalLine(Math.min(x1, x2), Math.max(x1, x2), y1, color);
-        context.drawVerticalLine(x2, Math.min(y1, y2), Math.max(y1, y2), color);
+    private void renderDenseConnectionCurve(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
+        context.hLine(Math.min(x1, x2), Math.max(x1, x2), y1, color);
+        context.vLine(x2, Math.min(y1, y2), Math.max(y1, y2), color);
     }
 
     private static final class CutPoint {
@@ -14141,7 +14141,7 @@ public class NodeGraph {
     }
     
     private boolean isMouseOverStartButton(Node startNode, int mouseX, int mouseY) {
-        int centerX = startNode.getX() + startNode.getWidth() / 2;
+        int centerX = startNode.getX() + startNode.width() / 2;
         int centerY = startNode.getY() + startNode.getHeight() / 2;
         int worldMouseX = screenToWorldX(mouseX);
         int worldMouseY = screenToWorldY(mouseY);
@@ -14334,7 +14334,7 @@ public class NodeGraph {
                 }
             } else {
                 int screenX = node.getX() - cameraX;
-                if (!isNodeOverSidebar(node, sidebarWidthForRendering, screenX, node.getWidth())) {
+                if (!isNodeOverSidebar(node, sidebarWidthForRendering, screenX, node.width())) {
                     continue;
                 }
             }

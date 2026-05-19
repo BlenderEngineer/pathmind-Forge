@@ -1,7 +1,8 @@
 package com.pathmind.util;
 
 import com.pathmind.PathmindMod;
-import net.fabricmc.loader.api.FabricLoader;
+import com.pathmind.util.ModPaths;
+import net.neoforged.fml.ModList;
 
 /**
  * Lightweight runtime check for UI Utils availability.
@@ -25,8 +26,8 @@ public final class UiUtilsDependencyChecker {
             return cachedResult;
         }
 
-        boolean legacyLoaded = FabricLoader.getInstance().isModLoaded(LEGACY_MOD_ID);
-        boolean modernLoaded = FabricLoader.getInstance().isModLoaded(MODERN_MOD_ID);
+        boolean legacyLoaded = ModPaths.isModLoaded(LEGACY_MOD_ID);
+        boolean modernLoaded = ModPaths.isModLoaded(MODERN_MOD_ID);
         if (!legacyLoaded && !modernLoaded) {
             cachedResult = Boolean.FALSE;
             return false;

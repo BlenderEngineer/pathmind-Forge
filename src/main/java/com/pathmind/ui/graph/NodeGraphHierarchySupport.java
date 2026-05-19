@@ -28,7 +28,7 @@ final class NodeGraphHierarchySupport {
             }
             minX = Math.min(minX, node.getX());
             minY = Math.min(minY, node.getY());
-            maxX = Math.max(maxX, node.getX() + node.getWidth());
+            maxX = Math.max(maxX, node.getX() + node.width());
             maxY = Math.max(maxY, node.getY() + node.getHeight());
         }
         if (minX == Integer.MAX_VALUE) {

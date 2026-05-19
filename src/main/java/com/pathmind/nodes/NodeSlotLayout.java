@@ -22,7 +22,7 @@ final class NodeSlotLayout {
 
     static int sensorSlotWidth(Node node) {
         int minWidth = Node.SENSOR_SLOT_MIN_CONTENT_WIDTH + 2 * Node.SENSOR_SLOT_INNER_PADDING;
-        int widthWithMargins = node.getWidth() - 2 * Node.SENSOR_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = node.width() - 2 * Node.SENSOR_SLOT_MARGIN_HORIZONTAL;
         return Math.max(minWidth, widthWithMargins);
     }
 
@@ -55,7 +55,7 @@ final class NodeSlotLayout {
             int baseLeft = node.getX() + Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
             if (node.usesMinimalNodePresentation()) {
                 int contentLeft = node.getX() + Node.MINIMAL_NODE_TAB_WIDTH + Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
-                int contentWidth = Math.max(0, node.getWidth() - Node.MINIMAL_NODE_TAB_WIDTH - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL);
+                int contentWidth = Math.max(0, node.width() - Node.MINIMAL_NODE_TAB_WIDTH - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL);
                 int groupWidth = slotWidth * 2 + Node.OPERATOR_SLOT_GAP;
                 int startX = contentLeft + Math.max(0, (contentWidth - groupWidth) / 2);
                 if (slotIndex <= 0) {
@@ -109,15 +109,15 @@ final class NodeSlotLayout {
     }
 
     static int parameterSlotWidth(Node node) {
-        int widthWithMargins = node.getWidth() - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = node.width() - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
         return Math.max(Node.PARAMETER_SLOT_MIN_CONTENT_WIDTH, widthWithMargins);
     }
 
     static int parameterSlotWidth(Node node, int slotIndex) {
         if (node.isComparisonOperator()) {
-            int widthWithMargins = node.getWidth() - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
+            int widthWithMargins = node.width() - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL;
             if (node.usesMinimalNodePresentation()) {
-                widthWithMargins = Math.max(0, node.getWidth() - Node.MINIMAL_NODE_TAB_WIDTH - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL);
+                widthWithMargins = Math.max(0, node.width() - Node.MINIMAL_NODE_TAB_WIDTH - 2 * Node.PARAMETER_SLOT_MARGIN_HORIZONTAL);
             }
             int minCombinedWidth = Node.PARAMETER_SLOT_MIN_CONTENT_WIDTH * 2 + Node.OPERATOR_SLOT_GAP;
             int effectiveWidth = Math.max(minCombinedWidth, widthWithMargins);
@@ -190,7 +190,7 @@ final class NodeSlotLayout {
 
     static int actionSlotWidth(Node node) {
         int minWidth = Node.ACTION_SLOT_MIN_CONTENT_WIDTH + 2 * Node.ACTION_SLOT_INNER_PADDING;
-        int widthWithMargins = node.getWidth() - 2 * Node.ACTION_SLOT_MARGIN_HORIZONTAL;
+        int widthWithMargins = node.width() - 2 * Node.ACTION_SLOT_MARGIN_HORIZONTAL;
         return Math.max(minWidth, widthWithMargins);
     }
 

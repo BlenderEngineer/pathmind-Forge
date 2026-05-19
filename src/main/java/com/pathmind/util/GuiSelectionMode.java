@@ -21,7 +21,7 @@ public enum GuiSelectionMode {
     CARTOGRAPHY_TABLE("cartography_table", "Cartography Table"),
     BARREL("barrel", "Barrel / Single Chest"),
     CHEST_DOUBLE("double_chest", "Double Chest"),
-    SHULKER_BOX("shulker_box", "Shulker Box"),
+    SHULKER_BOX("shulker_box", "Shulker AABB"),
     HOPPER("hopper", "Hopper"),
     DISPENSER("dispenser", "Dispenser / Dropper"),
     BEACON("beacon", "Beacon");
